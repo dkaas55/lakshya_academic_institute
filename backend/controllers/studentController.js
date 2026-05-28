@@ -148,16 +148,21 @@ const registerStudent = async (req, res) => {
 };
 
 const getStudents = async (req, res) => {
-  if (req.user.role !== "admin") {
+  if (req.user.role !== "admin" && req.user.role !== "teacher") {
     return res.status(403).json({
       success: false,
-      message: "Only administrators can view students",
+      message: "Only administrators and teachers can view students",
     });
   }
 
   try {
+    const query = { status: { $ne: "removed" } };
+    if (req.user.role === "teacher") {
+      query.batch = { $in: req.user.assignedBatches || [] };
+    }
+
     // Exclude 'removed' students from the active roster
-    const profiles = await StudentProfile.find({ status: { $ne: "removed" } })
+    const profiles = await StudentProfile.find(query)
       .populate("user", "name username")
       .sort({ createdAt: -1 })
       .lean();

@@ -5,6 +5,7 @@ const {
   updateAttendanceSheet,
   getMyAttendanceHistory,
   getAttendanceHistory,
+  getStudentAttendanceHistoryDetail,
 } = require("../controllers/attendanceController");
 const { protect, protectAdminOrTeacher } = require("../middleware/authMiddleware");
 
@@ -15,6 +16,7 @@ router.get("/sheet", protectAdminOrTeacher, getAttendanceSheet);
 router.post("/sheet", protectAdminOrTeacher, saveAttendanceSheet);
 router.put("/sheet", protectAdminOrTeacher, updateAttendanceSheet);
 router.get("/history", protectAdminOrTeacher, getAttendanceHistory);
+router.get("/student/:studentId", protectAdminOrTeacher, getStudentAttendanceHistoryDetail);
 
 // Student endpoints
 router.get("/my-history", protect, getMyAttendanceHistory);

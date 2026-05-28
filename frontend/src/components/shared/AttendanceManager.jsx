@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import api from '../../lib/api'
 import StudentFilterBar from './StudentFilterBar'
+import StudentAttendanceDetailModal from './StudentAttendanceDetailModal'
 
 const ALL_BATCH_OPTIONS = [
   'Morning Batch A',
@@ -42,7 +43,18 @@ function PctBadge({ pct }) {
 // ── History View Sub-panel ────────────────────────────────────────────────────
 function AttendanceHistoryView({ allowedBatches }) {
   const batches = allowedBatches || ALL_BATCH_OPTIONS
-  const [batch,    setBatch]    = useState(batches[0] || '')
+  const [batch, setBatch] = useState(batches[0] || '')
+
+  // ── Student search & filtering state ────────────────────────────────────────
+  const [studentList,    setStudentList]    = useState([])
+  const [studentsLoading, setStudentsLoading] = useState(false)
+  const [searchQuery,    setSearchQuery]    = useState('')
+  const [filterBatch,    setFilterBatch]    = useState('all')
+  const [filterClass,    setFilterClass]    = useState('all')
+  const [showDropdown,   setShowDropdown]   = useState(false)
+  const [selectedStudentForModal, setSelectedStudentForModal] = useState(null)
+
+  // ── Batch report state ──────────────────────────────────────────────────────
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo,   setDateTo]   = useState('')
   const [loading,  setLoading]  = useState(false)
@@ -50,6 +62,56 @@ function AttendanceHistoryView({ allowedBatches }) {
   const [result,   setResult]   = useState(null)
   const [filtered, setFiltered] = useState([])
 
+  // ── Fetch students once on mount ────────────────────────────────────────────
+  const fetchStudents = async () => {
+    setStudentsLoading(true)
+    try {
+      const { data } = await api.get('/students')
+      if (data.success) {
+        setStudentList(data.data?.students ?? [])
+      }
+    } catch { /* silent */ }
+    finally { setStudentsLoading(false) }
+  }
+
+  useEffect(() => {
+    fetchStudents()
+  }, [])
+
+  // ── Derive unique option lists from student registry ────────────────────────
+  const uniqueBatches = useMemo(() => {
+    return [...new Set(studentList.map((s) => s.batch).filter(Boolean))].sort()
+  }, [studentList])
+
+  const uniqueClasses = useMemo(() => {
+    return [...new Set(studentList.map((s) => s.studentClass).filter(Boolean))].sort()
+  }, [studentList])
+
+  // ── Search & Filter Logic ───────────────────────────────────────────────────
+  const q = searchQuery.trim().toLowerCase()
+  const filteredSearchList = useMemo(() => {
+    return studentList.filter((s) => {
+      const matchBatch = filterBatch === 'all' || s.batch === filterBatch
+      const matchClass = filterClass === 'all' || s.studentClass === filterClass
+      const matchText = !q ||
+        (s.fullName || '').toLowerCase().includes(q) ||
+        (s.phoneNumber || '').includes(q) ||
+        (s.username || '').toLowerCase().includes(q)
+      return matchBatch && matchClass && matchText
+    })
+  }, [studentList, filterBatch, filterClass, q])
+
+  const isActivelyFiltering = q.length > 0 || filterBatch !== 'all' || filterClass !== 'all'
+
+  const handlePickStudentFromSearch = (student) => {
+    setSelectedStudentForModal(student)
+    setSearchQuery('')
+    setFilterBatch('all')
+    setFilterClass('all')
+    setShowDropdown(false)
+  }
+
+  // ── Batch report fetch ──────────────────────────────────────────────────────
   const fetchHistory = async () => {
     if (!batch) return
     setLoading(true)
@@ -74,15 +136,164 @@ function AttendanceHistoryView({ allowedBatches }) {
   }
 
   return (
-    <div className="space-y-5">
-      {/* Controls */}
-      <div className="rounded-2xl border border-brand-border bg-brand-surface p-5 shadow-sm">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="space-y-5 animate-fadeIn">
+      {/* 🔍 Global Student Search Card */}
+      <div className="rounded-2xl border border-brand-border bg-brand-surface p-5 shadow-sm space-y-4">
+        <div>
+          <h3 className="text-sm font-bold text-brand-text">🔍 Student Attendance Lookup</h3>
+          <p className="text-[10px] text-brand-text-muted mt-0.5">
+            Search for a specific student or filter by batch and class to view their detailed attendance.
+          </p>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          {/* Search by Name */}
+          <div className="relative">
+            <label className="block text-xs font-semibold text-brand-text mb-1.5">Search Student</label>
+            <div className="relative">
+              <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-brand-text-muted/60">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                </svg>
+              </span>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value)
+                  setShowDropdown(true)
+                }}
+                onFocus={() => setShowDropdown(true)}
+                placeholder={studentsLoading ? 'Loading registry…' : 'Type name, phone…'}
+                className="w-full rounded-xl border border-brand-border bg-brand-surface pl-9 pr-10 py-2.5 text-xs text-brand-text placeholder:text-brand-text-muted/50 focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => { setSearchQuery(''); setShowDropdown(false) }}
+                  className="absolute inset-y-0 right-3 flex items-center text-brand-text-muted hover:text-brand-accent transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Batch Filter */}
+          <div>
+            <label className="block text-xs font-semibold text-brand-text mb-1.5">Batch</label>
+            <select
+              value={filterBatch}
+              onChange={(e) => {
+                setFilterBatch(e.target.value)
+                setShowDropdown(true)
+              }}
+              className="w-full rounded-xl border border-brand-border bg-brand-surface px-3 py-2.5 text-xs text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all"
+            >
+              <option value="all">All Batches</option>
+              {uniqueBatches.map((b) => (
+                <option key={b} value={b}>{b}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Class Filter */}
+          <div>
+            <label className="block text-xs font-semibold text-brand-text mb-1.5">Class</label>
+            <select
+              value={filterClass}
+              onChange={(e) => {
+                setFilterClass(e.target.value)
+                setShowDropdown(true)
+              }}
+              className="w-full rounded-xl border border-brand-border bg-brand-surface px-3 py-2.5 text-xs text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all"
+            >
+              <option value="all">All Classes</option>
+              {uniqueClasses.map((c) => (
+                <option key={c} value={c}>Class {c}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Dropdown panel positioned relative to the container */}
+        {showDropdown && isActivelyFiltering && (
+          <div className="relative">
+            <div className="absolute z-30 left-0 right-0 mt-1 rounded-xl border border-brand-border bg-brand-surface shadow-lg max-h-56 overflow-y-auto">
+              <div className="flex justify-between items-center px-4 py-2 border-b border-brand-border/60 bg-brand-surface-tint">
+                <span className="text-[10px] font-bold text-brand-text-muted">
+                  Matching Students ({filteredSearchList.length})
+                </span>
+                <div className="flex items-center gap-2">
+                  {(filterBatch !== 'all' || filterClass !== 'all' || searchQuery !== '') && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearchQuery('')
+                        setFilterBatch('all')
+                        setFilterClass('all')
+                        setShowDropdown(false)
+                      }}
+                      className="text-[10px] text-brand-accent font-bold hover:underline cursor-pointer"
+                    >
+                      Clear Filters
+                    </button>
+                  )}
+                  <span className="text-brand-border/30">|</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowDropdown(false)}
+                    className="text-[10px] text-brand-primary font-bold hover:underline cursor-pointer"
+                  >
+                    Hide Results
+                  </button>
+                </div>
+              </div>
+              {filteredSearchList.length === 0 ? (
+                <div className="px-4 py-3 text-xs text-brand-text-muted">No students found matching your criteria.</div>
+              ) : (
+                filteredSearchList.map((s) => (
+                  <button
+                    key={s.id || s._id}
+                    type="button"
+                    onClick={() => handlePickStudentFromSearch(s)}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-brand-primary/5 transition-colors border-b border-brand-border/50 last:border-b-0 cursor-pointer"
+                  >
+                    <div className="w-7 h-7 rounded-full bg-brand-primary/10 text-brand-primary flex items-center justify-center text-[10px] font-bold shrink-0">
+                      {s.fullName?.charAt(0)?.toUpperCase() ?? '?'}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold text-brand-text truncate">{s.fullName}</p>
+                      <p className="text-[10px] text-brand-text-muted truncate">
+                        Batch: <span className="font-semibold text-brand-text">{s.batch}</span> {s.studentClass ? `· Class ${s.studentClass}` : ''}
+                      </p>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 📊 Batch Attendance Report Card */}
+      <div className="rounded-2xl border border-brand-border bg-brand-surface p-5 shadow-sm space-y-4">
+        <div>
+          <h3 className="text-sm font-bold text-brand-text">📊 Batch Attendance Report</h3>
+          <p className="text-[10px] text-brand-text-muted mt-0.5">Select a batch and date range to load student overview stats.</p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div>
             <label className="block text-xs font-semibold text-brand-text mb-1.5">Batch</label>
             <select
               value={batch}
-              onChange={(e) => setBatch(e.target.value)}
+              onChange={(e) => {
+                setBatch(e.target.value)
+                setResult(null)
+                setFiltered([])
+              }}
               className="w-full rounded-xl border border-brand-border bg-brand-surface px-4 py-2.5 text-sm text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all"
             >
               {batches.map((b) => <option key={b} value={b}>{b}</option>)}
@@ -96,28 +307,26 @@ function AttendanceHistoryView({ allowedBatches }) {
               onChange={(e) => setDateFrom(e.target.value)}
               max={new Date().toISOString().split('T')[0]}
               className="w-full rounded-xl border border-brand-border bg-brand-surface px-4 py-2.5 text-sm text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all"
-            >
-            </input>
+            />
           </div>
           <div>
             <label className="block text-xs font-semibold text-brand-text mb-1.5">To Date</label>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              max={new Date().toISOString().split('T')[0]}
-              className="w-full rounded-xl border border-brand-border bg-brand-surface px-4 py-2.5 text-sm text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all"
-            >
-            </input>
-          </div>
-          <div className="flex items-end">
-            <button
-              onClick={fetchHistory}
-              disabled={loading}
-              className="w-full rounded-xl bg-brand-primary hover:bg-brand-primary/90 px-4 py-3 text-xs font-bold text-brand-surface disabled:opacity-60 transition-all shadow-sm cursor-pointer"
-            >
-              {loading ? 'Loading…' : 'Load Report'}
-            </button>
+            <div className="flex gap-2">
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                max={new Date().toISOString().split('T')[0]}
+                className="flex-1 rounded-xl border border-brand-border bg-brand-surface px-4 py-2.5 text-sm text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all"
+              />
+              <button
+                onClick={fetchHistory}
+                disabled={loading}
+                className="rounded-xl bg-brand-primary hover:bg-brand-primary/90 px-4 py-2.5 text-xs font-bold text-brand-surface disabled:opacity-60 transition-all shadow-sm cursor-pointer whitespace-nowrap"
+              >
+                {loading ? 'Loading…' : 'Load Report'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -127,7 +336,7 @@ function AttendanceHistoryView({ allowedBatches }) {
       )}
 
       {result && (
-        <div className="space-y-4">
+        <div className="space-y-4 animate-fadeIn">
           {/* Summary strip */}
           <div className="flex items-center gap-3 flex-wrap text-[11px] text-brand-text-muted">
             <span className="font-bold text-brand-text">{result.batch}</span>
@@ -165,13 +374,20 @@ function AttendanceHistoryView({ allowedBatches }) {
                       </td>
                     </tr>
                   ) : filtered.map((s) => (
-                    <tr key={s.studentId} className="hover:bg-brand-primary/5 transition-colors duration-150">
+                    <tr
+                      key={s.studentId}
+                      onClick={() => setSelectedStudentForModal(s)}
+                      className="hover:bg-brand-primary/5 transition-colors duration-150 cursor-pointer"
+                    >
                       <td className="px-4 py-3.5">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-brand-primary/10 text-brand-primary flex items-center justify-center text-[10px] font-bold shrink-0">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-full bg-brand-primary/10 text-brand-primary flex items-center justify-center text-[10px] font-bold shrink-0">
                             {s.fullName.charAt(0).toUpperCase()}
                           </div>
-                          <span className="font-semibold text-brand-text">{s.fullName}</span>
+                          <div>
+                            <span className="font-semibold text-brand-text block">{s.fullName}</span>
+                            <span className="text-[9px] text-brand-text-muted block mt-0.5">Click to view detail</span>
+                          </div>
                         </div>
                       </td>
                       <td className="px-4 py-3.5 text-center">
@@ -184,7 +400,19 @@ function AttendanceHistoryView({ allowedBatches }) {
                         <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-brand-accent/10 text-brand-accent text-[11px] font-bold">{s.absent}</span>
                       </td>
                       <td className="px-4 py-3.5 text-center text-brand-text font-semibold">{s.total}</td>
-                      <td className="px-4 py-3.5 text-center"><PctBadge pct={s.attendancePercentage} /></td>
+                      <td className="px-4 py-3.5 text-center">
+                        {s.attendancePercentage !== null ? (
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-bold ring-1 ${
+                            s.attendancePercentage >= 85 ? 'bg-brand-primary/10 text-brand-primary ring-brand-primary/20' :
+                            s.attendancePercentage >= 75 ? 'bg-brand-gold/15 text-brand-gold ring-brand-gold/25' :
+                                                           'bg-brand-accent/10 text-brand-accent ring-brand-accent/20'
+                          }`}>
+                            {s.attendancePercentage}%
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-brand-text-muted">—</span>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -203,9 +431,18 @@ function AttendanceHistoryView({ allowedBatches }) {
           </div>
         </div>
       )}
+
+      {/* ── Student Attendance History Modal ────────────────────────────────── */}
+      {selectedStudentForModal && (
+        <StudentAttendanceDetailModal
+          student={selectedStudentForModal}
+          onClose={() => setSelectedStudentForModal(null)}
+        />
+      )}
     </div>
   )
 }
+
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function AttendanceManager({ allowedBatches = null }) {

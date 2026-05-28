@@ -67,8 +67,8 @@ export default function FeeReceiptTemplate({ receiptInfo, student }) {
   const isPaid = amountDue <= 0
 
   return (
-    <div className="w-[700px] min-h-[950px] bg-white text-slate-800 p-12 flex flex-col justify-between relative border border-slate-100 font-sans" style={{ ...tailwindHexColors, fontFamily: '"Outfit", sans-serif' }}>
-      <style dangerouslySetInnerHTML={{ __html: `@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');` }} />
+    <div className="w-[700px] min-h-[950px] bg-white text-slate-800 p-12 flex flex-col justify-between relative border border-slate-100 font-sans" style={{ ...tailwindHexColors, fontFamily: '"Source Sans 3", sans-serif' }}>
+      <style dangerouslySetInnerHTML={{ __html: `@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,200..900;1,200..900&display=swap');` }} />
       {/* Watermark for fully paid */}
       {isPaid && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden z-0">

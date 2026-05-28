@@ -32,7 +32,7 @@ async function run() {
     return;
   }
 
-  const passwordHash = await bcrypt.hash("Teacher@123", 12);
+  const passwordHash = await bcrypt.hash("Tch#7d9A$k2", 12);
 
   const teacher = await User.create({
     name: "Priya Sharma",
@@ -45,7 +45,7 @@ async function run() {
   console.log("✅  Teacher account created:");
   console.log(`    Name    : ${teacher.name}`);
   console.log(`    Username: ${teacher.username}`);
-  console.log(`    Password: Teacher@123`);
+  console.log(`    Password: Tch#7d9A$k2`);
   console.log(`    Batches : ${teacher.assignedBatches.join(", ")}`);
   console.log("\n🏁  Sign in at http://localhost:5173/login with role = Teacher");
 

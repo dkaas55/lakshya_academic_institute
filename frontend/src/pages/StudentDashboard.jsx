@@ -565,6 +565,13 @@ function AttendanceSummaryCard({ attnData, onViewAll }) {
 function AttendanceHistoryPage({ attnData }) {
   const [filter, setFilter] = useState('all')   // 'all' | 'Present' | 'Late' | 'Absent'
 
+  // ── Date and Month lookup state ────────────────────────────────────────────
+  const [lookupDate, setLookupDate]       = useState('')
+  const [selectedMonth, setSelectedMonth] = useState('')
+  const [dateResult, setDateResult]       = useState(null)
+  const [monthResult, setMonthResult]     = useState(null)
+  const [filterLoading, setFilterLoading] = useState(false)
+
   if (!attnData?.summary) {
     return (
       <div className="rounded-xl border border-dashed border-brand-border bg-brand-surface p-12 text-center">
@@ -599,6 +606,65 @@ function AttendanceHistoryPage({ attnData }) {
   for (const h of [...history]) {
     if (h.status === 'Present' || h.status === 'Late') streak++
     else break
+  }
+
+  // ── Month options from history ──────────────────────────────────────────────
+  const MONTH_NAMES = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December',
+  ]
+  const monthOptions = []
+  const seenMonths = new Set()
+  for (const h of history) {
+    const d = new Date(h.date)
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    if (!seenMonths.has(key)) {
+      seenMonths.add(key)
+      monthOptions.push({ value: key, label: `${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}` })
+    }
+  }
+
+  // ── Date lookup handler ─────────────────────────────────────────────────────
+  const handleDateLookup = () => {
+    if (!lookupDate) return
+    setMonthResult(null)
+    const target = new Date(lookupDate)
+    target.setUTCHours(0, 0, 0, 0)
+    const match = history.find((h) => {
+      const hd = new Date(h.date)
+      hd.setUTCHours(0, 0, 0, 0)
+      return hd.getTime() === target.getTime()
+    })
+    setDateResult({ date: lookupDate, status: match?.status || null })
+  }
+
+  // ── Month filter handler ────────────────────────────────────────────────────
+  const handleMonthSelect = (monthVal) => {
+    setSelectedMonth(monthVal)
+    setDateResult(null)
+    if (!monthVal) { setMonthResult(null); return }
+    const [year, mon] = monthVal.split('-').map(Number)
+    const monthHistory = history.filter((h) => {
+      const d = new Date(h.date)
+      return d.getFullYear() === year && d.getMonth() + 1 === mon
+    })
+    let mp = 0, ml = 0, ma = 0
+    monthHistory.forEach((h) => {
+      if (h.status === 'Present') mp++
+      else if (h.status === 'Late') ml++
+      else if (h.status === 'Absent') ma++
+    })
+    const total = monthHistory.length
+    const pct = total > 0 ? Math.round(((mp + ml) / total) * 100) : null
+    setMonthResult({
+      month: `${MONTH_NAMES[mon - 1]} ${year}`,
+      totalClasses: total,
+      present: mp,
+      late: ml,
+      absent: ma,
+      attendancePercentage: pct,
+      history: monthHistory,
+    })
   }
 
   return (
@@ -684,6 +750,141 @@ function AttendanceHistoryPage({ attnData }) {
               </span>
             ))}
           </div>
+        </section>
+      )}
+
+      {/* ── Date / Month Lookup Controls ────────────────────────────────────── */}
+      <section className="w-full rounded-2xl border border-brand-border bg-brand-surface p-6 shadow-sm">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-brand-text-muted/80 mb-4">Lookup Attendance</p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {/* Date lookup */}
+          <div>
+            <label className="block text-xs font-semibold text-brand-text mb-1.5">By Date</label>
+            <div className="flex gap-2">
+              <input
+                type="date"
+                value={lookupDate}
+                onChange={(e) => setLookupDate(e.target.value)}
+                max={new Date().toISOString().split('T')[0]}
+                className="flex-1 rounded-xl border border-brand-border bg-brand-surface px-3 py-2.5 text-sm text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all"
+              />
+              <button
+                type="button"
+                onClick={handleDateLookup}
+                disabled={!lookupDate}
+                className="rounded-xl bg-brand-primary hover:bg-brand-primary/90 px-4 py-2.5 text-xs font-bold text-brand-surface disabled:opacity-60 transition-all shadow-sm cursor-pointer"
+              >
+                Check
+              </button>
+            </div>
+          </div>
+
+          {/* Month selector */}
+          <div>
+            <label className="block text-xs font-semibold text-brand-text mb-1.5">By Month</label>
+            <select
+              value={selectedMonth}
+              onChange={(e) => handleMonthSelect(e.target.value)}
+              className="w-full rounded-xl border border-brand-border bg-brand-surface px-3 py-2.5 text-sm text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all"
+            >
+              <option value="">Select month…</option>
+              {monthOptions.map((m) => (
+                <option key={m.value} value={m.value}>{m.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Date Result ──────────────────────────────────────────────────────── */}
+      {dateResult && (
+        <section className="w-full rounded-2xl border border-brand-border bg-brand-surface p-6 shadow-sm">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-brand-text-muted/80 mb-3">
+            Status on {new Intl.DateTimeFormat('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(dateResult.date))}
+          </p>
+          {dateResult.status ? (
+            <div className="flex items-center gap-3">
+              {(() => {
+                const dotCfg = { Present: 'bg-emerald-500', Late: 'bg-amber-400', Absent: 'bg-rose-500' }[dateResult.status] ?? 'bg-gray-400'
+                const badgeCfg = {
+                  Present: 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-400 ring-emerald-100 dark:ring-emerald-900/50',
+                  Late:    'bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-400 ring-amber-100 dark:ring-amber-900/50',
+                  Absent:  'bg-rose-50 dark:bg-rose-950/30 text-rose-800 dark:text-rose-400 ring-rose-100 dark:ring-rose-900/50',
+                }[dateResult.status] ?? 'bg-brand-surface-tint text-brand-text-muted ring-brand-border'
+                return (
+                  <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-semibold ring-1 ${badgeCfg}`}>
+                    <span className={`h-1.5 w-1.5 rounded-full ${dotCfg}`} />
+                    {dateResult.status}
+                  </span>
+                )
+              })()}
+              <span className="text-xs text-brand-text font-semibold">
+                You were marked <strong>{dateResult.status}</strong> on this date.
+              </span>
+            </div>
+          ) : (
+            <p className="text-xs text-brand-text-muted">No attendance record found for this date.</p>
+          )}
+        </section>
+      )}
+
+      {/* ── Month Result ─────────────────────────────────────────────────────── */}
+      {monthResult && (
+        <section className="w-full rounded-2xl border border-brand-border bg-brand-surface p-6 shadow-sm space-y-4">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-brand-text-muted/80">
+              {monthResult.month} Summary
+            </p>
+            {(() => {
+              const pct = monthResult.attendancePercentage
+              if (pct === null) return <span className="text-[11px] text-brand-text-muted">—</span>
+              const cls =
+                pct >= 85 ? 'bg-brand-primary/10 text-brand-primary ring-brand-primary/20' :
+                pct >= 75 ? 'bg-brand-gold/15 text-brand-gold ring-brand-gold/25' :
+                            'bg-brand-accent/10 text-brand-accent ring-brand-accent/20'
+              return <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold ring-1 ${cls}`}>{pct}%</span>
+            })()}
+          </div>
+
+          {/* Stats row */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: 'Classes',  value: monthResult.totalClasses, bg: 'bg-brand-surface-tint border-brand-border', color: 'text-brand-text' },
+              { label: 'Present',  value: monthResult.present,      bg: 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-100 dark:border-emerald-900/50', color: 'text-emerald-800 dark:text-emerald-300' },
+              { label: 'Late',     value: monthResult.late,         bg: 'bg-amber-50 dark:bg-amber-950/30 border-amber-100 dark:border-amber-900/50', color: 'text-amber-800 dark:text-amber-300' },
+              { label: 'Absent',   value: monthResult.absent,       bg: 'bg-rose-50 dark:bg-rose-950/30 border-rose-100 dark:border-rose-900/50', color: 'text-rose-800 dark:text-rose-300' },
+            ].map((s) => (
+              <div key={s.label} className={`rounded-xl border px-3 py-2 ${s.bg}`}>
+                <p className="text-[9px] uppercase font-semibold tracking-wide text-brand-text-muted">{s.label}</p>
+                <p className={`text-lg font-bold mt-0.5 ${s.color}`}>{s.value}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Day-by-day list */}
+          {monthResult.history?.length > 0 && (
+            <div className="divide-y divide-brand-border max-h-52 overflow-y-auto pr-1">
+              {monthResult.history.map((h, idx) => {
+                const dotCfg = { Present: 'bg-emerald-500', Late: 'bg-amber-400', Absent: 'bg-rose-500' }[h.status] ?? 'bg-gray-400'
+                const badgeCfg = {
+                  Present: 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-400 ring-emerald-100 dark:ring-emerald-900/50',
+                  Late:    'bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-400 ring-amber-100 dark:ring-amber-900/50',
+                  Absent:  'bg-rose-50 dark:bg-rose-950/30 text-rose-800 dark:text-rose-400 ring-rose-100 dark:ring-rose-900/50',
+                }[h.status] ?? 'bg-brand-surface-tint text-brand-text-muted ring-brand-border'
+                return (
+                  <div key={idx} className="flex items-center justify-between py-2.5 hover:bg-brand-surface-tint/60 transition-colors">
+                    <span className="text-xs font-semibold text-brand-text">
+                      {new Intl.DateTimeFormat('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(h.date))}
+                    </span>
+                    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-semibold ring-1 ${badgeCfg}`}>
+                      <span className={`h-1.5 w-1.5 rounded-full ${dotCfg}`} />
+                      {h.status}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </section>
       )}
 

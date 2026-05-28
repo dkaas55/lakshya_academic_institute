@@ -347,10 +347,137 @@ const getAttendanceHistory = async (req, res) => {
   }
 };
 
+// ── GET /api/attendance/student/:studentId ───────────────────────────────────
+const getStudentAttendanceHistoryDetail = async (req, res) => {
+  const { studentId } = req.params;
+  const { date, month } = req.query;
+
+  try {
+    const profile = await StudentProfile.findById(studentId)
+      .populate("user", "name username")
+      .lean();
+
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        message: "Student profile not found",
+      });
+    }
+
+    // Auth & Batch Scope Check for Teachers
+    if (req.user.role === "teacher") {
+      const assigned = req.user.assignedBatches || [];
+      if (!assigned.includes(profile.batch)) {
+        return res.status(403).json({
+          success: false,
+          message: "You are not authorized to view attendance for this student",
+        });
+      }
+    } else if (req.user.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied",
+      });
+    }
+
+    const attendanceLogs = await Attendance.find({ batch: profile.batch })
+      .sort({ date: -1 })
+      .lean();
+
+    let presentCount = 0;
+    let lateCount = 0;
+    let absentCount = 0;
+    const history = [];
+
+    attendanceLogs.forEach((log) => {
+      const studentRecord = log.records.find(
+        (r) => String(r.student) === String(profile._id)
+      );
+      if (studentRecord) {
+        const status = studentRecord.status;
+        if (status === "Present") presentCount++;
+        else if (status === "Late") lateCount++;
+        else if (status === "Absent") absentCount++;
+        history.push({ date: log.date, status });
+      }
+    });
+
+    const totalClasses = history.length;
+    const attendedCount = presentCount + lateCount;
+    const attendancePercentage =
+      totalClasses > 0 ? Math.round((attendedCount / totalClasses) * 100) : 100;
+
+    const sessionTotal = { totalClasses, present: presentCount, late: lateCount, absent: absentCount, attendancePercentage };
+
+    const responseData = {
+      studentInfo: {
+        fullName: profile.user?.name ?? "Unknown Student",
+        batch: profile.batch,
+        studentClass: profile.studentClass ?? "",
+        username: profile.user?.username ?? "",
+      },
+      sessionTotal,
+      history,
+    };
+
+    // Single-date detail
+    if (date) {
+      const targetDate = getNormalizedDate(date);
+      const entry = history.find(
+        (h) => new Date(h.date).getTime() === targetDate.getTime()
+      );
+      responseData.dateResult = entry
+        ? { date: entry.date, status: entry.status }
+        : { date: targetDate, status: null };
+    }
+
+    // Monthly breakdown
+    if (month) {
+      const [yearStr, monthStr] = month.split("-");
+      const monthStart = new Date(Date.UTC(Number(yearStr), Number(monthStr) - 1, 1));
+      const monthEnd = new Date(Date.UTC(Number(yearStr), Number(monthStr), 0, 23, 59, 59, 999));
+
+      const monthHistory = history.filter((h) => {
+        const d = new Date(h.date);
+        return d >= monthStart && d <= monthEnd;
+      });
+
+      let mPresent = 0;
+      let mLate = 0;
+      let mAbsent = 0;
+      monthHistory.forEach((h) => {
+        if (h.status === "Present") mPresent++;
+        else if (h.status === "Late") mLate++;
+        else if (h.status === "Absent") mAbsent++;
+      });
+
+      const mTotal = monthHistory.length;
+      const mAttended = mPresent + mLate;
+      const mPercentage = mTotal > 0 ? Math.round((mAttended / mTotal) * 100) : 100;
+
+      responseData.monthResult = {
+        month,
+        totalClasses: mTotal,
+        present: mPresent,
+        late: mLate,
+        absent: mAbsent,
+        attendancePercentage: mPercentage,
+        history: monthHistory,
+      };
+    }
+
+    res.json({ success: true, data: responseData });
+  } catch (error) {
+    console.error("getStudentAttendanceHistoryDetail error:", error);
+    res.status(500).json({ success: false, message: "Failed to fetch student attendance detail" });
+  }
+};
+
 module.exports = {
   getAttendanceSheet,
   saveAttendanceSheet,
   updateAttendanceSheet,
   getMyAttendanceHistory,
   getAttendanceHistory,
+  getStudentAttendanceHistoryDetail,
 };

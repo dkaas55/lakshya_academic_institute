@@ -9,6 +9,27 @@ const BATCH_OPTIONS = [
   'Weekend Batch',
 ]
 
+const generateSecurePassword = () => {
+  const lowercase = 'abcdefghijklmnopqrstuvwxyz'
+  const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+  const numbers = '0123456789'
+  const symbols = '!@#$%^&*'
+  const allChars = lowercase + uppercase + numbers + symbols
+
+  let password = ''
+  password += lowercase[Math.floor(Math.random() * lowercase.length)]
+  password += uppercase[Math.floor(Math.random() * uppercase.length)]
+  password += numbers[Math.floor(Math.random() * numbers.length)]
+  password += symbols[Math.floor(Math.random() * symbols.length)]
+
+  for (let i = 4; i < 12; i++) {
+    password += allChars[Math.floor(Math.random() * allChars.length)]
+  }
+
+  // Shuffle the password characters
+  return password.split('').sort(() => 0.5 - Math.random()).join('')
+}
+
 const initialForm = {
   name: '',
   username: '',
@@ -30,6 +51,7 @@ export default function TeacherManagement() {
   const [form, setForm] = useState(initialForm)
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
+  const [showPassword, setShowPassword] = useState(true)
 
   const loadTeachers = async () => {
     setLoading(true)
@@ -57,8 +79,12 @@ export default function TeacherManagement() {
 
   const openAddModal = () => {
     setEditingTeacher(null)
-    setForm(initialForm)
+    setForm({
+      ...initialForm,
+      password: generateSecurePassword()
+    })
     setFormError('')
+    setShowPassword(true)
     setShowModal(true)
   }
 
@@ -273,26 +299,46 @@ export default function TeacherManagement() {
                   </div>
                   {!editingTeacher && (
                     <>
-                        <div>
-                          <label className="block text-xs font-medium text-brand-text mb-1">Username</label>
-                          <input
-                            type="text"
-                            required
-                            disabled={!!editingTeacher}
-                            value={form.username}
-                            onChange={e => setForm({...form, username: e.target.value})}
-                            className="w-full rounded-lg border border-brand-border px-3 py-2 text-sm text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-brand-primary focus:border-indigo-500 disabled:opacity-50"
-                          />
-                        </div>
+                      <div>
+                        <label className="block text-xs font-medium text-brand-text mb-1">Username</label>
+                        <input
+                          type="text"
+                          required
+                          disabled={!!editingTeacher}
+                          value={form.username}
+                          onChange={e => setForm({...form, username: e.target.value})}
+                          autoComplete="new-username"
+                          className="w-full rounded-lg border border-brand-border px-3 py-2 text-sm text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-brand-primary focus:border-indigo-500 disabled:opacity-50"
+                        />
+                      </div>
                       <div>
                         <label className="block text-xs font-medium text-brand-text mb-1">Password</label>
-                        <input
-                          required
-                          type="password"
-                          value={form.password}
-                          onChange={e => setForm({...form, password: e.target.value})}
-                          className="w-full rounded-lg border border-brand-border px-3 py-2 text-sm focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
-                        />
+                        <div className="relative flex items-center">
+                          <input
+                            required
+                            type={showPassword ? 'text' : 'password'}
+                            value={form.password}
+                            onChange={e => setForm({...form, password: e.target.value})}
+                            autoComplete="new-password"
+                            className="w-full rounded-lg border border-brand-border pl-3 pr-28 py-2 text-sm focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
+                          />
+                          <div className="absolute right-2 flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword(!showPassword)}
+                              className="px-2 py-1 text-[10px] font-semibold text-brand-text bg-brand-surface-tint border border-brand-border rounded hover:bg-brand-surface-tint/80 transition-colors"
+                            >
+                              {showPassword ? 'Hide' : 'Show'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setForm({...form, password: generateSecurePassword()})}
+                              className="px-2 py-1 text-[10px] font-semibold text-brand-primary bg-brand-primary/10 border border-brand-primary/20 rounded hover:bg-brand-primary/20 transition-colors"
+                            >
+                              Generate
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </>
                   )}
