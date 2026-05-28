@@ -14,6 +14,14 @@
   --color-brand-accent-hover: var(--color-accent-hover);
   --color-brand-gold: var(--color-gold);
   --color-brand-border: var(--color-border);
+
+  --radius-xs: 0.125rem;
+  --radius-sm: 0.125rem;
+  --radius-md: 0.1875rem;
+  --radius-lg: 0.25rem;
+  --radius-xl: 0.375rem;
+  --radius-2xl: 0.5rem;
+  --radius-3xl: 0.75rem;
 }
 
 :root {
