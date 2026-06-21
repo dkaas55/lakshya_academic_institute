@@ -1,13 +1,6 @@
 import { useEffect, useState } from 'react'
 import api from '../../lib/api'
-
-const BATCH_OPTIONS = [
-  'Morning Batch A',
-  'Morning Batch B',
-  'Evening Batch A',
-  'Evening Batch B',
-  'Weekend Batch',
-]
+import useBatches from '../../hooks/useBatches'
 
 const generateSecurePassword = () => {
   const lowercase = 'abcdefghijklmnopqrstuvwxyz'
@@ -42,6 +35,7 @@ const initialForm = {
 }
 
 export default function TeacherManagement() {
+  const { batches: BATCH_OPTIONS } = useBatches()
   const [teachers, setTeachers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')

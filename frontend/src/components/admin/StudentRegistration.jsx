@@ -1,21 +1,21 @@
 import { useMemo, useState } from 'react'
 import ActiveStudentsList from './ActiveStudentsList'
 import api from '../../lib/api'
+import useBatches from '../../hooks/useBatches'
 import {
   buildWhatsAppInvite,
   generateUsername,
   tempPasswordFromPhone,
 } from '../../utils/studentCredentials'
 
-const BATCH_OPTIONS = [
-  'Morning Batch A',
-  'Morning Batch B',
-  'Evening Batch A',
-  'Evening Batch B',
-  'Weekend Batch',
-]
+
 
 const CLASS_OPTIONS = [
+  'Class 3',
+  'Class 4',
+  'Class 5',
+  'Class 6',
+  'Class 7',
   'Class 8',
   'Class 9',
   'Class 10',
@@ -51,7 +51,7 @@ const SUBJECT_OPTIONS = [
 const initialForm = {
   fullName: '',
   phoneNumber: '',
-  batch: BATCH_OPTIONS[0],
+  batch: '',
   studentClass: '',
   subjects: '',
   totalCourseFee: '',
@@ -65,6 +65,7 @@ export default function StudentRegistration() {
   const [success, setSuccess] = useState(null)
   const [copiedInvite, setCopiedInvite] = useState(false)
   const [listRefreshKey, setListRefreshKey] = useState(0)
+  const { batches: BATCH_OPTIONS } = useBatches()
 
   const tempPassword = useMemo(
     () => tempPasswordFromPhone(form.phoneNumber),

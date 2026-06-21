@@ -44,6 +44,12 @@ const getAttendanceSheet = async (req, res) => {
       .sort({ "user.name": 1 })
       .lean();
 
+    // Filter out students who were admitted after targetDate
+    const eligibleStudents = students.filter((s) => {
+      const regDate = getNormalizedDate(s.admissionDate || s.joiningDate);
+      return targetDate >= regDate;
+    });
+
     // Find if attendance is already saved for this batch and day
     const attendanceDoc = await Attendance.findOne({
       batch,
@@ -58,7 +64,7 @@ const getAttendanceSheet = async (req, res) => {
     }
 
     // Build the records list, defaulting missing records to 'Present'
-    const records = students.map((s) => ({
+    const records = eligibleStudents.map((s) => ({
       studentId: s._id,
       fullName: s.user?.name ?? "Unknown Student",
       status: recordMap[String(s._id)] || "Present",
@@ -112,10 +118,26 @@ const saveAttendanceSheet = async (req, res) => {
   try {
     const targetDate = getNormalizedDate(date);
 
-    const formattedRecords = records.map((r) => ({
-      student: r.studentId,
-      status: r.status,
-    }));
+    // Fetch all active students currently enrolled in this batch
+    const students = await StudentProfile.find({ batch, status: { $ne: "removed" } }).lean();
+
+    // Determine which student IDs are eligible to have attendance for this targetDate
+    const eligibleStudentIds = new Set(
+      students
+        .filter((s) => {
+          const regDate = getNormalizedDate(s.admissionDate || s.joiningDate);
+          return targetDate >= regDate;
+        })
+        .map((s) => String(s._id))
+    );
+
+    // Filter incoming records to exclude any students who registered after targetDate
+    const formattedRecords = records
+      .filter((r) => eligibleStudentIds.has(String(r.studentId)))
+      .map((r) => ({
+        student: r.studentId,
+        status: r.status,
+      }));
 
     const updatedSheet = await Attendance.findOneAndUpdate(
       { batch, date: targetDate },
@@ -167,10 +189,26 @@ const updateAttendanceSheet = async (req, res) => {
   try {
     const targetDate = getNormalizedDate(date);
 
-    const formattedRecords = records.map((r) => ({
-      student: r.studentId,
-      status: r.status,
-    }));
+    // Fetch all active students currently enrolled in this batch
+    const students = await StudentProfile.find({ batch, status: { $ne: "removed" } }).lean();
+
+    // Determine which student IDs are eligible to have attendance for this targetDate
+    const eligibleStudentIds = new Set(
+      students
+        .filter((s) => {
+          const regDate = getNormalizedDate(s.admissionDate || s.joiningDate);
+          return targetDate >= regDate;
+        })
+        .map((s) => String(s._id))
+    );
+
+    // Filter incoming records to exclude any students who registered after targetDate
+    const formattedRecords = records
+      .filter((r) => eligibleStudentIds.has(String(r.studentId)))
+      .map((r) => ({
+        student: r.studentId,
+        status: r.status,
+      }));
 
     const updated = await Attendance.findOneAndUpdate(
       { batch, date: targetDate },
@@ -226,7 +264,12 @@ const getMyAttendanceHistory = async (req, res) => {
     let absentCount = 0;
     const history = [];
 
+    const regDate = getNormalizedDate(profile.admissionDate || profile.joiningDate);
+
     attendanceLogs.forEach((log) => {
+      // Skip class days before student's admission date
+      if (getNormalizedDate(log.date) < regDate) return;
+
       const studentRecord = log.records.find(
         (r) => String(r.student) === String(profile._id)
       );
@@ -315,9 +358,18 @@ const getAttendanceHistory = async (req, res) => {
     });
 
     logs.forEach((log) => {
+      const logDate = getNormalizedDate(log.date);
       log.records.forEach((r) => {
         const key = String(r.student);
         if (!summaryMap[key]) return;
+
+        // Skip records before student's registration/admission date
+        const sProfile = students.find((s) => String(s._id) === key);
+        if (sProfile) {
+          const regDate = getNormalizedDate(sProfile.admissionDate || sProfile.joiningDate);
+          if (logDate < regDate) return;
+        }
+
         summaryMap[key].total++;
         if (r.status === "Present") summaryMap[key].present++;
         else if (r.status === "Late") summaryMap[key].late++;
@@ -389,7 +441,12 @@ const getStudentAttendanceHistoryDetail = async (req, res) => {
     let absentCount = 0;
     const history = [];
 
+    const regDate = getNormalizedDate(profile.admissionDate || profile.joiningDate);
+
     attendanceLogs.forEach((log) => {
+      // Skip class days before student's admission date
+      if (getNormalizedDate(log.date) < regDate) return;
+
       const studentRecord = log.records.find(
         (r) => String(r.student) === String(profile._id)
       );

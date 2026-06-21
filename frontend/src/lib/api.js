@@ -20,7 +20,7 @@ api.interceptors.request.use((config) => {
 // ── Response interceptor: handle auth failures globally ───────────────────────
 //
 // When the backend returns 401 (no/invalid token) or 403 (wrong role), we:
-//   1. Wipe the stale token + role from localStorage
+//   1. Wipe the stale token + role from sessionStorage
 //   2. Hard-redirect to /login so the user can authenticate with the correct account
 //
 // Using window.location instead of react-router's navigate because this module

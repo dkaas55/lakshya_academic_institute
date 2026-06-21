@@ -10,8 +10,8 @@ const studentProfileSchema = new mongoose.Schema(
     },
     batch: {
       type: String,
-      required: [true, "Batch is required"],
       trim: true,
+      default: "",
     },
     studentClass: {
       type: String,

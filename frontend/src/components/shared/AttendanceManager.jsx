@@ -2,14 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import api from '../../lib/api'
 import StudentFilterBar from './StudentFilterBar'
 import StudentAttendanceDetailModal from './StudentAttendanceDetailModal'
+import useBatches from '../../hooks/useBatches'
 
-const ALL_BATCH_OPTIONS = [
-  'Morning Batch A',
-  'Morning Batch B',
-  'Evening Batch A',
-  'Evening Batch B',
-  'Weekend Batch',
-]
 
 // ── Small helpers ─────────────────────────────────────────────────────────────
 function StatusPill({ status, count }) {
@@ -40,10 +34,16 @@ function PctBadge({ pct }) {
   )
 }
 
-// ── History View Sub-panel ────────────────────────────────────────────────────
 function AttendanceHistoryView({ allowedBatches }) {
-  const batches = allowedBatches || ALL_BATCH_OPTIONS
-  const [batch, setBatch] = useState(batches[0] || '')
+  const { batches: dynamicBatches } = useBatches()
+  const batches = allowedBatches || dynamicBatches
+  const [batch, setBatch] = useState('')
+
+  useEffect(() => {
+    if (batches.length > 0 && !batch) {
+      setBatch(batches[0])
+    }
+  }, [batches, batch])
 
   // ── Student search & filtering state ────────────────────────────────────────
   const [studentList,    setStudentList]    = useState([])
@@ -446,9 +446,16 @@ function AttendanceHistoryView({ allowedBatches }) {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function AttendanceManager({ allowedBatches = null }) {
-  const batches = allowedBatches || ALL_BATCH_OPTIONS
+  const { batches: dynamicBatches } = useBatches()
+  const batches = allowedBatches || dynamicBatches
   const [activeView,    setActiveView]    = useState('take')   // 'take' | 'history'
-  const [selectedBatch, setSelectedBatch] = useState(batches[0] || '')
+  const [selectedBatch, setSelectedBatch] = useState('')
+
+  useEffect(() => {
+    if (batches.length > 0 && !selectedBatch) {
+      setSelectedBatch(batches[0])
+    }
+  }, [batches, selectedBatch])
   const [selectedDate, setSelectedDate]   = useState(new Date().toISOString().split('T')[0])
   const [records, setRecords]             = useState([])
   const [loading, setLoading]             = useState(false)

@@ -206,7 +206,7 @@ export default function StudentDashboard() {
             </div>
             <div className="min-w-0">
               <h2 className="text-sm font-semibold text-brand-text truncate">
-                Student Workspace
+                {student ? `Hello ${student.fullName}` : ''}
               </h2>
             </div>
           </div>
@@ -978,7 +978,17 @@ function FeeStatusCard({ fee }) {
     )
   }
 
-  const config = FEE_STATUS_CONFIG[fee.feeStatus] ?? FEE_STATUS_CONFIG.PENDING
+  let config = FEE_STATUS_CONFIG[fee.feeStatus]
+  if (!config) {
+    const status = fee.feeStatus || '';
+    if (status === 'PAID') {
+      config = FEE_STATUS_CONFIG.PAID;
+    } else if (status === 'PARTIAL') {
+      config = FEE_STATUS_CONFIG.PARTIAL;
+    } else {
+      config = { ...FEE_STATUS_CONFIG.PENDING, label: status };
+    }
+  }
   const paidPercent =
     fee.totalCourseFee > 0
       ? Math.min(100, Math.round((fee.amountPaid / fee.totalCourseFee) * 100))

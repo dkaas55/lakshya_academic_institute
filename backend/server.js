@@ -37,6 +37,7 @@ const teacherRoutes = require("./routes/teacherRoutes");
 const adminTeacherRoutes = require("./routes/adminTeacherRoutes");
 const attendanceRoutes = require("./routes/attendanceRoutes");
 const testRoutes = require("./routes/testRoutes");
+const { adminRouter: batchAdminRoutes, publicRouter: batchPublicRoutes } = require("./routes/batchRoutes");
 
 app.use("/api/auth", authRoutes);
 app.use("/api/students", studentRoutes);
@@ -47,6 +48,8 @@ app.use("/api/student", studentPortalRoutes);
 app.use("/api/teacher", teacherRoutes);
 app.use("/api/admin/teachers", adminTeacherRoutes);
 app.use("/api/attendance", attendanceRoutes);
+app.use("/api/admin/batches", batchAdminRoutes);
+app.use("/api/batches", batchPublicRoutes);
 
 const connectDatabase = async () => {
   const uri = process.env.MONGODB_URI;
@@ -83,10 +86,29 @@ const seedAdminUser = async () => {
   );
 };
 
+const Batch = require("./models/Batch");
+
+const seedDefaultBatches = async () => {
+  const defaults = [
+    "Morning Batch A",
+    "Morning Batch B",
+    "Evening Batch A",
+    "Evening Batch B",
+    "Weekend Batch",
+  ];
+
+  const existing = await Batch.countDocuments();
+  if (existing > 0) return;
+
+  await Batch.insertMany(defaults.map((name) => ({ name })));
+  console.log(`Seeded ${defaults.length} default batches.`);
+};
+
 const startServer = async () => {
   try {
     await connectDatabase();
     await seedAdminUser();
+    await seedDefaultBatches();
 
     // Run the automated monthly fee processor on startup
     await processMonthlyFees();

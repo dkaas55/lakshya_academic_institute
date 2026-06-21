@@ -1,13 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import api from '../../lib/api'
-
-const BATCH_OPTIONS = [
-  'Morning Batch A',
-  'Morning Batch B',
-  'Evening Batch A',
-  'Evening Batch B',
-  'Weekend Batch',
-]
+import useBatches from '../../hooks/useBatches'
 
 const MATERIAL_TYPES = ['Notes', 'Assignment', 'Lecture Link']
 
@@ -39,8 +32,8 @@ const TYPE_CONFIG = {
   },
 }
 
-const initialMaterialForm = { title: '', description: '', materialType: MATERIAL_TYPES[0], fileUrlOrLink: '', batch: BATCH_OPTIONS[0], subject: '', chapter: '' }
-const initialTestForm = { testTitle: '', subject: '', chapter: '', totalQuestions: '', documentUrl: '', batch: BATCH_OPTIONS[0] }
+const initialMaterialForm = { title: '', description: '', materialType: MATERIAL_TYPES[0], fileUrlOrLink: '', batch: '', subject: '', chapter: '' }
+const initialTestForm = { testTitle: '', subject: '', chapter: '', totalQuestions: '', documentUrl: '', batch: '' }
 
 function validateMaterialForm(form) {
   const errs = {}
@@ -138,6 +131,7 @@ function TestCard({ item, onDelete }) {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function ContentManager() {
+  const { batches: BATCH_OPTIONS } = useBatches()
   const [activeTab, setActiveTab] = useState('materials')  // 'materials' | 'tests'
 
   // ── Study Materials state ─────────────────────────────────────────────────
@@ -159,6 +153,17 @@ export default function ContentManager() {
   const [testUploading, setTestUploading] = useState(false)
   const [testUploadErr, setTestUploadErr] = useState('')
   const [testUploadOk,  setTestUploadOk]  = useState('')
+
+  useEffect(() => {
+    if (BATCH_OPTIONS.length > 0) {
+      if (!matForm.batch) {
+        setMatForm((p) => ({ ...p, batch: BATCH_OPTIONS[0] }))
+      }
+      if (!testForm.batch) {
+        setTestForm((p) => ({ ...p, batch: BATCH_OPTIONS[0] }))
+      }
+    }
+  }, [BATCH_OPTIONS, matForm.batch, testForm.batch])
 
   // ── Loaders ───────────────────────────────────────────────────────────────
   const loadMaterials = useCallback(async () => {
@@ -207,7 +212,7 @@ export default function ContentManager() {
       if (data.success) {
         setMatUploadOk(`"${data.data.title}" uploaded successfully!`)
         setMaterials((p) => [data.data, ...p])
-        setMatForm(initialMaterialForm); setMatFieldErrs({})
+        setMatForm({ ...initialMaterialForm, batch: BATCH_OPTIONS[0] || '' }); setMatFieldErrs({})
       } else { setMatUploadErr(data.message || 'Upload failed.') }
     } catch (err) {
       setMatUploadErr(err.response?.data?.message || (err.request ? 'Unable to reach the server.' : 'Something went wrong.'))
@@ -243,7 +248,7 @@ export default function ContentManager() {
       if (data.success) {
         setTestUploadOk(`"${data.data.testTitle}" uploaded successfully!`)
         setTests((p) => [data.data, ...p])
-        setTestForm(initialTestForm); setTestFieldErrs({})
+        setTestForm({ ...initialTestForm, batch: BATCH_OPTIONS[0] || '' }); setTestFieldErrs({})
       } else { setTestUploadErr(data.message || 'Upload failed.') }
     } catch (err) {
       setTestUploadErr(err.response?.data?.message || (err.request ? 'Unable to reach the server.' : 'Something went wrong.'))

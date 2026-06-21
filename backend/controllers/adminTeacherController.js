@@ -1,14 +1,8 @@
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
+const Batch = require("../models/Batch");
 
 const SALT_ROUNDS = 12;
-const BATCH_OPTIONS = [
-  "Morning Batch A",
-  "Morning Batch B",
-  "Evening Batch A",
-  "Evening Batch B",
-  "Weekend Batch",
-];
 
 // ── Helper: strip sensitive fields before sending to client ───────────────────
 function formatTeacher(user) {
@@ -87,14 +81,15 @@ const createTeacher = async (req, res) => {
     });
   }
 
-  const invalidBatches = (assignedBatches || []).filter(
-    (b) => !BATCH_OPTIONS.includes(b)
-  );
-  if (invalidBatches.length) {
-    return res.status(400).json({
-      success: false,
-      message: `Invalid batch(es): ${invalidBatches.join(", ")}`,
-    });
+  if (assignedBatches && assignedBatches.length > 0) {
+    const validBatches = await Batch.find({ isActive: true }).distinct('name');
+    const invalidBatches = assignedBatches.filter((b) => !validBatches.includes(b));
+    if (invalidBatches.length) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid batch(es): ${invalidBatches.join(", ")}`,
+      });
+    }
   }
 
   try {
@@ -169,8 +164,9 @@ const updateTeacher = async (req, res) => {
   }
 
   if (assignedBatches !== undefined) {
+    const validBatches = await Batch.find({ isActive: true }).distinct('name');
     const invalidBatches = assignedBatches.filter(
-      (b) => !BATCH_OPTIONS.includes(b)
+      (b) => !validBatches.includes(b)
     );
     if (invalidBatches.length) {
       return res.status(400).json({

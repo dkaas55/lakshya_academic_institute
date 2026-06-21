@@ -31,8 +31,15 @@ function FeeStatusPill({ status }) {
     PARTIAL: 'bg-sky-50 text-sky-700 ring-sky-200',
     PENDING: 'bg-amber-50 text-amber-800 ring-amber-200',
   }
+  const cleanStatus = status || '';
+  let baseStatus = 'PENDING';
+  if (cleanStatus === 'PAID') {
+    baseStatus = 'PAID';
+  } else if (cleanStatus === 'PARTIAL') {
+    baseStatus = 'PARTIAL';
+  }
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1 ${styles[status] ?? styles.PENDING}`}>
+    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1 ${styles[baseStatus]}`}>
       {status}
     </span>
   )

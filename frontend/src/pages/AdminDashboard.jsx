@@ -5,6 +5,7 @@ import ContentManager from '../components/admin/ContentManager'
 import ActiveStudentsList from '../components/admin/ActiveStudentsList'
 import MasterFeeLedger from '../components/admin/MasterFeeLedger'
 import TeacherManagement from '../components/admin/TeacherManagement'
+import BatchManagement from '../components/admin/BatchManagement'
 import AttendanceManager from '../components/shared/AttendanceManager'
 import api from '../lib/api'
 import { useEffect } from 'react'
@@ -16,6 +17,7 @@ const NAV_ITEMS = [
   { id: 'overview', label: 'Overview', icon: '◫' },
   { id: 'register', label: 'Student Registration', icon: '✎' },
   { id: 'students', label: 'Students', icon: '◎', disabled: false },
+  { id: 'batches', label: 'Batches', icon: '📦', disabled: false },
   { id: 'teachers', label: 'Teachers', icon: '👩‍🏫', disabled: false },
   { id: 'attendance', label: 'Attendance', icon: '📅', disabled: false },
   { id: 'fees', label: 'Fee Ledger', icon: '₹', disabled: false },
@@ -182,6 +184,7 @@ export default function AdminDashboard() {
             { activeTab === 'overview' && <OverviewPanel /> }
             { activeTab === 'register' && <StudentRegistration /> }
             { activeTab === 'content' && <ContentManager /> }
+            { activeTab === 'batches' && <BatchManagement /> }
             { activeTab === 'teachers' && <TeacherManagement /> }
             { activeTab === 'attendance' && <AttendanceManager /> }
             { activeTab === 'students' && (
@@ -197,6 +200,7 @@ export default function AdminDashboard() {
             { activeTab !== 'overview' &&
               activeTab !== 'register' &&
               activeTab !== 'content' &&
+              activeTab !== 'batches' &&
               activeTab !== 'teachers' &&
               activeTab !== 'attendance' &&
               activeTab !== 'students' &&
@@ -213,17 +217,20 @@ function OverviewPanel() {
     totalStudents: 0,
     totalCollected: 0,
     totalPending: 0,
-    activeBatches: 5,
+    activeBatches: 0,
   })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function loadStats() {
       try {
-        const { data } = await api.get('/students/stats')
-        if (data.success) {
-          setStats(data.data)
-        }
+        const [statsRes, batchesRes] = await Promise.all([
+          api.get('/students/stats'),
+          api.get('/batches'),
+        ])
+        const statsData = statsRes.data.success ? statsRes.data.data : {}
+        const batchCount = batchesRes.data.success ? batchesRes.data.data.batches.length : 0
+        setStats({ ...statsData, activeBatches: batchCount })
       } catch (err) {
         console.error('Failed to load stats', err)
       } finally {

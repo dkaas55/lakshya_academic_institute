@@ -9,13 +9,6 @@ import { useTheme } from '../context/ThemeContext'
 
 // ── Constants ────────────────────────────────────────────────────────────────
 const MATERIAL_TYPES = ['Notes', 'Assignment', 'Lecture Link']
-const BATCH_OPTIONS = [
-  'Morning Batch A',
-  'Morning Batch B',
-  'Evening Batch A',
-  'Evening Batch B',
-  'Weekend Batch',
-]
 const SUBJECT_OPTIONS = [
   'Mathematics',
   'Science',
@@ -216,7 +209,7 @@ export default function TeacherDashboard() {
             </button>
             <div className="min-w-0">
               <h2 className="text-sm font-semibold text-brand-text truncate">
-                Teacher Panel
+                {teacher ? `Hello ${teacher.name}` : ''}
               </h2>
             </div>
           </div>

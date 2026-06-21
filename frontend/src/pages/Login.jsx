@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
-import { setToken, setRole } from '../lib/auth'
+import { setToken, setRole as setAuthRole } from '../lib/auth'
 
 const LOGIN_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/login`
 
@@ -34,7 +34,7 @@ export default function Login() {
 
       setToken(data.data.token)
       const userRole = data.data.user?.role ?? role
-      setRole(userRole)
+      setAuthRole(userRole)
       const dest = userRole === 'student' ? '/student' : userRole === 'teacher' ? '/teacher' : '/admin'
       navigate(dest, { replace: true })
     } catch (err) {

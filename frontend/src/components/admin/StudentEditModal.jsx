@@ -1,15 +1,14 @@
 import { useEffect, useState } from 'react'
 import api from '../../lib/api'
+import useBatches from '../../hooks/useBatches'
 
-const BATCH_OPTIONS = [
-  'Morning Batch A',
-  'Morning Batch B',
-  'Evening Batch A',
-  'Evening Batch B',
-  'Weekend Batch',
-]
 
 const CLASS_OPTIONS = [
+  'Class 3',
+  'Class 4',
+  'Class 5',
+  'Class 6',
+  'Class 7',
   'Class 8',
   'Class 9',
   'Class 10',
@@ -43,10 +42,11 @@ const SUBJECT_OPTIONS = [
 ]
 
 export default function StudentEditModal({ student, onClose, onUpdated }) {
+  const { batches: BATCH_OPTIONS } = useBatches()
   const [form, setForm] = useState({
     fullName: '',
     phoneNumber: '',
-    batch: BATCH_OPTIONS[0],
+    batch: '',
     studentClass: '',
     subjects: '',
   })
@@ -58,12 +58,12 @@ export default function StudentEditModal({ student, onClose, onUpdated }) {
       setForm({
         fullName: student.fullName || '',
         phoneNumber: student.phoneNumber || '',
-        batch: student.batch || BATCH_OPTIONS[0],
+        batch: student.batch || BATCH_OPTIONS[0] || '',
         studentClass: student.studentClass || '',
         subjects: student.subjects || '',
       })
     }
-  }, [student])
+  }, [student, BATCH_OPTIONS])
 
   useEffect(() => {
     function onKeyDown(e) {
