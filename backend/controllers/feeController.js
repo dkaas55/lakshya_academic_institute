@@ -1,6 +1,6 @@
 const StudentProfile = require("../models/StudentProfile");
 const FeeLedger = require("../models/FeeLedger");
-const { calculateDynamicAmountDue, deriveFeeStatus } = require("../utils/feeStatus");
+const { calculateDynamicAmountDue, deriveFeeStatus, calculatePreviousPending } = require("../utils/feeStatus");
 
 const PAYMENT_MODES = ["Cash", "UPI", "GPay", "PhonePe"];
 
@@ -54,6 +54,7 @@ const getLedger = async (req, res) => {
           amountPaid: ledger.amountPaid,
           amountDue: dynamicAmountDue,
           feeStatus,
+          previousPending: calculatePreviousPending(ledger, profile),
           paymentHistory: [...(ledger.paymentHistory ?? [])].sort(
             (a, b) => new Date(b.paidAt) - new Date(a.paidAt)
           ),
@@ -158,6 +159,7 @@ const collectInstallment = async (req, res) => {
           amountPaid: ledger.amountPaid,
           amountDue: newDynamicAmountDue,
           feeStatus,
+          previousPending: calculatePreviousPending(ledger, profile),
           paymentHistory: [...ledger.paymentHistory].sort(
             (a, b) => new Date(b.paidAt) - new Date(a.paidAt)
           ),

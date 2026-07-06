@@ -335,12 +335,12 @@ export default function FeeLedgerModal({ student, onClose, onPaymentCollected })
 
               <div className="grid grid-cols-3 gap-2">
                 <div className="rounded-xl border border-brand-border bg-brand-surface-tint/80 px-3 py-2.5">
-                  <p className="text-[10px] font-medium text-brand-text-muted uppercase tracking-wide">Total Fee</p>
+                  <p className="text-[10px] font-medium text-brand-text-muted uppercase tracking-wide">Fee</p>
                   <p className="text-sm font-semibold text-brand-text mt-1">{formatCurrency(ledgerData.totalCourseFee)}</p>
                 </div>
-                <div className="rounded-xl border border-emerald-100 bg-brand-primary/10/50 px-3 py-2.5">
-                  <p className="text-[10px] font-medium text-brand-primary/80 uppercase tracking-wide">Paid</p>
-                  <p className="text-sm font-semibold text-emerald-800 mt-1">{formatCurrency(ledgerData.amountPaid)}</p>
+                <div className="rounded-xl border border-amber-100 bg-amber-50/50 px-3 py-2.5">
+                  <p className="text-[10px] font-medium text-amber-800/80 uppercase tracking-wide">Previous Pending</p>
+                  <p className="text-sm font-semibold text-amber-900 mt-1">{formatCurrency(ledgerData.previousPending ?? 0)}</p>
                 </div>
                 <div className="rounded-xl border border-amber-100 bg-amber-50/50 px-3 py-2.5">
                   <p className="text-[10px] font-medium text-amber-800/80 uppercase tracking-wide">Due</p>

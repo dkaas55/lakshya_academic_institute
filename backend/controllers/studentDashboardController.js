@@ -2,7 +2,7 @@ const StudentProfile = require("../models/StudentProfile");
 const FeeLedger = require("../models/FeeLedger");
 const Content = require("../models/Content");
 const Test = require("../models/Test");
-const { calculateDynamicAmountDue, deriveFeeStatus } = require("../utils/feeStatus");
+const { calculateDynamicAmountDue, deriveFeeStatus, calculatePreviousPending } = require("../utils/feeStatus");
 
 const getStudentDashboard = async (req, res) => {
   // Any authenticated user who is a student can access their own dashboard
@@ -35,6 +35,7 @@ const getStudentDashboard = async (req, res) => {
           amountPaid: ledger.amountPaid,
           amountDue: calculateDynamicAmountDue(ledger, profile),
           feeStatus,
+          previousPending: calculatePreviousPending(ledger, profile),
           paymentHistory: [...(ledger.paymentHistory ?? [])].sort(
             (a, b) => new Date(b.paidAt) - new Date(a.paidAt)
           ),

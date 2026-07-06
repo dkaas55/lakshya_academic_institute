@@ -29,7 +29,7 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
-  const { theme, setTheme } = useTheme()
+  const { theme, setTheme, isDark } = useTheme()
 
   function handleSignOut() {
     clearToken()
@@ -155,11 +155,11 @@ export default function AdminDashboard() {
             
             <button
               type="button"
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              onClick={() => setTheme(isDark ? 'light' : 'dark')}
               className="p-2 rounded-xl bg-brand-surface-tint hover:bg-brand-surface border border-brand-border text-brand-text-muted hover:text-brand-text transition-colors cursor-pointer text-xs font-semibold"
               title="Toggle Theme"
             >
-              {theme === 'dark' ? '☀️ Light' : '🌙 Dark'}
+              {isDark ? '☀️ Light' : '🌙 Dark'}
             </button>
 
             <img src="/logo.png" alt="Logo" className="lg:hidden h-8 w-8 object-contain" />

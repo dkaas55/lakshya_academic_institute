@@ -31,7 +31,7 @@ const FEE_STATUS_CONFIG = {
   PAID: {
     pill: 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-400 ring-emerald-100 dark:ring-emerald-900/50',
     bar: 'bg-emerald-500',
-    label: 'Fully Paid',
+    label: 'Paid',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
         stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -91,7 +91,7 @@ export default function StudentDashboard() {
   const [loading, setLoading]       = useState(true)
   const [error, setError]           = useState('')
   const [showSettings, setShowSettings] = useState(false)
-  const { theme, setTheme } = useTheme()
+  const { theme, setTheme, isDark } = useTheme()
 
   useEffect(() => {
     let cancelled = false
@@ -219,11 +219,11 @@ export default function StudentDashboard() {
             
             <button
               type="button"
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              onClick={() => setTheme(isDark ? 'light' : 'dark')}
               className="p-2 rounded-xl bg-brand-surface-tint hover:bg-brand-surface border border-brand-border text-brand-text-muted hover:text-brand-text transition-colors cursor-pointer text-xs font-semibold"
               title="Toggle Theme"
             >
-              {theme === 'dark' ? '☀️ Light' : '🌙 Dark'}
+              {isDark ? '☀️ Light' : '🌙 Dark'}
             </button>
 
             <span className="hidden sm:inline-flex rounded-full bg-brand-primary/10 text-brand-primary border border-brand-primary/20 px-2.5 py-1 text-[10px] uppercase font-bold tracking-wide">
@@ -328,7 +328,7 @@ export default function StudentDashboard() {
                     <div className="mt-3">
                       <p className="text-2xl font-bold text-brand-text">{formatCurrency(fee?.amountDue ?? 0)}</p>
                       <p className="text-xs text-brand-text-muted mt-1">
-                        {fee ? `Total paid: ${formatCurrency(fee.amountPaid)}` : 'No fee info'}
+                        {fee ? `Previous pending: ${formatCurrency(fee.previousPending ?? 0)}` : 'No fee info'}
                       </p>
                     </div>
                   </div>
@@ -1008,9 +1008,9 @@ function FeeStatusCard({ fee }) {
       </div>
 
       <div className="grid grid-cols-3 gap-3 mb-4">
-        <FeeMetric label="Total Fee"    value={formatCurrency(fee.totalCourseFee)} />
-        <FeeMetric label="Amount Paid"  value={formatCurrency(fee.amountPaid)}  accent="emerald" />
-        <FeeMetric label="Balance Due"  value={formatCurrency(fee.amountDue)}   accent={fee.amountDue > 0 ? 'amber' : 'slate'} />
+        <FeeMetric label="Fee"              value={formatCurrency(fee.totalCourseFee)} />
+        <FeeMetric label="Previous Pending" value={formatCurrency(fee.previousPending ?? 0)} accent={fee.previousPending > 0 ? 'amber' : 'slate'} />
+        <FeeMetric label="Due"              value={formatCurrency(fee.amountDue)}   accent={fee.amountDue > 0 ? 'amber' : 'slate'} />
       </div>
 
     </section>

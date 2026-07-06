@@ -8,18 +8,20 @@ export function ThemeProvider({ children }) {
     return stored ? stored : 'system'
   })
 
+  const [isDark, setIsDark] = useState(false)
+
   useEffect(() => {
     localStorage.setItem('app-theme', theme)
     
     const root = window.document.documentElement
     root.classList.remove('light', 'dark')
 
+    let active = theme
     if (theme === 'system') {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-      root.classList.add(systemTheme)
-    } else {
-      root.classList.add(theme)
+      active = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
     }
+    root.classList.add(active)
+    setIsDark(active === 'dark')
   }, [theme])
 
   // Listen for system theme changes if set to system
@@ -29,14 +31,16 @@ export function ThemeProvider({ children }) {
     const handleChange = (e) => {
       const root = window.document.documentElement
       root.classList.remove('light', 'dark')
-      root.classList.add(e.matches ? 'dark' : 'light')
+      const active = e.matches ? 'dark' : 'light'
+      root.classList.add(active)
+      setIsDark(active === 'dark')
     }
     mediaQuery.addEventListener('change', handleChange)
     return () => mediaQuery.removeEventListener('change', handleChange)
   }, [theme])
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme, isDark }}>
       {children}
     </ThemeContext.Provider>
   )

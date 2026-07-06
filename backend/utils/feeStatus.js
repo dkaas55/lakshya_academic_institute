@@ -104,4 +104,34 @@ const deriveFeeStatus = (ledger, student, overrideNow) => {
   return `PENDING - ${currentMonthName}`;
 };
 
-module.exports = { calculateDynamicAmountDue, deriveFeeStatus };
+const calculatePreviousPending = (ledger, student, overrideNow) => {
+  if (!ledger) return 0;
+  
+  const studentProfile = student || ledger.student;
+  if (!studentProfile) {
+    return 0;
+  }
+
+  const joiningDate = studentProfile.joiningDate || studentProfile.admissionDate || ledger.createdAt || new Date();
+  const monthlyFeeAmount = ledger.monthlyFeeAmount || ledger.totalFee || 0;
+  const totalPaidAmount = ledger.amountPaid || 0;
+
+  const now = overrideNow || new Date();
+  const join = new Date(joiningDate);
+  let monthDiff = (now.getFullYear() - join.getFullYear()) * 12 + (now.getMonth() - join.getMonth());
+  
+  const currentCalendarMonthBilled = now.getDate() >= join.getDate();
+  if (!currentCalendarMonthBilled) {
+    monthDiff--;
+  }
+  
+  monthDiff = Math.max(0, monthDiff);
+  const monthsElapsed = monthDiff + 1;
+
+  const previousBilledMonths = currentCalendarMonthBilled ? Math.max(0, monthsElapsed - 1) : monthsElapsed;
+  const previousBilledAmount = previousBilledMonths * monthlyFeeAmount;
+
+  return Math.max(0, previousBilledAmount - totalPaidAmount);
+};
+
+module.exports = { calculateDynamicAmountDue, deriveFeeStatus, calculatePreviousPending };
