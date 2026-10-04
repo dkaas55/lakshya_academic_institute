@@ -12,16 +12,30 @@ import { useEffect } from 'react'
 import { clearToken, clearRole } from '../lib/auth'
 import SettingsModal from '../components/shared/SettingsModal'
 import { useTheme } from '../context/ThemeContext'
+import {
+  LayoutDashboard,
+  UserPlus,
+  Users,
+  Layers,
+  GraduationCap,
+  CalendarCheck,
+  IndianRupee,
+  BookOpen,
+  Settings,
+  LogOut,
+  Menu,
+  X,
+} from 'lucide-react'
 
 const NAV_ITEMS = [
-  { id: 'overview', label: 'Overview', icon: '◫' },
-  { id: 'register', label: 'Student Registration', icon: '✎' },
-  { id: 'students', label: 'Students', icon: '◎', disabled: false },
-  { id: 'batches', label: 'Batches', icon: '📦', disabled: false },
-  { id: 'teachers', label: 'Teachers', icon: '👩‍🏫', disabled: false },
-  { id: 'attendance', label: 'Attendance', icon: '📅', disabled: false },
-  { id: 'fees', label: 'Fee Ledger', icon: '₹', disabled: false },
-  { id: 'content', label: 'Content', icon: '▤', disabled: false },
+  { id: 'overview',    label: 'Overview',              Icon: LayoutDashboard },
+  { id: 'register',   label: 'Student Registration',   Icon: UserPlus },
+  { id: 'students',   label: 'Students',               Icon: Users,          disabled: false },
+  { id: 'batches',    label: 'Batches',                Icon: Layers,         disabled: false },
+  { id: 'teachers',   label: 'Teachers',               Icon: GraduationCap,  disabled: false },
+  { id: 'attendance', label: 'Attendance',             Icon: CalendarCheck,  disabled: false },
+  { id: 'fees',       label: 'Fee Ledger',             Icon: IndianRupee,    disabled: false },
+  { id: 'content',    label: 'Content',                Icon: BookOpen,       disabled: false },
 ]
 
 export default function AdminDashboard() {
@@ -37,15 +51,19 @@ export default function AdminDashboard() {
     navigate('/login', { replace: true })
   }
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' })
+  }, [activeTab])
+
   const activeItem = NAV_ITEMS.find((item) => item.id === activeTab)
 
   return (
-    <div className="min-h-screen bg-brand-bg text-brand-text flex transition-colors duration-300">
+    <div className="min-h-screen bg-brand-bg text-brand-text flex flex-col lg:flex-row lg:h-screen lg:overflow-hidden transition-colors duration-300">
       {sidebarOpen && (
         <button
           type="button"
           aria-label="Close menu"
-          className="fixed inset-0 z-20 bg-brand-text/20 lg:hidden backdrop-blur-sm"
+          className="fixed inset-0 z-40 bg-brand-text/30 lg:hidden backdrop-blur-sm transition-opacity"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -53,25 +71,37 @@ export default function AdminDashboard() {
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
 
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-30 flex w-60 flex-col border-r border-brand-border bg-brand-primary text-brand-surface transform transition-transform duration-300 ease-in-out ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        className={`fixed lg:sticky lg:top-0 inset-y-0 left-0 z-50 flex w-64 max-w-[85vw] h-screen flex-col border-r border-brand-border bg-brand-primary text-brand-surface transform transition-transform duration-300 ease-in-out shrink-0 ${
+          sidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'
         }`}
       >
-        <div className="px-6 py-6 border-b border-brand-border/20 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white overflow-hidden shrink-0 shadow-sm">
-            <img src="/logo.png" alt="Logo" className="h-full w-full object-contain p-1" />
+        <div className="px-5 py-5 border-b border-brand-border/20 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white overflow-hidden shrink-0 shadow-sm">
+              <img src="/logo.png" alt="Logo" className="h-full w-full object-contain p-1" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-brand-gold truncate">
+                Lakshya Academy
+              </p>
+              <h1 className="text-xs font-semibold text-brand-surface/90 mt-0.5 truncate">Admin Workspace</h1>
+            </div>
           </div>
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-brand-gold">
-              Lakshya Academy
-            </p>
-            <h1 className="text-xs font-semibold text-brand-surface/90 mt-0.5">Admin Workspace</h1>
-          </div>
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(false)}
+            className="lg:hidden p-1.5 rounded-xl hover:bg-brand-surface/10 text-brand-surface/70 hover:text-brand-surface transition-colors cursor-pointer"
+            title="Close sidebar"
+            aria-label="Close sidebar"
+          >
+            <X size={18} strokeWidth={2} />
+          </button>
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
           {NAV_ITEMS.map((item) => {
             const isActive = activeTab === item.id
+            const Icon = item.Icon
             return (
               <button
                 key={item.id}
@@ -91,9 +121,7 @@ export default function AdminDashboard() {
                       : 'text-brand-surface/80 hover:bg-brand-surface/10 hover:text-brand-surface'
                 }`}
               >
-                <span className="text-[14px]" aria-hidden>
-                  {item.icon}
-                </span>
+                <Icon size={16} strokeWidth={isActive ? 2.5 : 2} aria-hidden />
                 {item.label}
                 {item.disabled && (
                   <span className="ml-auto text-[8px] uppercase tracking-wide text-brand-surface/40 bg-brand-surface/5 px-1.5 py-0.5 rounded">
@@ -105,47 +133,48 @@ export default function AdminDashboard() {
           })}
         </nav>
 
-        <div className="px-3 py-4 border-t border-brand-border/20 space-y-1.5">
+        <div className="px-3 py-3 border-t border-brand-border/20 space-y-1 shrink-0">
           <button
             type="button"
             onClick={() => {
               setShowSettings(true)
               setSidebarOpen(false)
             }}
-            className="w-full rounded-xl px-4 py-3 text-xs font-semibold text-brand-surface/80 hover:bg-brand-surface/10 hover:text-brand-surface transition-all duration-200 text-left flex items-center gap-3"
+            className="w-full rounded-xl px-4 py-3 text-xs font-semibold text-brand-surface/80 hover:bg-brand-surface/10 hover:text-brand-surface transition-all duration-200 text-left flex items-center gap-3 cursor-pointer"
           >
-            <span className="text-[14px]" aria-hidden>⚙️</span>
+            <Settings size={16} strokeWidth={2} aria-hidden />
             Settings
           </button>
           <button
             type="button"
             onClick={handleSignOut}
-            className="w-full rounded-xl px-4 py-3 text-xs font-semibold text-brand-surface/80 hover:bg-brand-surface/10 hover:text-brand-surface transition-all duration-200 text-left flex items-center gap-3"
+            className="w-full rounded-xl px-4 py-3 text-xs font-semibold text-brand-surface/80 hover:bg-brand-surface/10 hover:text-brand-surface transition-all duration-200 text-left flex items-center gap-3 cursor-pointer"
           >
-            <span className="text-[14px]" aria-hidden>🚪</span>
+            <LogOut size={16} strokeWidth={2} aria-hidden />
             Sign out
           </button>
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="sticky top-0 z-10 bg-brand-surface border-b border-brand-border px-6 py-4 flex items-center justify-between gap-4 transition-colors duration-300">
-          <div className="flex items-center gap-3 min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 lg:h-screen lg:overflow-hidden">
+        <header className="sticky top-0 z-20 bg-brand-surface border-b border-brand-border px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3 sm:gap-4 shrink-0 transition-colors duration-300">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
             <button
               type="button"
-              className="lg:hidden rounded-xl border border-brand-border bg-brand-surface-tint hover:bg-brand-surface px-3 py-1.5 text-xs font-semibold text-brand-text transition-colors"
+              className="lg:hidden p-2 rounded-xl border border-brand-border bg-brand-surface-tint hover:bg-brand-surface text-brand-text transition-colors flex items-center justify-center cursor-pointer"
               onClick={() => setSidebarOpen(true)}
+              aria-label="Open menu"
             >
-              Menu
+              <Menu size={18} strokeWidth={2} />
             </button>
             <div className="min-w-0">
-              <h2 className="text-sm font-semibold text-brand-text truncate">
+              <h2 className="text-xs sm:text-sm font-semibold text-brand-text truncate">
                 Admin Panel
               </h2>
             </div>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-3">
             <div className="hidden sm:flex items-center gap-3 text-xs font-semibold text-brand-text-muted">
               <span className="rounded-full bg-brand-primary/10 text-brand-primary border border-brand-primary/20 px-2.5 py-0.5 font-bold">
                 Live
@@ -162,16 +191,26 @@ export default function AdminDashboard() {
               {isDark ? '☀️ Light' : '🌙 Dark'}
             </button>
 
-            <img src="/logo.png" alt="Logo" className="lg:hidden h-8 w-8 object-contain" />
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="lg:hidden p-2 rounded-xl bg-brand-surface-tint hover:bg-brand-surface border border-brand-border text-brand-text-muted hover:text-rose-500 hover:border-rose-500/30 transition-colors cursor-pointer"
+              title="Sign out"
+              aria-label="Sign out"
+            >
+              <LogOut size={16} strokeWidth={2} />
+            </button>
+
+            <img src="/logo.png" alt="Logo" className="lg:hidden h-8 w-8 object-contain shrink-0" />
           </div>
         </header>
 
-        <main className="flex-1 p-6 sm:p-8 overflow-auto">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 lg:overflow-y-auto">
           {/* Top-Left Logo Card in Dashboard body canvas */}
-          <div className="bg-brand-surface border border-brand-border rounded-2xl p-4 flex items-center gap-4 mb-8 shadow-sm max-w-sm transition-all duration-300 hover:scale-[1.01]">
-            <img src="/logo.png" alt="Lakshya Logo" className="h-10 w-auto object-contain" />
+          <div className="bg-brand-surface border border-brand-border rounded-2xl p-3 sm:p-4 flex items-center gap-3 sm:gap-4 mb-5 sm:mb-8 shadow-sm max-w-sm transition-all duration-300 hover:scale-[1.01]">
+            <img src="/logo.png" alt="Lakshya Logo" className="h-9 sm:h-10 w-auto object-contain shrink-0" />
             <div>
-              <h1 className="text-base font-extrabold text-brand-primary leading-tight">
+              <h1 className="text-sm sm:text-base font-extrabold text-brand-primary leading-tight">
                 Lakshya Academic Institute
               </h1>
               <p className="text-[9px] text-brand-text-muted uppercase tracking-widest font-bold mt-0.5">

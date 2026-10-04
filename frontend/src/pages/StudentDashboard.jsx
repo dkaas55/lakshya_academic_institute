@@ -4,6 +4,15 @@ import api from '../lib/api'
 import { clearToken, clearRole } from '../lib/auth'
 import SettingsModal from '../components/shared/SettingsModal'
 import { useTheme } from '../context/ThemeContext'
+import {
+  LayoutDashboard,
+  CalendarCheck,
+  BookOpen,
+  ClipboardList,
+  IndianRupee,
+  Settings,
+  LogOut,
+} from 'lucide-react'
 
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -74,11 +83,11 @@ const MATERIAL_TYPE_CONFIG = {
 // ─── Nav tabs for the student portal ─────────────────────────────────────────
 
 const TABS = [
-  { id: 'overview',    label: 'Overview',    icon: '◫' },
-  { id: 'attendance',  label: 'Attendance',  icon: '📅' },
-  { id: 'materials',   label: 'Materials',   icon: '📚' },
-  { id: 'tests',       label: 'Practice Tests', icon: '📝' },
-  { id: 'payments',    label: 'Payments',    icon: '₹'  },
+  { id: 'overview',    label: 'Overview',       Icon: LayoutDashboard },
+  { id: 'attendance',  label: 'Attendance',     Icon: CalendarCheck },
+  { id: 'materials',   label: 'Materials',      Icon: BookOpen },
+  { id: 'tests',       label: 'Practice Tests', Icon: ClipboardList },
+  { id: 'payments',    label: 'Payments',       Icon: IndianRupee },
 ]
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -138,18 +147,22 @@ export default function StudentDashboard() {
     navigate('/login', { replace: true })
   }
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' })
+  }, [activeTab])
+
   const student   = dashData?.student
   const fee       = dashData?.fee
   const materials = dashData?.materials ?? []
   const tests     = dashData?.tests ?? []
 
   return (
-    <div className="min-h-screen bg-brand-bg text-brand-text flex relative pb-28 lg:pb-0 transition-colors duration-300">
+    <div className="min-h-screen bg-brand-bg text-brand-text flex flex-col lg:flex-row lg:h-screen lg:overflow-hidden transition-colors duration-300">
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
       
       {/* ── Desktop Sidebar (hidden on mobile) ─────────────────────────────── */}
-      <aside className="hidden lg:flex inset-y-0 left-0 z-30 w-60 flex-col border-r border-brand-border bg-brand-primary text-brand-surface transition-transform duration-300">
-        <div className="px-6 py-6 border-b border-brand-border/20 flex items-center gap-3">
+      <aside className="hidden lg:flex sticky top-0 inset-y-0 left-0 z-30 w-60 h-screen flex-col shrink-0 border-r border-brand-border bg-brand-primary text-brand-surface transition-transform duration-300">
+        <div className="px-6 py-6 border-b border-brand-border/20 flex items-center gap-3 shrink-0">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white shadow-sm overflow-hidden shrink-0">
             <img src="/logo.png" alt="Logo" className="h-full w-full object-contain p-1" />
           </div>
@@ -164,6 +177,7 @@ export default function StudentDashboard() {
         <nav className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
           {TABS.map((item) => {
             const isActive = activeTab === item.id
+            const Icon = item.Icon
             return (
               <button
                 key={item.id}
@@ -175,44 +189,50 @@ export default function StudentDashboard() {
                     : 'text-brand-surface/80 hover:bg-brand-surface/10 hover:text-brand-surface'
                 }`}
               >
-                <span className="text-[14px]" aria-hidden>
-                  {item.icon}
-                </span>
+                <Icon size={16} strokeWidth={isActive ? 2.5 : 2} aria-hidden />
                 {item.label}
               </button>
             )
           })}
         </nav>
 
-        <div className="px-3 py-4 border-t border-brand-border/20 space-y-1.5">
+        <div className="px-3 py-4 border-t border-brand-border/20 space-y-1.5 shrink-0">
           <button
             type="button"
             onClick={() => setShowSettings(true)}
             className="w-full rounded-xl px-4 py-3 text-xs font-semibold text-brand-surface/80 hover:bg-brand-surface/10 hover:text-brand-surface transition-all duration-200 text-left flex items-center gap-3"
           >
-            <span className="text-[14px]">⚙️</span>
+            <Settings size={16} strokeWidth={2} aria-hidden />
             Settings
+          </button>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="w-full rounded-xl px-4 py-3 text-xs font-semibold text-brand-surface/80 hover:bg-brand-surface/10 hover:text-brand-surface transition-all duration-200 text-left flex items-center gap-3"
+          >
+            <LogOut size={16} strokeWidth={2} aria-hidden />
+            Sign out
           </button>
         </div>
       </aside>
 
       {/* ── Main Content Area ──────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 lg:h-screen lg:overflow-hidden">
         {/* Top Header (visible on all screens) */}
-        <header className="sticky top-0 z-10 bg-brand-surface border-b border-brand-border px-6 py-4 flex items-center justify-between gap-4 transition-colors duration-300">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="lg:hidden flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow-sm overflow-hidden">
+        <header className="sticky top-0 z-20 bg-brand-surface border-b border-brand-border px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3 sm:gap-4 shrink-0 transition-colors duration-300">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="lg:hidden flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow-sm overflow-hidden shrink-0">
               <img src="/logo.png" alt="Logo" className="h-full w-full object-contain p-0.5" />
             </div>
             <div className="min-w-0">
-              <h2 className="text-sm font-semibold text-brand-text truncate">
-                {student ? `Hello ${student.fullName}` : ''}
+              <h2 className="text-xs sm:text-sm font-semibold text-brand-text truncate">
+                {student ? `Hello ${student.fullName}` : 'Welcome'}
               </h2>
             </div>
           </div>
-          <div className="flex items-center gap-3 text-xs font-semibold text-brand-text-muted">
-             {student?.batch && (
-              <span className="hidden sm:inline-flex items-center rounded-full bg-brand-primary/10 px-3 py-1 text-[10px] font-bold text-brand-primary border border-brand-primary/20">
+          <div className="flex items-center gap-2 sm:gap-3 text-xs font-semibold text-brand-text-muted">
+            {student?.batch && (
+              <span className="hidden sm:inline-flex items-center rounded-full bg-brand-primary/10 px-2.5 py-0.5 text-[10px] font-bold text-brand-primary border border-brand-primary/20">
                 {student.batch}
               </span>
             )}
@@ -232,19 +252,29 @@ export default function StudentDashboard() {
             <button
               type="button"
               onClick={() => setShowSettings(true)}
-              className="lg:hidden rounded-xl bg-brand-surface-tint border border-brand-border px-3 py-1.5 text-xs font-bold text-brand-text hover:bg-brand-surface transition-colors"
+              className="p-2 rounded-xl bg-brand-surface-tint border border-brand-border text-brand-text-muted hover:text-brand-text hover:bg-brand-surface transition-colors cursor-pointer"
+              title="Settings"
             >
-              ⚙️
+              <Settings size={16} strokeWidth={2} />
+            </button>
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="lg:hidden p-2 rounded-xl bg-brand-surface-tint border border-brand-border text-brand-text-muted hover:text-rose-500 hover:border-rose-500/30 transition-colors cursor-pointer"
+              title="Sign out"
+              aria-label="Sign out"
+            >
+              <LogOut size={16} strokeWidth={2} />
             </button>
           </div>
         </header>
 
-        <main className="flex-1 overflow-auto p-6 sm:p-8">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 pb-32 lg:pb-8 lg:overflow-y-auto">
           {/* Top-Left Logo Card in Dashboard body canvas */}
-          <div className="bg-brand-surface border border-brand-border rounded-2xl p-4 flex items-center gap-4 mb-8 shadow-sm max-w-sm transition-all duration-300 hover:scale-[1.01]">
-            <img src="/logo.png" alt="Lakshya Logo" className="h-10 w-auto object-contain" />
+          <div className="bg-brand-surface border border-brand-border rounded-2xl p-3 sm:p-4 flex items-center gap-3 sm:gap-4 mb-5 sm:mb-6 shadow-sm max-w-sm transition-all duration-300 hover:scale-[1.01]">
+            <img src="/logo.png" alt="Lakshya Logo" className="h-9 sm:h-10 w-auto object-contain shrink-0" />
             <div>
-              <h1 className="text-base font-extrabold text-brand-primary leading-tight">
+              <h1 className="text-sm sm:text-base font-extrabold text-brand-primary leading-tight">
                 Lakshya Academic Institute
               </h1>
               <p className="text-[9px] text-brand-text-muted uppercase tracking-widest font-bold mt-0.5">
@@ -417,66 +447,23 @@ export default function StudentDashboard() {
       </div>
 
       {/* ── Mobile Bottom Nav (hidden on desktop) ──────────────────────────── */}
-      <nav className="lg:hidden fixed bottom-6 left-4 right-4 z-50 bg-brand-primary text-brand-surface rounded-[2rem] px-4 py-3 flex justify-between items-center shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] border border-brand-border/20 backdrop-blur-xl">
+      <nav className="lg:hidden fixed bottom-3 sm:bottom-5 left-3 sm:left-6 right-3 sm:right-6 z-50 bg-brand-primary text-brand-surface rounded-2xl sm:rounded-[2rem] px-2 sm:px-3 py-1.5 sm:py-2 flex justify-around items-center shadow-2xl border border-brand-border/20 backdrop-blur-xl">
         {TABS.map((item) => {
           const isActive = activeTab === item.id
-          // Custom SVG icons matching the tabs
-          const renderIcon = (id, active) => {
-            const color = active ? 'text-brand-gold' : 'text-brand-surface/60'
-            const fill = active ? 'currentColor' : 'none'
-            switch (id) {
-              case 'overview':
-                return (
-                  <svg className={`w-6 h-6 ${color} transition-all duration-300`} fill={fill} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 2 : 1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                  </svg>
-                )
-              case 'materials':
-                return (
-                  <svg className={`w-6 h-6 ${color} transition-all duration-300`} fill={fill} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 2 : 1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                  </svg>
-                )
-              case 'tests':
-                return (
-                  <svg className={`w-6 h-6 ${color} transition-all duration-300`} fill={fill} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 2 : 1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                  </svg>
-                )
-              case 'attendance':
-                return (
-                  <svg className={`w-6 h-6 ${color} transition-all duration-300`} fill={fill} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 2 : 1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                )
-              case 'payments':
-                return (
-                  <svg className={`w-6 h-6 ${color} transition-all duration-300`} fill={fill} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 2 : 1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                )
-              default:
-                return null
-            }
-          }
+          const Icon = item.Icon
 
           return (
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className="relative flex-1 flex flex-col items-center justify-center p-2 group"
+              className={`relative flex-1 flex flex-col items-center justify-center py-1 sm:py-1.5 px-1 rounded-xl transition-all duration-200 min-w-0 ${
+                isActive ? 'bg-brand-surface/15 text-brand-gold font-bold scale-[1.03]' : 'text-brand-surface/60 hover:text-brand-surface'
+              }`}
             >
-              {isActive && (
-                <div className="absolute inset-0 bg-brand-surface/10 rounded-xl scale-105 transition-transform duration-300" />
-              )}
-              <div className={`relative transition-transform duration-300 ${isActive ? '-translate-y-1' : 'group-hover:-translate-y-0.5'}`}>
-                {renderIcon(item.id, isActive)}
-              </div>
-              {isActive && (
-                <span className="absolute bottom-0 text-[10px] font-bold text-brand-gold mt-1 opacity-100 transition-opacity">
-                  {item.label}
-                </span>
-              )}
+              <Icon size={18} strokeWidth={isActive ? 2.5 : 2} className="shrink-0" />
+              <span className={`text-[9px] sm:text-[10px] truncate mt-0.5 sm:mt-1 leading-tight ${isActive ? 'text-brand-gold font-bold' : 'text-brand-surface/70'}`}>
+                {item.label}
+              </span>
             </button>
           )
         })}
