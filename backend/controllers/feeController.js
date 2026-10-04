@@ -1,6 +1,12 @@
 const StudentProfile = require("../models/StudentProfile");
 const FeeLedger = require("../models/FeeLedger");
-const { calculateDynamicAmountDue, deriveFeeStatus, calculatePreviousPending } = require("../utils/feeStatus");
+const {
+  calculateDynamicAmountDue,
+  deriveFeeStatus,
+  calculateFeePendingForMonth,
+  getFeeOverview,
+  calculatePreviousPending,
+} = require("../utils/feeStatus");
 
 const PAYMENT_MODES = ["Cash", "UPI", "GPay", "PhonePe"];
 
@@ -35,8 +41,7 @@ const getLedger = async (req, res) => {
       });
     }
 
-    const dynamicAmountDue = calculateDynamicAmountDue(ledger, profile);
-    const feeStatus = deriveFeeStatus(ledger, profile);
+    const overview = getFeeOverview(ledger, profile);
 
     res.json({
       success: true,
@@ -50,11 +55,13 @@ const getLedger = async (req, res) => {
         ledger: {
           id: ledger._id,
           totalCourseFee: ledger.totalFee,
-          monthlyFeeAmount: ledger.monthlyFeeAmount || ledger.totalFee,
+          monthlyFeeAmount: overview.monthlyFeeAmount,
           amountPaid: ledger.amountPaid,
-          amountDue: dynamicAmountDue,
-          feeStatus,
-          previousPending: calculatePreviousPending(ledger, profile),
+          amountDue: overview.amountDue,
+          feeStatus: overview.feeStatus,
+          feePendingForMonth: overview.feePendingForMonth,
+          paymentTiming: overview.paymentTiming,
+          previousPending: 0,
           paymentHistory: [...(ledger.paymentHistory ?? [])].sort(
             (a, b) => new Date(b.paidAt) - new Date(a.paidAt)
           ),
@@ -78,7 +85,7 @@ const collectInstallment = async (req, res) => {
   }
 
   const { studentId } = req.params;
-  const { amount, paymentMode } = req.body;
+  const { amount, paymentMode, paymentTiming } = req.body;
 
   if (!studentId) {
     return res.status(400).json({
@@ -124,16 +131,18 @@ const collectInstallment = async (req, res) => {
       });
     }
 
-    const dynamicAmountDue = calculateDynamicAmountDue(ledger, profile);
-    if (paymentAmount > dynamicAmountDue) {
-      return res.status(400).json({
-        success: false,
-        message: `Payment cannot exceed amount due (₹${dynamicAmountDue})`,
-      });
+    // Set paymentTiming if provided or if not yet set
+    if (paymentTiming && ["advance", "after_month"].includes(paymentTiming)) {
+      ledger.paymentTiming = paymentTiming;
+    } else if (!ledger.paymentTiming) {
+      ledger.paymentTiming = "advance";
     }
 
     ledger.amountPaid += paymentAmount;
-    ledger.amountDue = Math.max(0, ledger.totalFee - ledger.amountPaid);
+    if (ledger.amountPaid > ledger.totalFee) {
+      ledger.totalFee = ledger.amountPaid;
+    }
+    ledger.amountDue = calculateDynamicAmountDue(ledger, profile);
     ledger.paymentHistory.push({
       amount: paymentAmount,
       paidAt: new Date(),
@@ -142,8 +151,7 @@ const collectInstallment = async (req, res) => {
 
     await ledger.save();
 
-    const newDynamicAmountDue = calculateDynamicAmountDue(ledger, profile);
-    const feeStatus = deriveFeeStatus(ledger, profile);
+    const overview = getFeeOverview(ledger, profile);
 
     res.json({
       success: true,
@@ -155,11 +163,13 @@ const collectInstallment = async (req, res) => {
         },
         ledger: {
           totalCourseFee: ledger.totalFee,
-          monthlyFeeAmount: ledger.monthlyFeeAmount || ledger.totalFee,
+          monthlyFeeAmount: overview.monthlyFeeAmount,
           amountPaid: ledger.amountPaid,
-          amountDue: newDynamicAmountDue,
-          feeStatus,
-          previousPending: calculatePreviousPending(ledger, profile),
+          amountDue: overview.amountDue,
+          feeStatus: overview.feeStatus,
+          feePendingForMonth: overview.feePendingForMonth,
+          paymentTiming: overview.paymentTiming,
+          previousPending: 0,
           paymentHistory: [...ledger.paymentHistory].sort(
             (a, b) => new Date(b.paidAt) - new Date(a.paidAt)
           ),
@@ -171,6 +181,62 @@ const collectInstallment = async (req, res) => {
       success: false,
       message: "Failed to record payment",
     });
+  }
+};
+
+const updatePaymentTiming = async (req, res) => {
+  if (req.user.role !== "admin") {
+    return res.status(403).json({
+      success: false,
+      message: "Only administrators can update payment timing",
+    });
+  }
+
+  const { studentId } = req.params;
+  const { paymentTiming } = req.body;
+
+  if (!["advance", "after_month"].includes(paymentTiming)) {
+    return res.status(400).json({
+      success: false,
+      message: "Payment timing must be 'advance' or 'after_month'",
+    });
+  }
+
+  try {
+    const profile = await StudentProfile.findById(studentId).lean();
+    if (!profile) {
+      return res.status(404).json({ success: false, message: "Student not found" });
+    }
+
+    const ledger = await FeeLedger.findOne({ student: studentId });
+    if (!ledger) {
+      return res.status(404).json({ success: false, message: "Fee ledger not found" });
+    }
+
+    ledger.paymentTiming = paymentTiming;
+    ledger.amountDue = calculateDynamicAmountDue(ledger, profile);
+    await ledger.save();
+
+    const overview = getFeeOverview(ledger, profile);
+
+    res.json({
+      success: true,
+      message: "Payment timing updated successfully",
+      data: {
+        ledger: {
+          id: ledger._id,
+          totalCourseFee: ledger.totalFee,
+          monthlyFeeAmount: overview.monthlyFeeAmount,
+          amountPaid: ledger.amountPaid,
+          amountDue: overview.amountDue,
+          feeStatus: overview.feeStatus,
+          feePendingForMonth: overview.feePendingForMonth,
+          paymentTiming: overview.paymentTiming,
+        },
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Failed to update payment timing" });
   }
 };
 
@@ -242,8 +308,8 @@ const getPendingDues = async (req, res) => {
     for (const ledger of ledgers) {
       if (!ledger.student || ledger.student.status === "removed") continue;
 
-      const dynamicAmountDue = calculateDynamicAmountDue(ledger, ledger.student);
-      if (dynamicAmountDue <= 0) continue;
+      const overview = getFeeOverview(ledger, ledger.student);
+      if (!overview || overview.amountDue <= 0) continue;
 
       pendingList.push({
         id: ledger.student._id,
@@ -251,9 +317,12 @@ const getPendingDues = async (req, res) => {
         batch: ledger.student.batch,
         studentClass: ledger.student.studentClass,
         totalCourseFee: ledger.totalFee,
+        monthlyFeeAmount: overview.monthlyFeeAmount,
         amountPaid: ledger.amountPaid,
-        amountDue: dynamicAmountDue,
-        monthlyFeeAmount: ledger.monthlyFeeAmount || 0,
+        amountDue: overview.amountDue,
+        feeStatus: overview.feeStatus,
+        feePendingForMonth: overview.feePendingForMonth,
+        paymentTiming: overview.paymentTiming,
         lastBillingDate: ledger.lastBillingDate,
       });
     }
@@ -270,4 +339,11 @@ const getPendingDues = async (req, res) => {
   }
 };
 
-module.exports = { getLedger, collectInstallment, getAllTransactions, getPendingDues, PAYMENT_MODES };
+module.exports = {
+  getLedger,
+  collectInstallment,
+  updatePaymentTiming,
+  getAllTransactions,
+  getPendingDues,
+  PAYMENT_MODES,
+};

@@ -56,14 +56,13 @@ export default function FeeReceiptTemplate({ receiptInfo, student }) {
     amountDue = 0,
     totalCourseFee = 0,
     monthlyFeeAmount = 0,
+    paymentTiming = null,
     paymentMode = '—',
     paidAt = new Date().toISOString(),
     receiptNumber = '—',
   } = receiptInfo
 
   const totalAmountToPay = amountDue + amount;
-  const previousDue = totalAmountToPay - monthlyFeeAmount;
-
   const isPaid = amountDue <= 0
 
   return (
@@ -196,16 +195,16 @@ export default function FeeReceiptTemplate({ receiptInfo, student }) {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 <tr>
-                  <td className="px-5 py-4 text-slate-600">This Month's Fee</td>
+                  <td className="px-5 py-4 text-slate-600">Monthly Fee</td>
                   <td className="px-5 py-4 text-right font-semibold text-slate-800">
-                    {formatCurrency(monthlyFeeAmount)}
+                    {formatCurrency(monthlyFeeAmount || totalCourseFee)}
                   </td>
                 </tr>
-                {previousDue > 0 && (
+                {paymentTiming && (
                   <tr>
-                    <td className="px-5 py-4 text-slate-600">Previous Due Amount</td>
-                    <td className="px-5 py-4 text-right font-semibold text-slate-800">
-                      {formatCurrency(previousDue)}
+                    <td className="px-5 py-4 text-slate-600">Payment Schedule</td>
+                    <td className="px-5 py-4 text-right font-medium text-slate-700">
+                      {paymentTiming === 'advance' ? 'In Advance' : 'End of Month'}
                     </td>
                   </tr>
                 )}

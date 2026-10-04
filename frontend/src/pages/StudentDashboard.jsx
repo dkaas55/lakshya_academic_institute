@@ -328,7 +328,7 @@ export default function StudentDashboard() {
                     <div className="mt-3">
                       <p className="text-2xl font-bold text-brand-text">{formatCurrency(fee?.amountDue ?? 0)}</p>
                       <p className="text-xs text-brand-text-muted mt-1">
-                        {fee ? `Previous pending: ${formatCurrency(fee.previousPending ?? 0)}` : 'No fee info'}
+                        {fee ? `Monthly: ${formatCurrency(fee.monthlyFeeAmount ?? fee.totalCourseFee ?? 0)} · ${fee.feePendingForMonth || 'All clear'}` : 'No fee info'}
                       </p>
                     </div>
                   </div>
@@ -1007,10 +1007,20 @@ function FeeStatusCard({ fee }) {
         </span>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 mb-4">
-        <FeeMetric label="Fee"              value={formatCurrency(fee.totalCourseFee)} />
-        <FeeMetric label="Previous Pending" value={formatCurrency(fee.previousPending ?? 0)} accent={fee.previousPending > 0 ? 'amber' : 'slate'} />
-        <FeeMetric label="Due"              value={formatCurrency(fee.amountDue)}   accent={fee.amountDue > 0 ? 'amber' : 'slate'} />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+        <FeeMetric label="Monthly Fee" value={formatCurrency(fee.monthlyFeeAmount || fee.totalCourseFee)} />
+        <FeeMetric label="Amount to be Paid" value={formatCurrency(fee.amountDue)} accent={fee.amountDue > 0 ? 'amber' : 'emerald'} />
+        <FeeMetric label="Fee Pending for Month" value={fee.feePendingForMonth || 'None'} />
+        <FeeMetric
+          label="Payment Time"
+          value={
+            fee.paymentTiming === 'advance'
+              ? 'In Advance'
+              : fee.paymentTiming === 'after_month'
+              ? 'End of Month'
+              : 'Not Set'
+          }
+        />
       </div>
 
     </section>

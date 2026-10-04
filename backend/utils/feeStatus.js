@@ -1,6 +1,46 @@
+/**
+ * feeStatus.js
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Calculates dynamic monthly fees, amount to be paid, pending months,
+ * and fee payment status based on student joining date and payment timing.
+ *
+ * Payment Timing:
+ * - 'advance': Month 1 is billed immediately upon joining (in advance).
+ * - 'after_month': Month 1 is billed only after the full month completes (end of month).
+ * - null/undefined: Defaults to 'advance' for calculation until set on 1st payment.
+ */
+
+const getMonthDiff = (joiningDate, overrideNow) => {
+  const now = overrideNow ? new Date(overrideNow) : new Date();
+  const join = new Date(joiningDate || now);
+
+  let monthDiff = (now.getFullYear() - join.getFullYear()) * 12 + (now.getMonth() - join.getMonth());
+  if (now.getDate() < join.getDate()) {
+    monthDiff--;
+  }
+  return Math.max(0, monthDiff);
+};
+
+const getBilledCycles = (monthDiff, paymentTiming) => {
+  if (paymentTiming === "after_month") {
+    return monthDiff;
+  }
+  // Default to advance billing (1st cycle billed immediately on joining)
+  return monthDiff + 1;
+};
+
+const getBillingCycleMonth = (joiningDate, cycleIndex, short = false) => {
+  const join = new Date(joiningDate);
+  const cycleDate = new Date(join.getFullYear(), join.getMonth() + cycleIndex, 1);
+  return cycleDate.toLocaleString("en-US", {
+    month: short ? "short" : "long",
+    year: "numeric",
+  });
+};
+
 const calculateDynamicAmountDue = (ledger, student, overrideNow) => {
   if (!ledger) return 0;
-  
+
   const studentProfile = student || ledger.student;
   if (!studentProfile) {
     return ledger.amountDue ?? 0;
@@ -8,130 +48,123 @@ const calculateDynamicAmountDue = (ledger, student, overrideNow) => {
 
   const joiningDate = studentProfile.joiningDate || studentProfile.admissionDate || ledger.createdAt || new Date();
   const monthlyFeeAmount = ledger.monthlyFeeAmount || ledger.totalFee || 0;
-  const totalPaidAmount = ledger.amountPaid || 0;
+  const amountPaid = ledger.amountPaid || 0;
+  const paymentTiming = ledger.paymentTiming;
 
-  const now = overrideNow || new Date();
-  const join = new Date(joiningDate);
-  let monthDiff = (now.getFullYear() - join.getFullYear()) * 12 + (now.getMonth() - join.getMonth());
-  
-  // If the current day of the month is less than the joining day, a full month hasn't passed yet
-  if (now.getDate() < join.getDate()) {
-    monthDiff--;
+  if (monthlyFeeAmount <= 0) {
+    return Math.max(0, (ledger.totalFee || 0) - amountPaid);
   }
-  
-  monthDiff = Math.max(0, monthDiff);
-  const monthsElapsed = monthDiff + 1;
-  
-  const calculatedDue = (monthsElapsed * monthlyFeeAmount) - totalPaidAmount;
-  return Math.max(0, calculatedDue);
+
+  const monthDiff = getMonthDiff(joiningDate, overrideNow);
+  const billedCycles = getBilledCycles(monthDiff, paymentTiming);
+  const totalBilled = billedCycles * monthlyFeeAmount;
+
+  return Math.max(0, totalBilled - amountPaid);
 };
 
 const deriveFeeStatus = (ledger, student, overrideNow) => {
   if (!ledger) return "PENDING";
 
   const studentProfile = student || ledger.student;
-  if (!studentProfile) {
-    const amountDue = ledger.amountDue ?? 0;
-    const amountPaid = ledger.amountPaid ?? 0;
-    if (amountDue <= 0) return "PAID";
-    if (amountPaid > 0) return "PARTIAL";
-    return "PENDING";
-  }
-
-  const joiningDate = studentProfile.joiningDate || studentProfile.admissionDate || ledger.createdAt || new Date();
-  const monthlyFeeAmount = ledger.monthlyFeeAmount || ledger.totalFee || 0;
+  const dynamicAmountDue = calculateDynamicAmountDue(ledger, studentProfile, overrideNow);
   const amountPaid = ledger.amountPaid || 0;
-
-  const now = overrideNow || new Date();
-  const join = new Date(joiningDate);
-  
-  // Calculate month difference using the billing day rule
-  let monthDiff = (now.getFullYear() - join.getFullYear()) * 12 + (now.getMonth() - join.getMonth());
-  
-  const currentCalendarMonthBilled = now.getDate() >= join.getDate();
-  if (!currentCalendarMonthBilled) {
-    monthDiff--;
-  }
-  monthDiff = Math.max(0, monthDiff);
-  const monthsElapsed = monthDiff + 1;
-
-  // Calculate dynamic amount due
-  const totalBilled = monthsElapsed * monthlyFeeAmount;
-  const dynamicAmountDue = Math.max(0, totalBilled - amountPaid);
 
   if (dynamicAmountDue <= 0) {
     return "PAID";
   }
 
-  if (!currentCalendarMonthBilled) {
-    // Current calendar month has not been billed yet.
-    // So any outstanding amountDue > 0 must be from previous months.
-    return "PREVIOUS PENDING";
-  }
-
-  // Get name of the current billing month (Month M, index M - 1)
-  const getBillingMonthName = (dateVal, index) => {
-    const j = new Date(dateVal);
-    const d = new Date(j.getFullYear(), j.getMonth() + index, 15);
-    return d.toLocaleString("en-US", { month: "long" }).toUpperCase();
-  };
-
-  const currentMonthName = getBillingMonthName(joiningDate, monthsElapsed - 1);
-  const previousMonthsDue = (monthsElapsed - 1) * monthlyFeeAmount;
-  const isPreviousCleared = amountPaid >= previousMonthsDue;
-
-  if (isPreviousCleared) {
-    const currentPaid = amountPaid - previousMonthsDue;
-    if (currentPaid > 0) {
-      return "PARTIAL";
-    }
-    return `PENDING - ${currentMonthName}`;
-  }
-
-  // Previous is NOT cleared (so previous months are pending).
-  // Since amountPaid < previousMonthsDue, the current month has 0 paid.
-  // If there is at least one previous month (monthsElapsed > 1):
-  if (monthsElapsed > 1) {
-    return "PENDING";
-  }
-  
-  // If monthsElapsed === 1, there is no previous month. The only month (Month 1) is current.
-  // But wait, if currentCalendarMonthBilled is true, then Month 1 is the current month and is due.
-  // Since amountPaid < monthlyFeeAmount, if amountPaid > 0, it's partially paid.
   if (amountPaid > 0) {
     return "PARTIAL";
   }
-  return `PENDING - ${currentMonthName}`;
+
+  return "PENDING";
 };
 
-const calculatePreviousPending = (ledger, student, overrideNow) => {
-  if (!ledger) return 0;
-  
+const calculateFeePendingForMonth = (ledger, student, overrideNow) => {
+  if (!ledger) return "None";
+
   const studentProfile = student || ledger.student;
-  if (!studentProfile) {
-    return 0;
-  }
-
-  const joiningDate = studentProfile.joiningDate || studentProfile.admissionDate || ledger.createdAt || new Date();
+  const joiningDate = studentProfile?.joiningDate || studentProfile?.admissionDate || ledger.createdAt || new Date();
   const monthlyFeeAmount = ledger.monthlyFeeAmount || ledger.totalFee || 0;
-  const totalPaidAmount = ledger.amountPaid || 0;
+  const amountPaid = ledger.amountPaid || 0;
+  const paymentTiming = ledger.paymentTiming;
 
-  const now = overrideNow || new Date();
-  const join = new Date(joiningDate);
-  let monthDiff = (now.getFullYear() - join.getFullYear()) * 12 + (now.getMonth() - join.getMonth());
-  
-  const currentCalendarMonthBilled = now.getDate() >= join.getDate();
-  if (!currentCalendarMonthBilled) {
-    monthDiff--;
+  if (monthlyFeeAmount <= 0) {
+    return ledger.amountPaid >= (ledger.totalFee || 0) ? "None" : "Course Fee Pending";
   }
-  
-  monthDiff = Math.max(0, monthDiff);
-  const monthsElapsed = monthDiff + 1;
 
-  const previousBilledMonths = currentCalendarMonthBilled ? Math.max(0, monthsElapsed - 1) : monthsElapsed;
-  const previousBilledAmount = previousBilledMonths * monthlyFeeAmount;
+  const monthDiff = getMonthDiff(joiningDate, overrideNow);
+  const billedCycles = getBilledCycles(monthDiff, paymentTiming);
 
-  return Math.max(0, previousBilledAmount - totalPaidAmount);
+  if (billedCycles === 0) {
+    return "None (Due at end of month)";
+  }
+
+  const totalBilled = billedCycles * monthlyFeeAmount;
+  const dynamicAmountDue = Math.max(0, totalBilled - amountPaid);
+  const fullyPaidCycles = Math.floor(amountPaid / monthlyFeeAmount);
+
+  if (dynamicAmountDue <= 0) {
+    if (fullyPaidCycles > billedCycles && billedCycles > 0) {
+      const advanceMonth = getBillingCycleMonth(joiningDate, fullyPaidCycles - 1, true);
+      return `None (Paid in advance up to ${advanceMonth})`;
+    }
+    return "None";
+  }
+
+  const pendingCount = Math.max(0, billedCycles - fullyPaidCycles);
+
+  if (pendingCount <= 0) {
+    return "None";
+  }
+
+  const isPartial = amountPaid % monthlyFeeAmount > 0;
+  const firstPendingMonth = getBillingCycleMonth(joiningDate, fullyPaidCycles);
+
+  if (pendingCount === 1) {
+    if (isPartial) {
+      return `${firstPendingMonth} (₹${dynamicAmountDue} pending)`;
+    }
+    return firstPendingMonth;
+  }
+
+  const firstShort = getBillingCycleMonth(joiningDate, fullyPaidCycles, true);
+  const lastShort = getBillingCycleMonth(joiningDate, billedCycles - 1, true);
+
+  if (isPartial) {
+    return `${pendingCount} Months (${firstShort} - ${lastShort}, ₹${dynamicAmountDue} pending)`;
+  }
+  return `${pendingCount} Months (${firstShort} - ${lastShort})`;
 };
 
-module.exports = { calculateDynamicAmountDue, deriveFeeStatus, calculatePreviousPending };
+const getFeeOverview = (ledger, student, overrideNow) => {
+  if (!ledger) return null;
+
+  const studentProfile = student || ledger.student;
+  const monthlyFeeAmount = ledger.monthlyFeeAmount || ledger.totalFee || 0;
+  const amountDue = calculateDynamicAmountDue(ledger, studentProfile, overrideNow);
+  const feeStatus = deriveFeeStatus(ledger, studentProfile, overrideNow);
+  const feePendingForMonth = calculateFeePendingForMonth(ledger, studentProfile, overrideNow);
+  const paymentTiming = ledger.paymentTiming || null;
+
+  return {
+    monthlyFeeAmount,
+    totalCourseFee: ledger.totalFee || monthlyFeeAmount,
+    amountPaid: ledger.amountPaid || 0,
+    amountDue,
+    feeStatus,
+    feePendingForMonth,
+    paymentTiming,
+    previousPending: 0,
+  };
+};
+
+const calculatePreviousPending = () => 0;
+
+module.exports = {
+  calculateDynamicAmountDue,
+  deriveFeeStatus,
+  calculateFeePendingForMonth,
+  getFeeOverview,
+  calculatePreviousPending,
+};

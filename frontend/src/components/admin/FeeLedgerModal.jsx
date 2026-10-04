@@ -40,7 +40,7 @@ function FeeStatusPill({ status }) {
   }
   return (
     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1 ${styles[baseStatus]}`}>
-      {status}
+      {status || 'PENDING'}
     </span>
   )
 }
@@ -160,6 +160,7 @@ export default function FeeLedgerModal({ student, onClose, onPaymentCollected })
   const [error,          setError]          = useState('')
   const [amount,         setAmount]         = useState('')
   const [paymentMode,    setPaymentMode]    = useState(PAYMENT_MODES[0])
+  const [paymentTiming,  setPaymentTiming]  = useState('advance')
   const [collecting,     setCollecting]     = useState(false)
   const [collectError,   setCollectError]   = useState('')
   // ── Receipt state ─────────────────────────────────────────────────────────
@@ -178,6 +179,11 @@ export default function FeeLedgerModal({ student, onClose, onPaymentCollected })
         return
       }
       setLedger(data.data)
+      if (data.data?.ledger?.paymentTiming) {
+        setPaymentTiming(data.data.ledger.paymentTiming)
+      } else {
+        setPaymentTiming('advance')
+      }
     } catch (err) {
       setError(
         err.response?.data?.message ||
@@ -216,10 +222,15 @@ export default function FeeLedgerModal({ student, onClose, onPaymentCollected })
 
     setCollecting(true)
     try {
-      const { data } = await api.post(`/fees/collect/${student.id}`, {
+      const payload = {
         amount: paymentAmount,
         paymentMode,
-      })
+      }
+      if (!ledger?.ledger?.paymentTiming) {
+        payload.paymentTiming = paymentTiming
+      }
+
+      const { data } = await api.post(`/fees/collect/${student.id}`, payload)
 
       if (!data.success) {
         setCollectError(data.message || 'Payment could not be recorded.')
@@ -232,6 +243,9 @@ export default function FeeLedgerModal({ student, onClose, onPaymentCollected })
         student: data.data.student,
         ledger:  data.data.ledger,
       }))
+      if (data.data.ledger.paymentTiming) {
+        setPaymentTiming(data.data.ledger.paymentTiming)
+      }
       onPaymentCollected?.(data.data.ledger.feeStatus)
       setAmount('')
 
@@ -243,6 +257,7 @@ export default function FeeLedgerModal({ student, onClose, onPaymentCollected })
         amountDue:      data.data.ledger.amountDue,
         totalCourseFee: data.data.ledger.totalCourseFee,
         monthlyFeeAmount: data.data.ledger.monthlyFeeAmount,
+        paymentTiming:  data.data.ledger.paymentTiming,
         paymentMode,
         paidAt:         now,
         receiptNumber:  rNum,
@@ -333,97 +348,182 @@ export default function FeeLedgerModal({ student, onClose, onPaymentCollected })
                 <FeeStatusPill status={ledgerData.feeStatus} />
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
-                <div className="rounded-xl border border-brand-border bg-brand-surface-tint/80 px-3 py-2.5">
-                  <p className="text-[10px] font-medium text-brand-text-muted uppercase tracking-wide">Fee</p>
-                  <p className="text-sm font-semibold text-brand-text mt-1">{formatCurrency(ledgerData.totalCourseFee)}</p>
+              {/* ── 4 Summary Cards: Monthly Fee, Amount to be Paid, Fee Pending for Month, Payment Time ── */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="rounded-xl border border-brand-border bg-brand-surface-tint/80 px-3 py-2.5 flex flex-col justify-between">
+                  <p className="text-[10px] font-medium text-brand-text-muted uppercase tracking-wide">Monthly Fee</p>
+                  <p className="text-sm font-semibold text-brand-text mt-1">
+                    {formatCurrency(ledgerData.monthlyFeeAmount || ledgerData.totalCourseFee)}
+                  </p>
                 </div>
-                <div className="rounded-xl border border-amber-100 bg-amber-50/50 px-3 py-2.5">
-                  <p className="text-[10px] font-medium text-amber-800/80 uppercase tracking-wide">Previous Pending</p>
-                  <p className="text-sm font-semibold text-amber-900 mt-1">{formatCurrency(ledgerData.previousPending ?? 0)}</p>
+                <div className={`rounded-xl border px-3 py-2.5 flex flex-col justify-between ${
+                  amountDue > 0
+                    ? 'border-amber-200 bg-amber-50/50 dark:border-amber-800/40 dark:bg-amber-950/20'
+                    : 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-800/40 dark:bg-emerald-950/20'
+                }`}>
+                  <p className={`text-[10px] font-medium uppercase tracking-wide ${
+                    amountDue > 0 ? 'text-amber-800/80 dark:text-amber-400' : 'text-emerald-800/80 dark:text-emerald-400'
+                  }`}>Amount to be Paid</p>
+                  <p className={`text-sm font-semibold mt-1 ${
+                    amountDue > 0 ? 'text-amber-900 dark:text-amber-300' : 'text-emerald-900 dark:text-emerald-300'
+                  }`}>{formatCurrency(amountDue)}</p>
                 </div>
-                <div className="rounded-xl border border-amber-100 bg-amber-50/50 px-3 py-2.5">
-                  <p className="text-[10px] font-medium text-amber-800/80 uppercase tracking-wide">Due</p>
-                  <p className="text-sm font-semibold text-amber-900 mt-1">{formatCurrency(ledgerData.amountDue)}</p>
+                <div className="rounded-xl border border-brand-border bg-brand-surface-tint/80 px-3 py-2.5 flex flex-col justify-between">
+                  <p className="text-[10px] font-medium text-brand-text-muted uppercase tracking-wide">Fee Pending for Month</p>
+                  <p className="text-xs font-semibold text-brand-text mt-1 leading-snug line-clamp-2" title={ledgerData.feePendingForMonth || 'None'}>
+                    {ledgerData.feePendingForMonth || 'None'}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-brand-border bg-brand-surface-tint/80 px-3 py-2.5 flex flex-col justify-between">
+                  <p className="text-[10px] font-medium text-brand-text-muted uppercase tracking-wide">Payment Time</p>
+                  <p className="text-xs font-semibold text-brand-text mt-1">
+                    {ledgerData.paymentTiming === 'advance'
+                      ? 'In Advance'
+                      : ledgerData.paymentTiming === 'after_month'
+                      ? 'End of Month'
+                      : 'Set on 1st Payment'}
+                  </p>
                 </div>
               </div>
 
 
               {/* ── Collect Installment Form ────────────────────────────── */}
-              {amountDue > 0 && (
-                <form onSubmit={handleCollect} className="rounded-2xl border border-brand-border bg-brand-surface p-3 space-y-3">
+              <form onSubmit={handleCollect} className="rounded-2xl border border-brand-border bg-brand-surface p-3 space-y-3">
+                <div className="flex items-center justify-between">
                   <h3 className="text-xs font-semibold text-brand-text">Collect Installment</h3>
+                  {!ledgerData.paymentTiming ? (
+                    <span className="text-[10px] font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800">
+                      First Payment Setup
+                    </span>
+                  ) : amountDue === 0 ? (
+                    <span className="text-[10px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
+                      Advance Payment
+                    </span>
+                  ) : null}
+                </div>
 
-                  {collectError && (
-                    <p role="alert" className="text-[11px] text-red-600 bg-red-50 border border-red-100 rounded-lg px-2.5 py-1.5">
-                      {collectError}
-                    </p>
-                  )}
+                {collectError && (
+                  <p role="alert" className="text-[11px] text-red-600 bg-red-50 border border-red-100 rounded-lg px-2.5 py-1.5">
+                    {collectError}
+                  </p>
+                )}
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label htmlFor="installment-amount" className="block text-[10px] font-medium text-brand-text mb-1">
-                        Amount (₹)
+                {/* Payment Timing: ONLY rendered for 1st payment when paymentTiming is not yet saved */}
+                {!ledgerData.paymentTiming && (
+                  <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 dark:border-indigo-900/40 dark:bg-indigo-950/20 p-2.5 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-semibold text-brand-text">
+                        Payment Time
                       </label>
-                      <input
-                        id="installment-amount"
-                        type="number"
-                        min="1"
-                        max={amountDue}
-                        step="1"
-                        value={amount}
-                        onChange={(e) => {
-                          setAmount(e.target.value)
-                          setCollectError('')
-                          setLastReceipt(null)
-                        }}
-                        placeholder={`Max ${amountDue}`}
-                        className="w-full rounded-lg border border-brand-border px-2.5 py-2 text-xs text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-brand-primary"
-                        disabled={collecting}
-                      />
+                      <span className="text-[10px] text-brand-text-muted">Set once for this student</span>
                     </div>
-                    <div>
-                      <label htmlFor="payment-mode" className="block text-[10px] font-medium text-brand-text mb-1">
-                        Payment Mode
-                      </label>
-                      <select
-                        id="payment-mode"
-                        value={paymentMode}
-                        onChange={(e) => setPaymentMode(e.target.value)}
-                        className="w-full rounded-lg border border-brand-border px-2.5 py-2 text-xs text-brand-text bg-brand-surface focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-brand-primary"
-                        disabled={collecting}
+                    <div className="grid grid-cols-2 gap-2">
+                      <label
+                        className={`flex items-center gap-2 p-2 rounded-lg border text-xs cursor-pointer transition-all ${
+                          paymentTiming === 'advance'
+                            ? 'border-indigo-600 bg-white dark:bg-brand-surface shadow-xs font-semibold text-brand-text ring-1 ring-indigo-500'
+                            : 'border-brand-border bg-white/60 dark:bg-brand-surface/60 text-brand-text-muted hover:bg-white'
+                        }`}
                       >
-                        {PAYMENT_MODES.map((mode) => (
-                          <option key={mode} value={mode}>{mode}</option>
-                        ))}
-                      </select>
+                        <input
+                          type="radio"
+                          name="paymentTiming"
+                          value="advance"
+                          checked={paymentTiming === 'advance'}
+                          onChange={() => setPaymentTiming('advance')}
+                          className="accent-indigo-600"
+                        />
+                        <span>In Advance</span>
+                      </label>
+                      <label
+                        className={`flex items-center gap-2 p-2 rounded-lg border text-xs cursor-pointer transition-all ${
+                          paymentTiming === 'after_month'
+                            ? 'border-indigo-600 bg-white dark:bg-brand-surface shadow-xs font-semibold text-brand-text ring-1 ring-indigo-500'
+                            : 'border-brand-border bg-white/60 dark:bg-brand-surface/60 text-brand-text-muted hover:bg-white'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="paymentTiming"
+                          value="after_month"
+                          checked={paymentTiming === 'after_month'}
+                          onChange={() => setPaymentTiming('after_month')}
+                          className="accent-indigo-600"
+                        />
+                        <span>End of Month</span>
+                      </label>
                     </div>
+                    <p className="text-[10px] text-brand-text-muted">
+                      {paymentTiming === 'advance'
+                        ? 'Fees will be billed in advance at the start of each month.'
+                        : 'Fees will be billed after each month completes (end of month).'}
+                    </p>
                   </div>
+                )}
 
-                  <button
-                    type="submit"
-                    disabled={collecting || !amount}
-                    className="w-full rounded-lg bg-brand-accent px-3 py-2 text-xs font-semibold text-white dark:text-brand-bg hover:bg-brand-accent-hover disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5 shadow-sm"
-                  >
-                    {collecting ? (
-                      <>
-                        <svg className="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                        </svg>
-                        Recording…
-                      </>
-                    ) : (
-                      <>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clipRule="evenodd" />
-                        </svg>
-                        Record Payment
-                      </>
-                    )}
-                  </button>
-                </form>
-              )}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label htmlFor="installment-amount" className="block text-[10px] font-medium text-brand-text mb-1">
+                      Amount (₹)
+                    </label>
+                    <input
+                      id="installment-amount"
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={amount}
+                      onChange={(e) => {
+                        setAmount(e.target.value)
+                        setCollectError('')
+                        setLastReceipt(null)
+                      }}
+                      placeholder="Enter amount (more or less)"
+                      className="w-full rounded-lg border border-brand-border px-2.5 py-2 text-xs text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-brand-primary"
+                      disabled={collecting}
+                    />
+                    <p className="mt-1 text-[10px] text-brand-text-muted">Pay any amount — partial, exact, or advance.</p>
+                  </div>
+                  <div>
+                    <label htmlFor="payment-mode" className="block text-[10px] font-medium text-brand-text mb-1">
+                      Payment Mode
+                    </label>
+                    <select
+                      id="payment-mode"
+                      value={paymentMode}
+                      onChange={(e) => setPaymentMode(e.target.value)}
+                      className="w-full rounded-lg border border-brand-border px-2.5 py-2 text-xs text-brand-text bg-brand-surface focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-brand-primary"
+                      disabled={collecting}
+                    >
+                      {PAYMENT_MODES.map((mode) => (
+                        <option key={mode} value={mode}>{mode}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={collecting || !amount}
+                  className="w-full rounded-lg bg-brand-accent px-3 py-2 text-xs font-semibold text-white dark:text-brand-bg hover:bg-brand-accent-hover disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+                >
+                  {collecting ? (
+                    <>
+                      <svg className="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      Recording…
+                    </>
+                  ) : (
+                    <>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clipRule="evenodd" />
+                      </svg>
+                      Record Payment
+                    </>
+                  )}
+                </button>
+              </form>
 
               {/* ── Payment History ─────────────────────────────────────── */}
               <div>

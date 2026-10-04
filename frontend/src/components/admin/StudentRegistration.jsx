@@ -255,7 +255,7 @@ export default function StudentRegistration() {
               <p className="mt-1 text-[10px] text-brand-text-muted/75">Comma-separate multiple subjects</p>
             </Field>
 
-            <Field label="Total Course Fee (₹)" htmlFor="totalCourseFee">
+            <Field label="Monthly Fee (₹)" htmlFor="totalCourseFee">
               <input
                 id="totalCourseFee"
                 type="number"
@@ -264,9 +264,10 @@ export default function StudentRegistration() {
                 required
                 value={form.totalCourseFee}
                 onChange={(e) => updateField('totalCourseFee', e.target.value)}
-                placeholder="25000"
+                placeholder="e.g. 3600"
                 className={inputClass}
               />
+              <p className="mt-1 text-[10px] text-brand-text-muted/75">Monthly tuition fee for this student</p>
             </Field>
 
             <Field label="Joining Date" htmlFor="joiningDate">

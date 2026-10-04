@@ -98,6 +98,7 @@ const registerStudent = async (req, res) => {
       amountPaid: 0,
       amountDue: fee,
       monthlyFeeAmount: fee,
+      paymentTiming: null,
       paymentHistory: [],
     });
 

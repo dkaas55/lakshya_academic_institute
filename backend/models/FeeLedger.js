@@ -55,6 +55,11 @@ const feeLedgerSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    paymentTiming: {
+      type: String,
+      enum: ["advance", "after_month", null],
+      default: null,
+    },
     paymentHistory: {
       type: [paymentEntrySchema],
       default: [],

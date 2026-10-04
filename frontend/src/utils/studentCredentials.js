@@ -38,7 +38,7 @@ export function buildWhatsAppInvite({
     ``,
     `*Enrollment*`,
     `Batch: ${batch || '—'}`,
-    `Total course fee: ${feeLabel}`,
+    `Monthly fee: ${feeLabel}`,
     ``,
     `Please sign in and change the password after first login.`,
     ``,

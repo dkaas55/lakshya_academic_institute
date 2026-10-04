@@ -3,6 +3,14 @@ import api from '../../lib/api'
 import StudentFilterBar from '../shared/StudentFilterBar'
 import FeeLedgerModal from './FeeLedgerModal'
 
+function formatCurrency(value) {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0,
+  }).format(value ?? 0)
+}
+
 export default function MasterFeeLedger() {
   const [activeTab, setActiveTab] = useState('pending') // 'pending' | 'history'
   
@@ -152,7 +160,9 @@ export default function MasterFeeLedger() {
                     <th className="px-4 py-3 font-semibold text-brand-text">Student Name</th>
                     <th className="px-4 py-3 font-semibold text-brand-text">Batch</th>
                     <th className="px-4 py-3 font-semibold text-brand-text">Class</th>
-                    <th className="px-4 py-3 font-semibold text-brand-text text-right">Pending Dues</th>
+                    <th className="px-4 py-3 font-semibold text-brand-text">Monthly Fee</th>
+                    <th className="px-4 py-3 font-semibold text-brand-text">Fee Pending for Month</th>
+                    <th className="px-4 py-3 font-semibold text-brand-text text-right">Amount to be Paid</th>
                     <th className="px-4 py-3 font-semibold text-brand-text text-center">Action</th>
                   </tr>
                 </thead>
@@ -162,12 +172,16 @@ export default function MasterFeeLedger() {
                       <td className="px-4 py-3 font-medium text-brand-text">{due.studentName}</td>
                       <td className="px-4 py-3 text-brand-text">{due.batch}</td>
                       <td className="px-4 py-3 text-brand-text">{due.studentClass || '—'}</td>
+                      <td className="px-4 py-3 font-medium text-brand-text">
+                        {formatCurrency(due.monthlyFeeAmount || due.totalCourseFee)}
+                      </td>
+                      <td className="px-4 py-3 text-brand-text">
+                        <span className="inline-block max-w-[200px] truncate" title={due.feePendingForMonth || '1 Month'}>
+                          {due.feePendingForMonth || '1 Month'}
+                        </span>
+                      </td>
                       <td className="px-4 py-3 font-bold text-amber-600 text-right">
-                        {new Intl.NumberFormat('en-IN', {
-                          style: 'currency',
-                          currency: 'INR',
-                          maximumFractionDigits: 0,
-                        }).format(due.amountDue)}
+                        {formatCurrency(due.amountDue)}
                       </td>
                       <td className="px-4 py-3 text-center">
                         <button
