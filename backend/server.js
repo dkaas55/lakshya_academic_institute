@@ -5,6 +5,7 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const User = require("./models/User");
 const { processMonthlyFees } = require("./utils/feeCron");
+const { syncBatchTeacherAssignments } = require("./utils/syncBatchTeachers");
 
 const SALT_ROUNDS = 12;
 const SEED_ADMIN = {
@@ -58,12 +59,28 @@ const connectDatabase = async () => {
     throw new Error("MONGODB_URI is not defined in environment variables");
   }
 
+  mongoose.connection.on("error", (err) => {
+    console.error("MongoDB connection error:", err.message);
+  });
+
+  mongoose.connection.on("disconnected", () => {
+    console.warn("MongoDB connection disconnected. Mongoose will retry automatically.");
+  });
+
   await mongoose.connect(uri, {
     serverSelectionTimeoutMS: 5000,
   });
 
   console.log("MongoDB connected successfully");
 };
+
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled Rejection:", reason);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught Exception:", err);
+});
 
 const seedAdminUser = async () => {
   const existing = await User.findOne({ username: SEED_ADMIN.username });
@@ -109,6 +126,7 @@ const startServer = async () => {
     await connectDatabase();
     await seedAdminUser();
     await seedDefaultBatches();
+    await syncBatchTeacherAssignments();
 
     // Run the automated monthly fee processor on startup
     await processMonthlyFees();

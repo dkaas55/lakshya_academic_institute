@@ -86,7 +86,7 @@ export default function BatchManagement() {
     setForm({
       name: batch.name || '',
       timing: batch.timing || '',
-      assignedTeachers: (batch.assignedTeachers || []).map((t) => t.id || t),
+      assignedTeachers: (batch.assignedTeachers || []).map((t) => String(t.id || t._id || t)),
     })
     setFormError('')
     setShowModal(true)
@@ -107,13 +107,14 @@ export default function BatchManagement() {
   }
 
   const handleTeacherToggle = (teacherId) => {
+    const idStr = String(teacherId)
     setForm((prev) => {
-      const active = prev.assignedTeachers.includes(teacherId)
+      const active = prev.assignedTeachers.some((id) => String(id) === idStr)
       return {
         ...prev,
         assignedTeachers: active
-          ? prev.assignedTeachers.filter((id) => id !== teacherId)
-          : [...prev.assignedTeachers, teacherId],
+          ? prev.assignedTeachers.filter((id) => String(id) !== idStr)
+          : [...prev.assignedTeachers, idStr],
       }
     })
   }
@@ -334,7 +335,9 @@ export default function BatchManagement() {
                   <>
                     <div className="flex flex-wrap gap-2">
                       {teachers.map((t) => {
-                        const isSelected = form.assignedTeachers.includes(t.id)
+                        const isSelected = form.assignedTeachers.some(
+                          (id) => String(id) === String(t.id)
+                        )
                         return (
                           <button
                             key={t.id}

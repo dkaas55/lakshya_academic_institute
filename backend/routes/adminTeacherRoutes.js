@@ -5,6 +5,11 @@ const {
   updateTeacher,
   deleteTeacher,
 } = require("../controllers/adminTeacherController");
+const {
+  getTeacherSalaryPayments,
+  recordTeacherSalaryPayment,
+  deleteTeacherSalaryPayment,
+} = require("../controllers/SalaryController");
 const { protect } = require("../middleware/authMiddleware");
 
 const router = express.Router();
@@ -15,5 +20,10 @@ router.get("/", protect, getTeachers);
 router.post("/", protect, createTeacher);
 router.put("/:id", protect, updateTeacher);
 router.delete("/:id", protect, deleteTeacher);
+
+// Teacher Salary Payment Routes
+router.get("/:id/payments", protect, getTeacherSalaryPayments);
+router.post("/:id/payments", protect, recordTeacherSalaryPayment);
+router.delete("/:id/payments/:paymentId", protect, deleteTeacherSalaryPayment);
 
 module.exports = router;

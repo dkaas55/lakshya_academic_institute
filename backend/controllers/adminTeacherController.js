@@ -1,6 +1,8 @@
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
 const Batch = require("../models/Batch");
+const TeacherSalaryPayment = require("../models/TeacherSalaryPayment");
+const { calculateTeacherAccumulatedStats } = require("./SalaryController");
 
 const SALT_ROUNDS = 12;
 
@@ -33,9 +35,43 @@ const getTeachers = async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
 
+    const formattedTeachers = await Promise.all(
+      teachers.map(async (t) => {
+        const base = formatTeacher(t);
+        try {
+          const allPayments = await TeacherSalaryPayment.find({ teacher: t._id }).lean();
+          const stats = await calculateTeacherAccumulatedStats(t, allPayments);
+          return {
+            ...base,
+            totalPendingDues: stats.totalAccumulatedDue,
+            totalSalaryToBePaid: stats.totalAccumulatedDue,
+            previousSalary: stats.pastOverdueArrears,
+            pastOverdueArrears: stats.pastOverdueArrears,
+            currentMonthDue: stats.currentMonthDue,
+            unpaidMonthsCount: stats.unpaidMonthsCount,
+            oldestUnpaidMonth: stats.oldestUnpaidMonth,
+            hasOverdue: stats.hasOverdue,
+          };
+        } catch (e) {
+          console.error(`Failed to compute salary stats for teacher ${t._id}:`, e);
+          return {
+            ...base,
+            totalPendingDues: 0,
+            totalSalaryToBePaid: 0,
+            previousSalary: 0,
+            pastOverdueArrears: 0,
+            currentMonthDue: 0,
+            unpaidMonthsCount: 0,
+            oldestUnpaidMonth: null,
+            hasOverdue: false,
+          };
+        }
+      })
+    );
+
     res.json({
       success: true,
-      data: { teachers: teachers.map(formatTeacher) },
+      data: { teachers: formattedTeachers },
     });
   } catch (error) {
     res.status(500).json({ success: false, message: "Failed to load teachers" });
@@ -119,6 +155,13 @@ const createTeacher = async (req, res) => {
         studentPercentage != null ? Number(studentPercentage) : 0,
     });
 
+    if (assignedBatches && assignedBatches.length > 0) {
+      await Batch.updateMany(
+        { name: { $in: assignedBatches } },
+        { $addToSet: { assignedTeachers: teacher._id } }
+      );
+    }
+
     res.status(201).json({
       success: true,
       message: `Teacher "${teacher.name}" onboarded successfully`,
@@ -183,7 +226,22 @@ const updateTeacher = async (req, res) => {
     }
 
     if (name?.trim()) teacher.name = name.trim();
-    if (assignedBatches !== undefined) teacher.assignedBatches = assignedBatches;
+    if (assignedBatches !== undefined) {
+      teacher.assignedBatches = assignedBatches;
+
+      // Two-way sync: Add teacher to assigned batches
+      if (assignedBatches.length > 0) {
+        await Batch.updateMany(
+          { name: { $in: assignedBatches } },
+          { $addToSet: { assignedTeachers: teacher._id } }
+        );
+      }
+      // Two-way sync: Remove teacher from unassigned batches
+      await Batch.updateMany(
+        { name: { $nin: assignedBatches } },
+        { $pull: { assignedTeachers: teacher._id } }
+      );
+    }
     if (joiningDate !== undefined)
       teacher.joiningDate = joiningDate ? new Date(joiningDate) : null;
     if (compensationType !== undefined) teacher.compensationType = compensationType;
@@ -224,6 +282,12 @@ const deleteTeacher = async (req, res) => {
     if (!teacher) {
       return res.status(404).json({ success: false, message: "Teacher not found" });
     }
+
+    // Two-way sync: remove deleted teacher from all batches
+    await Batch.updateMany(
+      {},
+      { $pull: { assignedTeachers: teacher._id } }
+    );
 
     res.json({
       success: true,

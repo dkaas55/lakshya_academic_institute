@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import api from '../../lib/api'
 import useBatches from '../../hooks/useBatches'
+import TeacherSalaryModal from './TeacherSalaryModal'
+import { IndianRupee } from 'lucide-react'
 
 const generateSecurePassword = () => {
   const lowercase = 'abcdefghijklmnopqrstuvwxyz'
@@ -41,6 +43,7 @@ export default function TeacherManagement() {
   const [error, setError] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [editingTeacher, setEditingTeacher] = useState(null)
+  const [salaryModalTeacher, setSalaryModalTeacher] = useState(null)
   
   const [form, setForm] = useState(initialForm)
   const [submitting, setSubmitting] = useState(false)
@@ -237,6 +240,31 @@ export default function TeacherManagement() {
                       {t.joiningDate && (
                         <p className="text-[10px] text-brand-text-muted/75 mt-0.5">Joined {new Date(t.joiningDate).toLocaleDateString()}</p>
                       )}
+                      {/* Dues Status Badge */}
+                      {t.totalPendingDues > 0 ? (
+                        <div className="mt-1 flex flex-col gap-0.5">
+                          {t.hasOverdue ? (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-700 border border-red-200">
+                              ⚠️ ₹{t.totalPendingDues.toLocaleString('en-IN')} Due ({t.unpaidMonthsCount} mo)
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-200">
+                              ₹{t.totalPendingDues.toLocaleString('en-IN')} Due this month
+                            </span>
+                          )}
+                          {t.pastOverdueArrears > 0 && (
+                            <span className="text-[9px] text-red-600 font-medium">
+                              ₹{t.pastOverdueArrears.toLocaleString('en-IN')} overdue from past
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="mt-1">
+                          <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 border border-emerald-200">
+                            ✓ Dues Settled
+                          </span>
+                        </div>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
@@ -247,7 +275,22 @@ export default function TeacherManagement() {
                         )) : <span className="text-brand-text-muted/75 italic text-[10px]">No batches</span>}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={() => setSalaryModalTeacher(t)}
+                        className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-bold transition-all shadow-xs mr-2 cursor-pointer ${
+                          t.hasOverdue
+                            ? 'bg-red-50 hover:bg-red-100 text-red-700 border border-red-200'
+                            : t.totalPendingDues > 0
+                            ? 'bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200'
+                            : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/80'
+                        }`}
+                        title={t.totalPendingDues > 0 ? `Total Pending Dues: ₹${t.totalPendingDues.toLocaleString('en-IN')}` : 'All dues settled'}
+                      >
+                        <IndianRupee size={12} strokeWidth={2.5} />
+                        {t.totalPendingDues > 0 ? `Pay ₹${t.totalPendingDues.toLocaleString('en-IN')}` : 'Pay Salary'}
+                      </button>
                       <button onClick={() => openEditModal(t)} className="text-brand-primary hover:text-indigo-800 font-medium mr-3">Edit</button>
                       <button onClick={() => handleDelete(t.id, t.name)} className="text-red-600 hover:text-red-800 font-medium">Remove</button>
                     </td>
@@ -438,6 +481,15 @@ export default function TeacherManagement() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Teacher Salary & Payment Modal */}
+      {salaryModalTeacher && (
+        <TeacherSalaryModal
+          teacher={salaryModalTeacher}
+          onClose={() => setSalaryModalTeacher(null)}
+          onPaymentRecorded={loadTeachers}
+        />
       )}
     </div>
   )

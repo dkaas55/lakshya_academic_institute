@@ -15,6 +15,8 @@ import {
   LogOut,
   Menu,
   X,
+  Wallet,
+  IndianRupee,
 } from 'lucide-react'
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -56,10 +58,11 @@ function typeBadge(type) {
 
 // ── Nav items ─────────────────────────────────────────────────────────────────
 const NAV_ITEMS = [
-  { id: 'overview',    label: 'My Dashboard',    Icon: LayoutDashboard },
-  { id: 'upload',     label: 'Upload Content',   Icon: Upload },
-  { id: 'students',   label: 'My Students',      Icon: Users },
-  { id: 'attendance', label: 'Take Attendance',  Icon: CalendarCheck },
+  { id: 'overview',   label: 'My Dashboard',       Icon: LayoutDashboard },
+  { id: 'salary',     label: 'Salary & Payments',  Icon: Wallet },
+  { id: 'upload',     label: 'Upload Content',      Icon: Upload },
+  { id: 'students',   label: 'My Students',         Icon: Users },
+  { id: 'attendance', label: 'Take Attendance',     Icon: CalendarCheck },
 ]
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -296,7 +299,11 @@ export default function TeacherDashboard() {
                   teacher={teacher}
                   materials={dashData?.myMaterials ?? []}
                   tests={dashData?.myTests ?? []}
+                  onNavigateTab={(tab) => setActiveTab(tab)}
                 />
+              )}
+              {activeTab === 'salary' && (
+                <SalaryTab teacher={teacher} />
               )}
               {activeTab === 'upload' && (
                 <UploadTab
@@ -320,42 +327,46 @@ export default function TeacherDashboard() {
 }
 
 // ── Overview Tab ──────────────────────────────────────────────────────────────
-function OverviewTab({ teacher, materials, tests }) {
+function OverviewTab({ teacher, materials, tests, onNavigateTab }) {
   const [salaryData, setSalaryData] = useState(null)
   const [salaryLoading, setSalaryLoading] = useState(true)
   const [salaryError, setSalaryError] = useState('')
+  const [selectedMonth, setSelectedMonth] = useState('')
+  const [showBreakdown, setShowBreakdown] = useState(false)
 
-  useEffect(() => {
-    let isMounted = true
-    async function fetchSalary() {
-      setSalaryLoading(true)
-      setSalaryError('')
-      try {
-        const { data } = await api.get('/teacher/salary-overview')
-        if (data.success && isMounted) {
-          setSalaryData(data.data)
-        } else if (isMounted) {
-          setSalaryError(data.message || 'Failed to load salary.')
+  const fetchSalary = useCallback(async (targetMonth) => {
+    setSalaryLoading(true)
+    setSalaryError('')
+    try {
+      const { data } = await api.get('/teacher/salary-overview', {
+        params: targetMonth ? { month: targetMonth } : {},
+      })
+      if (data.success) {
+        setSalaryData(data.data)
+        if (data.data.selectedMonth) {
+          setSelectedMonth(data.data.selectedMonth)
         }
-      } catch (err) {
-        if (isMounted) {
-          setSalaryError(
-            err.response?.data?.message || 'Unable to load salary data.'
-          )
-        }
-      } finally {
-        if (isMounted) {
-          setSalaryLoading(false)
-        }
+      } else {
+        setSalaryError(data.message || 'Failed to load salary.')
       }
-    }
-    fetchSalary()
-    return () => {
-      isMounted = false
+    } catch (err) {
+      setSalaryError(
+        err.response?.data?.message || 'Unable to load salary data.'
+      )
+    } finally {
+      setSalaryLoading(false)
     }
   }, [])
 
+  useEffect(() => {
+    fetchSalary()
+  }, [fetchSalary])
+
   if (!teacher) return null
+
+  const calcDetails = salaryData?.calculationDetails || {}
+  const monthlyLedger = salaryData?.monthlyLedger || []
+  const monthsList = salaryData?.monthsList || []
 
   return (
     <div className="space-y-6">
@@ -381,11 +392,31 @@ function OverviewTab({ teacher, materials, tests }) {
           <div className="absolute top-0 right-0 p-3 opacity-15 text-6xl pointer-events-none group-hover:scale-110 transition-transform duration-300">
             🪙
           </div>
-          <div className="space-y-1">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-brand-accent">
-              Projected Earnings
-            </p>
-            <h3 className="text-sm font-semibold text-brand-text">This Month</h3>
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-brand-accent">
+                Earnings &amp; Due
+              </p>
+              <h3 className="text-sm font-semibold text-brand-text">
+                {salaryData?.selectedMonth || 'This Month'}
+              </h3>
+            </div>
+            {monthsList.length > 1 && (
+              <select
+                value={selectedMonth || salaryData?.selectedMonth}
+                onChange={(e) => {
+                  setSelectedMonth(e.target.value)
+                  fetchSalary(e.target.value)
+                }}
+                className="rounded-xl border border-brand-border bg-brand-surface-tint px-2.5 py-1 text-[11px] font-bold text-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary cursor-pointer shadow-xs"
+              >
+                {monthsList.map((m) => (
+                  <option key={m} value={m}>
+                    {m} {m === salaryData?.currentMonth ? '(Current)' : ''}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
           <div className="mt-4">
             {salaryLoading ? (
@@ -399,23 +430,81 @@ function OverviewTab({ teacher, materials, tests }) {
                 <p className="text-[10px] text-brand-text-muted mt-0.5">{salaryError}</p>
               </div>
             ) : salaryData ? (
-              <div>
-                <p className="text-2xl font-extrabold text-brand-text tracking-tight">
-                  ₹{salaryData.salary.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-                </p>
-                <p className="text-[11px] text-brand-text-muted mt-1">
-                  This Month's Projected Salary: <span className="font-semibold text-brand-primary">₹{salaryData.salary}</span>
-                </p>
-                <div className="mt-3 flex items-center gap-1.5">
+              <div className="space-y-3">
+                <div>
+                  <p className="text-2xl font-extrabold text-brand-text tracking-tight">
+                    ₹{salaryData.salary.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                  </p>
+                  <p className="text-[11px] text-brand-text-muted mt-0.5">
+                    Calculated Salary for {salaryData.selectedMonth}
+                  </p>
+                </div>
+
+                <div className="pt-2 border-t border-brand-border/60 space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-brand-text-muted">Paid for {salaryData.selectedMonth}:</span>
+                    <span className="font-bold text-emerald-600">
+                      ₹{(salaryData.totalPaidThisMonth || 0).toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                  {(salaryData.totalPaidThisMonth || 0) > 0 && (
+                    <div className="flex items-center justify-between text-[10px] text-brand-text-muted">
+                      <span>Breakdown:</span>
+                      <span>
+                        <strong className="text-amber-700">Advance: ₹{(salaryData.advancePaidThisMonth || 0).toLocaleString('en-IN')}</strong>
+                        {' · '}
+                        <strong className="text-emerald-700">In End: ₹{(salaryData.endPaidThisMonth || 0).toLocaleString('en-IN')}</strong>
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-brand-text-muted font-medium">Due for {salaryData.selectedMonth}:</span>
+                    <span className={`font-bold ${salaryData.remainingThisMonth > 0 ? 'text-brand-accent' : 'text-brand-primary'}`}>
+                      ₹{(salaryData.remainingThisMonth || 0).toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Accumulated Dues Callout */}
+                {(salaryData.totalAccumulatedDue > salaryData.remainingThisMonth || salaryData.pastOverdueArrears > 0) && (
+                  <div className="rounded-xl bg-red-50/90 border border-red-200 p-2.5 text-xs text-red-900 mt-2">
+                    <div className="flex items-center justify-between font-bold">
+                      <span>Total Outstanding Dues:</span>
+                      <span className="text-sm font-extrabold text-red-700">
+                        ₹{(salaryData.totalAccumulatedDue || 0).toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                    {salaryData.pastOverdueArrears > 0 && (
+                      <p className="text-[10px] text-red-600 font-medium mt-0.5">
+                        ⚠️ Includes ₹{(salaryData.pastOverdueArrears || 0).toLocaleString('en-IN')} from {salaryData.unpaidMonthsCount - (salaryData.currentMonthDue > 0 ? 1 : 0)} past unpaid month(s)
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <div className="mt-2 flex items-center justify-between gap-1.5">
                   <span className="inline-flex items-center rounded-full bg-brand-primary/10 px-2 py-0.5 text-[9px] font-bold text-brand-primary ring-1 ring-brand-primary/20">
                     {salaryData.compensationType === 'fixed' ? 'Fixed Salary' : `${salaryData.salaryPercentage}% Fee Split`}
                   </span>
-                  {salaryData.compensationType === 'percentage' && (
-                    <span className="text-[9px] text-brand-text-muted/70">
-                      calculated in real-time
-                    </span>
+                  {salaryData.compensationType === 'percentage' && calcDetails.students?.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowBreakdown(!showBreakdown)}
+                      className="text-[10px] font-bold text-brand-primary hover:underline cursor-pointer"
+                    >
+                      {showBreakdown ? 'Hide Breakdown' : `Breakdown (${calcDetails.studentCount} students)`}
+                    </button>
                   )}
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => onNavigateTab && onNavigateTab('salary')}
+                  className="w-full mt-2.5 rounded-xl border border-brand-primary/20 bg-brand-primary/10 hover:bg-brand-primary/20 text-brand-primary py-2 text-xs font-bold transition-colors cursor-pointer text-center flex items-center justify-center gap-1.5"
+                >
+                  <Wallet size={14} />
+                  <span>View Full Salary &amp; Payment Ledger →</span>
+                </button>
               </div>
             ) : (
               <p className="text-xs text-brand-text-muted">No salary configuration found.</p>
@@ -423,6 +512,57 @@ function OverviewTab({ teacher, materials, tests }) {
           </div>
         </div>
       </div>
+
+      {/* Overdue Salary Notification Banner */}
+      {salaryData?.pastOverdueArrears > 0 && (
+        <div className="rounded-2xl border border-red-200 bg-red-50/80 p-4 text-xs text-red-900 shadow-xs flex items-start gap-3 animate-fadeIn">
+          <span className="text-xl shrink-0 mt-0.5">⚠️</span>
+          <div className="flex-1">
+            <h4 className="font-extrabold text-sm text-red-900">
+              Unpaid Past Salary: ₹{salaryData.pastOverdueArrears.toLocaleString('en-IN')}
+            </h4>
+            <p className="text-red-700 mt-0.5 leading-relaxed">
+              You have pending salary disbursements from past months ({salaryData.unpaidMonthsList?.filter((m) => m !== salaryData.currentMonth).join(', ')}). Your total accumulated amount to receive across all cycles is <strong className="text-red-950 font-bold">₹{salaryData.totalAccumulatedDue?.toLocaleString('en-IN')}</strong>.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Percentage Calculation Student Breakdown */}
+      {showBreakdown && salaryData?.compensationType === 'percentage' && (
+        <div className="rounded-2xl border border-brand-border bg-brand-surface p-4 shadow-sm space-y-2 animate-fadeIn">
+          <div className="flex items-center justify-between">
+            <h4 className="text-xs font-bold text-brand-text">
+              Salary Calculation Breakdown for {salaryData.selectedMonth}
+            </h4>
+            <span className="text-[10px] text-brand-text-muted">
+              Total Student Pool: ₹{calcDetails.totalMonthlyFee?.toLocaleString('en-IN')} × {salaryData.salaryPercentage}% = <strong className="text-brand-primary">₹{salaryData.salary.toLocaleString('en-IN')}</strong>
+            </span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-brand-border text-brand-text-muted text-[10px] uppercase">
+                  <th className="py-2 px-3 font-semibold">Student Name</th>
+                  <th className="py-2 px-3 font-semibold">Batch</th>
+                  <th className="py-2 px-3 font-semibold">Monthly Fee</th>
+                  <th className="py-2 px-3 font-semibold">Your Share ({salaryData.salaryPercentage}%)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-brand-border/60">
+                {calcDetails.students?.map((s) => (
+                  <tr key={s.id} className="hover:bg-brand-surface-tint/50">
+                    <td className="py-2 px-3 font-medium text-brand-text">{s.name}</td>
+                    <td className="py-2 px-3 text-brand-text-muted">{s.batch}</td>
+                    <td className="py-2 px-3 font-medium text-brand-text">₹{s.monthlyFee?.toLocaleString('en-IN')}</td>
+                    <td className="py-2 px-3 font-bold text-brand-primary">₹{s.teacherShare?.toLocaleString('en-IN')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Assigned batches */}
       <div>
@@ -448,6 +588,8 @@ function OverviewTab({ teacher, materials, tests }) {
           </div>
         )}
       </div>
+
+
 
       {/* My uploaded materials */}
       <div>
@@ -529,6 +671,448 @@ function OverviewTab({ teacher, materials, tests }) {
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+// ── Salary & Payments Tab ────────────────────────────────────────────────────
+function SalaryTab({ teacher }) {
+  const [salaryData, setSalaryData] = useState(null)
+  const [salaryLoading, setSalaryLoading] = useState(true)
+  const [salaryError, setSalaryError] = useState('')
+  const [selectedMonth, setSelectedMonth] = useState('')
+  const [showBreakdown, setShowBreakdown] = useState(false)
+
+  const fetchSalary = useCallback(async (targetMonth) => {
+    setSalaryLoading(true)
+    setSalaryError('')
+    try {
+      const { data } = await api.get('/teacher/salary-overview', {
+        params: targetMonth ? { month: targetMonth } : {},
+      })
+      if (data.success) {
+        setSalaryData(data.data)
+        if (data.data.selectedMonth) {
+          setSelectedMonth(data.data.selectedMonth)
+        }
+      } else {
+        setSalaryError(data.message || 'Failed to load salary details.')
+      }
+    } catch (err) {
+      setSalaryError(err.response?.data?.message || 'Unable to load salary data.')
+    } finally {
+      setSalaryLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchSalary(selectedMonth)
+  }, [fetchSalary, selectedMonth])
+
+  if (!teacher) return null
+
+  const calcDetails = salaryData?.calculationDetails || {}
+  const monthlyLedger = salaryData?.monthlyLedger || []
+  const monthsList = salaryData?.monthsList || []
+
+  return (
+    <div className="space-y-6">
+      {/* Top Header */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-extrabold text-brand-text tracking-tight">
+              Salary &amp; Payments
+            </h2>
+            <span className="rounded-full bg-brand-primary/10 px-2.5 py-0.5 text-[10px] font-bold text-brand-primary">
+              {teacher.compensationType === 'fixed'
+                ? `Fixed: ₹${(teacher.salaryAmount || teacher.fixedSalary || 0).toLocaleString('en-IN')}/mo`
+                : `${teacher.salaryPercentage || teacher.studentPercentage || 0}% Fee Split`}
+            </span>
+          </div>
+          <p className="text-xs text-brand-text-muted mt-0.5">
+            Track your monthly earnings, advance &amp; settled payments, and outstanding balances.
+          </p>
+        </div>
+
+        {monthsList.length > 0 && (
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-semibold text-brand-text-muted">Cycle:</label>
+            <select
+              value={selectedMonth || salaryData?.selectedMonth}
+              onChange={(e) => {
+                setSelectedMonth(e.target.value)
+                fetchSalary(e.target.value)
+              }}
+              className="rounded-xl border border-brand-border bg-brand-surface px-3 py-1.5 text-xs font-bold text-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary cursor-pointer shadow-xs"
+            >
+              {monthsList.map((m) => (
+                <option key={m} value={m}>
+                  {m} {m === salaryData?.currentMonth ? '(Current)' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+
+      {salaryLoading && !salaryData ? (
+        <div className="py-16 text-center text-sm text-brand-text-muted animate-pulse">
+          Loading salary ledger and transactions...
+        </div>
+      ) : salaryError ? (
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-xs text-red-700">
+          {salaryError}
+        </div>
+      ) : (
+        <>
+          {/* Top 3 Core Metrics */}
+          <div className="grid gap-4 sm:grid-cols-3">
+            {/* 1. Monthly Salary */}
+            <div className="rounded-2xl border border-brand-border bg-brand-surface p-5 shadow-sm relative overflow-hidden">
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-brand-text-muted">
+                  Monthly Salary ({salaryData?.selectedMonth})
+                </p>
+                <span className="text-base">💼</span>
+              </div>
+              <p className="text-2xl font-black text-brand-primary mt-2">
+                ₹{(salaryData?.salary || 0).toLocaleString('en-IN')}
+              </p>
+              <div className="mt-2 flex items-center justify-between text-xs text-brand-text-muted border-t border-brand-border/60 pt-2">
+                <span>Paid for month:</span>
+                <span className="font-bold text-emerald-600">
+                  ₹{(salaryData?.totalPaidThisMonth || 0).toLocaleString('en-IN')}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-xs text-brand-text-muted mt-1">
+                <span>Due for month:</span>
+                <span className={`font-bold ${salaryData?.remainingThisMonth > 0 ? 'text-brand-accent' : 'text-emerald-600'}`}>
+                  ₹{(salaryData?.remainingThisMonth || 0).toLocaleString('en-IN')}
+                </span>
+              </div>
+            </div>
+
+            {/* 2. Previous Salary / Arrears */}
+            <div className={`rounded-2xl border p-5 shadow-sm relative overflow-hidden ${
+              salaryData?.previousSalary > 0
+                ? 'border-amber-300 bg-amber-50/40 text-amber-950'
+                : 'border-brand-border bg-brand-surface'
+            }`}>
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-brand-text-muted">
+                  Previous Salary (Past Dues)
+                </p>
+                <span className="text-base">{salaryData?.previousSalary > 0 ? '⚠️' : '✓'}</span>
+              </div>
+              <p className={`text-2xl font-black mt-2 ${
+                salaryData?.previousSalary > 0 ? 'text-amber-700' : 'text-brand-text'
+              }`}>
+                ₹{(salaryData?.previousSalary || 0).toLocaleString('en-IN')}
+              </p>
+              <p className="text-xs text-brand-text-muted mt-2 border-t border-brand-border/60 pt-2">
+                {salaryData?.previousSalary > 0
+                  ? `Unpaid: ${salaryData.previousUnpaidMonths?.join(', ') || 'Past cycles'}`
+                  : 'All past cycles settled cleanly ✓'}
+              </p>
+            </div>
+
+            {/* 3. Total Balance to Receive */}
+            <div className="rounded-2xl border-2 border-brand-primary/30 bg-gradient-to-br from-brand-primary/5 to-transparent p-5 shadow-sm relative overflow-hidden">
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-brand-primary">
+                  Total Outstanding Balance
+                </p>
+                <span className="text-base">🪙</span>
+              </div>
+              <p className="text-2xl font-black text-brand-primary mt-2">
+                ₹{(salaryData?.totalSalaryToBePaid ?? salaryData?.totalAccumulatedDue ?? 0).toLocaleString('en-IN')}
+              </p>
+              <div className="mt-2 flex items-center justify-between text-xs text-brand-text-muted border-t border-brand-border/60 pt-2">
+                <span>Total Received (All Time):</span>
+                <span className="font-bold text-brand-text">
+                  ₹{(salaryData?.totalPaidAllTime || 0).toLocaleString('en-IN')}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Student breakdown if percentage */}
+          {salaryData?.compensationType === 'percentage' && calcDetails.students?.length > 0 && (
+            <div className="rounded-2xl border border-brand-border bg-brand-surface p-4 shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-bold text-brand-text">
+                    Student Pool Share ({salaryData.selectedMonth})
+                  </h4>
+                  <p className="text-[11px] text-brand-text-muted">
+                    Total Student Pool: ₹{calcDetails.totalMonthlyFee?.toLocaleString('en-IN')} × {salaryData.salaryPercentage}% = <strong className="text-brand-primary">₹{salaryData.salary?.toLocaleString('en-IN')}</strong>
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowBreakdown(!showBreakdown)}
+                  className="rounded-xl border border-brand-border bg-brand-surface-tint px-2.5 py-1 text-xs font-bold text-brand-primary hover:bg-brand-primary/10 transition-colors cursor-pointer"
+                >
+                  {showBreakdown ? 'Hide List' : `View ${calcDetails.studentCount} Students`}
+                </button>
+              </div>
+
+              {showBreakdown && (
+                <div className="overflow-x-auto border-t border-brand-border pt-3">
+                  <table className="min-w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-brand-border text-brand-text-muted text-[10px] uppercase">
+                        <th className="py-2 px-3 font-semibold">Student Name</th>
+                        <th className="py-2 px-3 font-semibold">Batch</th>
+                        <th className="py-2 px-3 font-semibold">Monthly Fee</th>
+                        <th className="py-2 px-3 font-semibold">Your Share ({salaryData.salaryPercentage}%)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-brand-border/60">
+                      {calcDetails.students.map((s) => (
+                        <tr key={s.id} className="hover:bg-brand-surface-tint/50">
+                          <td className="py-2 px-3 font-medium text-brand-text">{s.name}</td>
+                          <td className="py-2 px-3 text-brand-text-muted">{s.batch}</td>
+                          <td className="py-2 px-3 font-medium text-brand-text">₹{s.monthlyFee?.toLocaleString('en-IN')}</td>
+                          <td className="py-2 px-3 font-bold text-brand-primary">₹{s.teacherShare?.toLocaleString('en-IN')}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Monthly Salary Ledger (All Months Overview) */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-brand-text">
+                  Monthly Salary Ledger &amp; Due Amounts
+                </h3>
+                <p className="text-xs text-brand-text-muted mt-0.5">
+                  Complete history of monthly salary cycles, paid amounts, and dues
+                </p>
+              </div>
+            </div>
+
+            {monthlyLedger.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-brand-border bg-brand-surface p-6 text-center text-xs text-brand-text-muted">
+                No monthly salary cycles recorded yet.
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-brand-border bg-brand-surface overflow-hidden shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-brand-border bg-brand-surface-tint">
+                        <th className="px-4 py-3 font-semibold text-brand-text">Month</th>
+                        <th className="px-4 py-3 font-semibold text-brand-text">Calculated Salary</th>
+                        <th className="px-4 py-3 font-semibold text-brand-text">Advance</th>
+                        <th className="px-4 py-3 font-semibold text-brand-text">In End</th>
+                        <th className="px-4 py-3 font-semibold text-brand-text">Total Paid</th>
+                        <th className="px-4 py-3 font-semibold text-brand-accent">Must Receive (Due)</th>
+                        <th className="px-4 py-3 font-semibold text-brand-text">Status</th>
+                        <th className="px-4 py-3 font-semibold text-brand-text text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-brand-border">
+                      {monthlyLedger.map((row) => {
+                        const isSelected = row.month === (salaryData?.selectedMonth || selectedMonth)
+                        const isRowOverdue = row.isOverdue || row.status === 'OVERDUE'
+                        return (
+                          <tr
+                            key={row.month}
+                            className={`transition-colors ${
+                              isRowOverdue
+                                ? 'bg-red-50/40 hover:bg-red-50/70'
+                                : isSelected
+                                ? 'bg-brand-primary/5 font-medium'
+                                : 'hover:bg-brand-surface-tint/50'
+                            }`}
+                          >
+                            <td className="px-4 py-3 font-bold text-brand-text whitespace-nowrap">
+                              {row.month}
+                              {row.month === salaryData?.currentMonth && (
+                                <span className="ml-2 rounded-full bg-brand-primary/10 text-brand-primary px-1.5 py-0.2 text-[9px] font-extrabold">
+                                  Current
+                                </span>
+                              )}
+                              {row.isProrated && (
+                                <span className="ml-1.5 rounded-full bg-blue-500/10 text-blue-700 border border-blue-500/20 px-1.5 py-0.5 text-[9px] font-semibold" title={`Joined mid-month: worked ${row.daysWorked} of ${row.totalDaysInMonth} days`}>
+                                  {row.daysWorked}d worked
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 font-semibold text-brand-text whitespace-nowrap">
+                              ₹{row.salary?.toLocaleString('en-IN')}
+                            </td>
+                            <td className="px-4 py-3 text-amber-700 whitespace-nowrap">
+                              ₹{row.advancePaid?.toLocaleString('en-IN')}
+                            </td>
+                            <td className="px-4 py-3 text-emerald-700 whitespace-nowrap">
+                              ₹{row.endPaid?.toLocaleString('en-IN')}
+                            </td>
+                            <td className="px-4 py-3 font-bold text-brand-text whitespace-nowrap">
+                              ₹{row.totalPaid?.toLocaleString('en-IN')}
+                            </td>
+                            <td className="px-4 py-3 font-extrabold text-brand-accent whitespace-nowrap">
+                              ₹{row.amountDue?.toLocaleString('en-IN')}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              {row.status === 'PAID' ? (
+                                <span className="rounded-full bg-emerald-500/10 text-emerald-800 border border-emerald-500/30 px-2 py-0.5 text-[9px] font-bold">
+                                  ✓ Settled
+                                </span>
+                              ) : isRowOverdue ? (
+                                <span className="rounded-full bg-red-100 text-red-800 border border-red-300 px-2 py-0.5 text-[9px] font-extrabold flex items-center gap-1 w-fit">
+                                  ⚠️ Overdue
+                                </span>
+                              ) : row.status === 'PARTIAL' ? (
+                                <span className="rounded-full bg-amber-500/10 text-amber-800 border border-amber-500/30 px-2 py-0.5 text-[9px] font-bold">
+                                  Partial
+                                </span>
+                              ) : row.isFuture || row.status === 'UPCOMING' ? (
+                                <span className="rounded-full bg-slate-100 text-slate-700 border border-slate-300 px-2 py-0.5 text-[9px] font-bold">
+                                  Upcoming
+                                </span>
+                              ) : row.status === 'UNPAID' ? (
+                                <span className="rounded-full bg-rose-500/10 text-rose-800 border border-rose-500/30 px-2 py-0.5 text-[9px] font-bold">
+                                  Due
+                                </span>
+                              ) : (
+                                <span className="text-brand-text-muted/60 text-[10px]">N/A</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-right whitespace-nowrap">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedMonth(row.month)
+                                  fetchSalary(row.month)
+                                }}
+                                className={`text-[10px] font-bold px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
+                                  isSelected
+                                    ? 'bg-brand-primary text-white'
+                                    : 'bg-brand-surface-tint border border-brand-border text-brand-primary hover:bg-brand-primary/10'
+                                }`}
+                              >
+                                {isSelected ? 'Viewing' : 'View Month'}
+                              </button>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                    <tfoot className="border-t-2 border-brand-border bg-brand-surface-tint font-bold text-xs">
+                      <tr>
+                        <td className="px-4 py-3 text-brand-text">Total Across All Cycles</td>
+                        <td className="px-4 py-3 text-brand-text">
+                          ₹{(salaryData.totalEarnedAllTime || monthlyLedger.reduce((s, r) => s + (r.salary || 0), 0)).toLocaleString('en-IN')}
+                        </td>
+                        <td className="px-4 py-3 text-amber-700">
+                          ₹{monthlyLedger.reduce((s, r) => s + (r.advancePaid || 0), 0).toLocaleString('en-IN')}
+                        </td>
+                        <td className="px-4 py-3 text-emerald-700">
+                          ₹{monthlyLedger.reduce((s, r) => s + (r.endPaid || 0), 0).toLocaleString('en-IN')}
+                        </td>
+                        <td className="px-4 py-3 text-brand-text">
+                          ₹{(salaryData.totalPaidAllTime || monthlyLedger.reduce((s, r) => s + (r.totalPaid || 0), 0)).toLocaleString('en-IN')}
+                        </td>
+                        <td className="px-4 py-3 text-red-600 font-extrabold text-sm">
+                          ₹{(salaryData.totalAccumulatedDue ?? monthlyLedger.reduce((s, r) => s + (r.amountDue || 0), 0)).toLocaleString('en-IN')}
+                        </td>
+                        <td colSpan={2} className="px-4 py-3 text-right text-brand-text-muted text-[11px]">
+                          Total Outstanding Balance to Receive
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* My Salary Payments History */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-brand-text">
+                  My Salary Payment Transactions
+                </h3>
+                <p className="text-xs text-brand-text-muted mt-0.5">
+                  Record of all payments received from the institute
+                </p>
+              </div>
+              {salaryData?.payments?.length > 0 && (
+                <span className="text-[11px] font-medium text-brand-text-muted">
+                  {salaryData.payments.length} payment{salaryData.payments.length !== 1 ? 's' : ''} recorded
+                </span>
+              )}
+            </div>
+
+            {!salaryData?.payments || salaryData.payments.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-brand-border bg-brand-surface p-6 text-center text-xs text-brand-text-muted">
+                No salary payment transactions recorded yet.
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-brand-border bg-brand-surface overflow-hidden shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-brand-border bg-brand-surface-tint">
+                        <th className="px-4 py-3 font-semibold text-brand-text">Date</th>
+                        <th className="px-4 py-3 font-semibold text-brand-text">Month</th>
+                        <th className="px-4 py-3 font-semibold text-brand-text">Timing</th>
+                        <th className="px-4 py-3 font-semibold text-brand-text">Amount</th>
+                        <th className="px-4 py-3 font-semibold text-brand-text">Mode</th>
+                        <th className="px-4 py-3 font-semibold text-brand-text">Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-brand-border">
+                      {salaryData.payments.map((p) => {
+                        const isAdvance = p.paymentType === 'advance'
+                        return (
+                          <tr key={p.id} className="hover:bg-brand-surface-tint/50 transition-colors">
+                            <td className="px-4 py-3 font-medium text-brand-text whitespace-nowrap">
+                              {p.paidAt ? new Date(p.paidAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                            </td>
+                            <td className="px-4 py-3 text-brand-text whitespace-nowrap font-semibold">
+                              {p.month}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              {isAdvance ? (
+                                <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-800 ring-1 ring-amber-500/30">
+                                  🟡 Advance
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-800 ring-1 ring-emerald-500/30">
+                                  🟢 In End
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 font-bold text-brand-primary whitespace-nowrap">
+                              ₹{p.amount?.toLocaleString('en-IN')}
+                            </td>
+                            <td className="px-4 py-3 text-brand-text-muted whitespace-nowrap">
+                              {p.paymentMode || 'UPI'}
+                            </td>
+                            <td className="px-4 py-3 text-brand-text-muted max-w-xs truncate">
+                              {p.notes || '—'}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   )
 }

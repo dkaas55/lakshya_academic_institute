@@ -14,6 +14,7 @@ require("dotenv").config();
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const User = require("./models/User");
+const Batch = require("./models/Batch");
 
 async function run() {
   const uri = process.env.MONGODB_URI;
@@ -28,6 +29,11 @@ async function run() {
     console.log("ℹ️   Teacher account already exists:");
     console.log(`    Username: ${existing.username}`);
     console.log(`    Batches : ${existing.assignedBatches.join(", ")}`);
+    // Ensure batch sync even if user already exists
+    await Batch.updateMany(
+      { name: { $in: existing.assignedBatches } },
+      { $addToSet: { assignedTeachers: existing._id } }
+    );
     await mongoose.disconnect();
     return;
   }
@@ -41,6 +47,11 @@ async function run() {
     role: "teacher",
     assignedBatches: ["Morning Batch A", "Morning Batch B"],
   });
+
+  await Batch.updateMany(
+    { name: { $in: teacher.assignedBatches } },
+    { $addToSet: { assignedTeachers: teacher._id } }
+  );
 
   console.log("✅  Teacher account created:");
   console.log(`    Name    : ${teacher.name}`);

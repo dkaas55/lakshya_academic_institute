@@ -1,17 +1,21 @@
 const Batch = require("../models/Batch");
 const StudentProfile = require("../models/StudentProfile");
 const User = require("../models/User");
+const { syncBatchTeacherAssignments } = require("../utils/syncBatchTeachers");
 
 // ── Helper: format batch before sending to client ─────────────────────────────
 function formatBatch(batch) {
+  const teachers = (batch.assignedTeachers || []).filter(
+    (t) => t && (t._id || t.id || typeof t === "string")
+  );
   return {
     id: batch._id,
     name: batch.name,
     timing: batch.timing || "",
-    assignedTeachers: (batch.assignedTeachers || []).map((t) => ({
-      id: t._id,
-      name: t.name,
-      username: t.username,
+    assignedTeachers: teachers.map((t) => ({
+      id: t._id || t.id || t,
+      name: t.name || "",
+      username: t.username || "",
     })),
     isActive: batch.isActive,
     createdAt: batch.createdAt,
@@ -25,6 +29,8 @@ const getBatches = async (req, res) => {
   }
 
   try {
+    await syncBatchTeacherAssignments();
+
     const batches = await Batch.find()
       .populate("assignedTeachers", "name username")
       .sort({ createdAt: 1 })
@@ -72,6 +78,14 @@ const createBatch = async (req, res) => {
       assignedTeachers: assignedTeachers || [],
     });
 
+    // Two-way sync: Add batch name to assigned teachers
+    if (assignedTeachers && assignedTeachers.length > 0) {
+      await User.updateMany(
+        { _id: { $in: assignedTeachers }, role: "teacher" },
+        { $addToSet: { assignedBatches: batch.name } }
+      );
+    }
+
     batch = await Batch.findById(batch._id)
       .populate("assignedTeachers", "name username")
       .lean();
@@ -108,6 +122,9 @@ const updateBatch = async (req, res) => {
       return res.status(404).json({ success: false, message: "Batch not found" });
     }
 
+    const oldName = batch.name;
+    const newName = name?.trim() || oldName;
+
     if (name?.trim() && name.trim() !== batch.name) {
       const duplicate = await Batch.findOne({
         _id: { $ne: id },
@@ -119,11 +136,37 @@ const updateBatch = async (req, res) => {
           message: "A batch with this name already exists",
         });
       }
-      batch.name = name.trim();
+      batch.name = newName;
+
+      // Update references to old batch name in teachers and students
+      await User.updateMany(
+        { role: "teacher", assignedBatches: oldName },
+        { $set: { "assignedBatches.$": newName } }
+      );
+      await StudentProfile.updateMany(
+        { batch: oldName },
+        { $set: { batch: newName } }
+      );
     }
 
     if (timing !== undefined) batch.timing = timing?.trim() || "";
-    if (assignedTeachers !== undefined) batch.assignedTeachers = assignedTeachers;
+
+    if (assignedTeachers !== undefined) {
+      batch.assignedTeachers = assignedTeachers;
+
+      // 1. Add batch name to assigned teachers
+      if (assignedTeachers.length > 0) {
+        await User.updateMany(
+          { _id: { $in: assignedTeachers }, role: "teacher" },
+          { $addToSet: { assignedBatches: newName } }
+        );
+      }
+      // 2. Remove batch name from teachers who are no longer assigned to this batch
+      await User.updateMany(
+        { _id: { $nin: assignedTeachers }, role: "teacher", assignedBatches: newName },
+        { $pull: { assignedBatches: newName } }
+      );
+    }
 
     await batch.save();
 
