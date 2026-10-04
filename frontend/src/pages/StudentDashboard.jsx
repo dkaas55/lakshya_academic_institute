@@ -399,8 +399,8 @@ export default function StudentDashboard() {
                       </div>
                     </div>
                     <div className="mt-3">
-                      <p className="text-lg font-bold text-brand-text truncate" title={tests[0]?.subject ?? 'No Exam'}>
-                        {tests[0]?.subject ?? 'No Exam'}
+                      <p className="text-lg font-bold text-brand-text truncate" title={tests[0]?.subject ?? 'No Practice Test'}>
+                        {tests[0]?.subject ?? 'No Practice Test'}
                       </p>
                       <p className="text-xs text-brand-text-muted mt-1 truncate" title={tests[0]?.testTitle ?? 'All caught up!'}>
                         {tests[0]?.testTitle ?? 'All caught up!'}
@@ -642,7 +642,7 @@ function getTestProgressCompliment(latest, previous) {
     }
     return {
       title: 'Holding Steady Ground! 🎯',
-      message: `Maintained ${latestPct}% across your last two tests. Pick 2–3 questions you felt unsure about during revision to push this score higher on your next exam!`,
+      message: `Maintained ${latestPct}% across your last two tests. Pick 2–3 questions you felt unsure about during revision to push this score higher on your next practice test!`,
       type: 'encouraging',
       color: 'text-brand-primary',
       bg: 'bg-brand-surface-tint border-brand-border',
@@ -715,18 +715,18 @@ function MyProgressCard({ exams = [] }) {
         {diff !== null && (
           <div className="flex items-center gap-1.5 self-start sm:self-auto">
             {diff > 0 ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 text-emerald-600 px-3 py-1 text-xs font-extrabold border border-emerald-500/20">
-                <TrendingUp size={14} />
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 text-emerald-600 px-3.5 py-1 text-sm font-extrabold border border-emerald-500/20">
+                <TrendingUp size={16} />
                 +{diff}% Improvement
               </span>
             ) : diff < 0 ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 text-amber-600 px-3 py-1 text-xs font-extrabold border border-amber-500/20">
-                <TrendingDown size={14} />
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 text-amber-600 px-3.5 py-1 text-sm font-extrabold border border-amber-500/20">
+                <TrendingDown size={16} />
                 {diff}% Change
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 rounded-full bg-brand-primary/10 text-brand-primary px-3 py-1 text-xs font-extrabold border border-brand-primary/20">
-                <Minus size={14} />
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-primary/10 text-brand-primary px-3.5 py-1 text-sm font-extrabold border border-brand-primary/20">
+                <Minus size={16} />
                 Consistent (0%)
               </span>
             )}
@@ -746,95 +746,39 @@ function MyProgressCard({ exams = [] }) {
       ) : (
         <div className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_auto_1fr] items-center">
-            {/* Previous Test Card */}
-            {previous ? (
-              <div className="rounded-xl border border-brand-border bg-brand-surface-tint/60 p-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-brand-text-muted">
-                    Previous Test
-                  </span>
-                  <span className="text-[10px] text-brand-text-muted">
-                    {previous.examDate ? formatDate(previous.examDate) : '—'}
-                  </span>
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-brand-text truncate">
-                    {previous.testName}
-                  </h4>
-                  <p className="text-[10px] text-brand-text-muted">{previous.subject || 'All Subjects'}</p>
-                </div>
-                <div className="flex items-baseline justify-between pt-1">
-                  <span className="text-base font-extrabold text-brand-text">
-                    {previous.isAbsent ? (
-                      <span className="text-red-500 text-xs">Absent</span>
-                    ) : (
-                      <>
-                        {previous.marksObtained}
-                        <span className="text-xs text-brand-text-muted font-normal"> / {previous.totalMarks}</span>
-                      </>
-                    )}
-                  </span>
-                  {prevPct !== null && (
-                    <span className="text-xs font-bold text-brand-text-muted bg-brand-surface px-2 py-0.5 rounded-md border border-brand-border">
-                      {prevPct}%
-                    </span>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="rounded-xl border border-dashed border-brand-border bg-brand-surface-tint/40 p-4 flex flex-col items-center justify-center text-center h-full min-h-[100px]">
-                <p className="text-[11px] font-semibold text-brand-text-muted">Previous Test</p>
-                <p className="text-[10px] text-brand-text-muted/70 mt-0.5">Only 1 test recorded so far</p>
-              </div>
-            )}
-
-            {/* Comparison Bridge / Arrow */}
-            <div className="hidden lg:flex flex-col items-center justify-center px-2">
-              <div className="w-8 h-8 rounded-full bg-brand-surface border border-brand-border flex items-center justify-center text-brand-text-muted shadow-xs">
-                {diff !== null && diff > 0 ? (
-                  <TrendingUp size={16} className="text-emerald-500" />
-                ) : diff !== null && diff < 0 ? (
-                  <TrendingDown size={16} className="text-amber-500" />
-                ) : (
-                  <Sparkles size={16} className="text-brand-primary" />
-                )}
-              </div>
-              <span className="text-[9px] font-bold text-brand-text-muted mt-1 uppercase tracking-wider">
-                Trend
-              </span>
-            </div>
-
-            {/* Latest Test Card */}
-            <div className="rounded-xl border-2 border-brand-primary/30 bg-brand-primary/5 p-4 space-y-2">
+            {/* Latest Test Card (Placed First) */}
+            <div className="rounded-2xl border-2 border-brand-primary/40 bg-brand-primary/5 p-4 sm:p-5 space-y-2.5 shadow-xs transition-all">
               <div className="flex items-center justify-between">
-                <span className="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider text-brand-primary">
-                  <span className="w-1.5 h-1.5 rounded-full bg-brand-primary animate-pulse" />
-                  Latest Test
+                <span className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-brand-primary">
+                  <span className="w-2 h-2 rounded-full bg-brand-primary animate-pulse" />
+                  Your Score in Latest Test
                 </span>
-                <span className="text-[10px] text-brand-text-muted">
+                <span className="text-[11px] font-semibold text-brand-text-muted">
                   {latest.examDate ? formatDate(latest.examDate) : '—'}
                 </span>
               </div>
               <div>
-                <h4 className="text-xs font-extrabold text-brand-text truncate">
+                <h4 className="text-sm font-extrabold text-brand-text truncate">
                   {latest.testName}
                 </h4>
-                <p className="text-[10px] text-brand-text-muted">{latest.subject || 'All Subjects'}</p>
+                <p className="text-sm font-semibold text-brand-text-muted capitalize mt-0.5">
+                  {latest.subject || 'All Subjects'}
+                </p>
               </div>
               <div className="flex items-baseline justify-between pt-1">
-                <span className="text-base font-black text-brand-primary">
+                <span className="text-2xl sm:text-3xl font-black text-brand-primary tracking-tight">
                   {latest.isAbsent ? (
-                    <span className="text-red-500 text-xs">Absent</span>
+                    <span className="text-red-500 text-sm font-bold">Absent</span>
                   ) : (
                     <>
                       {latest.marksObtained}
-                      <span className="text-xs text-brand-text-muted font-normal"> / {latest.totalMarks}</span>
+                      <span className="text-sm text-brand-text-muted font-bold"> / {latest.totalMarks}</span>
                     </>
                   )}
                 </span>
                 {latestPct !== null && (
                   <span
-                    className={`text-xs font-extrabold px-2.5 py-0.5 rounded-md border ${
+                    className={`text-base sm:text-lg font-black px-3.5 py-1 rounded-xl border shadow-xs ${
                       latestPct >= 75
                         ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                         : latestPct >= 33
@@ -847,26 +791,86 @@ function MyProgressCard({ exams = [] }) {
                 )}
               </div>
             </div>
+
+            {/* Comparison Bridge / Arrow */}
+            <div className="hidden lg:flex flex-col items-center justify-center px-2">
+              <div className="w-9 h-9 rounded-full bg-brand-surface border border-brand-border flex items-center justify-center text-brand-text-muted shadow-xs">
+                {diff !== null && diff > 0 ? (
+                  <TrendingUp size={18} className="text-emerald-500" />
+                ) : diff !== null && diff < 0 ? (
+                  <TrendingDown size={18} className="text-amber-500" />
+                ) : (
+                  <Sparkles size={18} className="text-brand-primary" />
+                )}
+              </div>
+              <span className="text-[9px] font-bold text-brand-text-muted mt-1 uppercase tracking-wider">
+                Trend
+              </span>
+            </div>
+
+            {/* Previous Test Card (Placed After) */}
+            {previous ? (
+              <div className="rounded-2xl border border-brand-border bg-brand-surface-tint/60 p-4 sm:p-5 space-y-2.5 shadow-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-brand-text-muted">
+                    Previous Test
+                  </span>
+                  <span className="text-[11px] text-brand-text-muted">
+                    {previous.examDate ? formatDate(previous.examDate) : '—'}
+                  </span>
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-brand-text truncate">
+                    {previous.testName}
+                  </h4>
+                  <p className="text-sm font-semibold text-brand-text-muted capitalize mt-0.5">
+                    {previous.subject || 'All Subjects'}
+                  </p>
+                </div>
+                <div className="flex items-baseline justify-between pt-1">
+                  <span className="text-xl sm:text-2xl font-extrabold text-brand-text">
+                    {previous.isAbsent ? (
+                      <span className="text-red-500 text-xs font-bold">Absent</span>
+                    ) : (
+                      <>
+                        {previous.marksObtained}
+                        <span className="text-xs text-brand-text-muted font-normal"> / {previous.totalMarks}</span>
+                      </>
+                    )}
+                  </span>
+                  {prevPct !== null && (
+                    <span className="text-sm font-bold text-brand-text-muted bg-brand-surface px-3 py-1 rounded-lg border border-brand-border shadow-2xs">
+                      {prevPct}%
+                    </span>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-brand-border bg-brand-surface-tint/40 p-4 sm:p-5 flex flex-col items-center justify-center text-center h-full min-h-[120px]">
+                <p className="text-xs font-semibold text-brand-text-muted">Previous Test</p>
+                <p className="text-[11px] text-brand-text-muted/70 mt-0.5">Only 1 test recorded so far</p>
+              </div>
+            )}
           </div>
 
           {/* Compliment / Feedback Banner */}
           <div className={`rounded-xl border p-4 sm:p-5 transition-all shadow-xs ${compliment.bg}`}>
             <div className="flex items-start gap-3">
               <div className="p-2 rounded-xl bg-brand-surface shadow-xs border border-brand-border shrink-0 text-brand-gold">
-                <Award size={20} />
+                <Award size={22} />
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h4 className={`text-xs sm:text-sm font-extrabold ${compliment.color}`}>
+                  <h4 className={`text-sm sm:text-base font-extrabold ${compliment.color}`}>
                     {compliment.title}
                   </h4>
                   {compliment.badge && (
-                    <span className="rounded-full bg-brand-surface text-brand-text text-[9px] font-extrabold px-2 py-0.5 border border-brand-border shadow-xs">
+                    <span className="rounded-full bg-brand-surface text-brand-text text-[11px] font-extrabold px-2.5 py-0.5 border border-brand-border shadow-xs">
                       {compliment.badge}
                     </span>
                   )}
                 </div>
-                <p className="text-xs leading-relaxed text-brand-text font-medium">
+                <p className="text-sm leading-relaxed text-brand-text font-medium">
                   {compliment.message}
                 </p>
               </div>
