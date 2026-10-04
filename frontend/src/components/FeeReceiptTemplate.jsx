@@ -136,6 +136,14 @@ export default function FeeReceiptTemplate({ receiptInfo, student }) {
             </div>
             <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
               <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                Roll Number
+              </p>
+              <p className="text-sm font-semibold text-indigo-700 font-mono mt-1">
+                {student.rollNo || '—'}
+              </p>
+            </div>
+            <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
+              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
                 Batch
               </p>
               <p className="text-sm font-semibold text-slate-900 mt-1">
@@ -148,14 +156,6 @@ export default function FeeReceiptTemplate({ receiptInfo, student }) {
               </p>
               <p className="text-sm font-semibold text-slate-900 mt-1">
                 {student.studentClass || '—'}
-              </p>
-            </div>
-            <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                Payment Mode
-              </p>
-              <p className="text-sm font-semibold text-slate-900 mt-1">
-                {paymentMode}
               </p>
             </div>
           </div>

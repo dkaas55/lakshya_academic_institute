@@ -3,6 +3,7 @@ const User = require("../models/User");
 const StudentProfile = require("../models/StudentProfile");
 const FeeLedger = require("../models/FeeLedger");
 const { calculateDynamicAmountDue, deriveFeeStatus } = require("../utils/feeStatus");
+const { generateRollNo } = require("../utils/rollNumber");
 
 const SALT_ROUNDS = 12;
 
@@ -81,8 +82,16 @@ const registerStudent = async (req, res) => {
     });
 
     const now = new Date();
+    const lastStudent = await StudentProfile.findOne({ admissionSerial: { $ne: null } })
+      .sort({ admissionSerial: -1 })
+      .lean();
+    const nextSerial = (lastStudent?.admissionSerial || 0) + 1;
+    const rollNo = generateRollNo(fullName, nextSerial);
+
     profile = await StudentProfile.create({
       user: user._id,
+      rollNo,
+      admissionSerial: nextSerial,
       batch: batch.trim(),
       studentClass: studentClass?.trim(),
       subjects: subjects?.trim(),
@@ -111,6 +120,7 @@ const registerStudent = async (req, res) => {
           userId: user._id,
           fullName: user.name,
           username: user.username,
+          rollNo: profile.rollNo,
           phoneNumber: profile.parentContact,
           batch: profile.batch,
           studentClass: profile.studentClass,
@@ -185,6 +195,7 @@ const getStudents = async (req, res) => {
         id: profile._id,
         fullName: profile.user?.name ?? "Unknown",
         username: profile.user?.username ?? "",
+        rollNo: profile.rollNo ?? "",
         phoneNumber: profile.parentContact,
         batch: profile.batch,
         studentClass: profile.studentClass,
@@ -260,6 +271,7 @@ const updateStudent = async (req, res) => {
       data: {
         id: profile._id,
         fullName: profile.user.name,
+        rollNo: profile.rollNo ?? "",
         phoneNumber: profile.parentContact,
         batch: profile.batch,
         studentClass: profile.studentClass,

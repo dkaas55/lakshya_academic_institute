@@ -16,6 +16,7 @@ export function generateUsername(phone, fullName = '') {
 
 export function buildWhatsAppInvite({
   fullName,
+  rollNo,
   phone,
   batch,
   totalCourseFee,
@@ -31,6 +32,7 @@ export function buildWhatsAppInvite({
     `Hello!`,
     ``,
     `Your ward *${fullName || '—'}* has been registered at *${INSTITUTE_NAME}*.`,
+    ...(rollNo ? [`Roll No: *${rollNo}*`] : []),
     ``,
     `*Login details*`,
     `Username: ${username || '—'}`,

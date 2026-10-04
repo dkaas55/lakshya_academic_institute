@@ -12,6 +12,12 @@ import {
   IndianRupee,
   Settings,
   LogOut,
+  Trophy,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  Award,
+  Sparkles,
 } from 'lucide-react'
 
 
@@ -225,14 +231,26 @@ export default function StudentDashboard() {
               <img src="/logo.png" alt="Logo" className="h-full w-full object-contain p-0.5" />
             </div>
             <div className="min-w-0">
-              <h2 className="text-xs sm:text-sm font-semibold text-brand-text truncate">
-                {student ? `Hello ${student.fullName}` : 'Welcome'}
-              </h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-xs sm:text-sm font-semibold text-brand-text truncate">
+                  {student ? `Hello ${student.fullName}` : 'Welcome'}
+                </h2>
+                {student?.rollNo && (
+                  <span className="font-mono text-[10px] font-extrabold text-brand-primary bg-brand-primary/10 px-2 py-0.5 rounded-full border border-brand-primary/20 shrink-0">
+                    Roll No: {student.rollNo}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-3 text-xs font-semibold text-brand-text-muted">
+            {student?.rollNo && (
+              <span className="hidden sm:inline-flex items-center rounded-full bg-brand-primary/10 px-2.5 py-0.5 text-[10px] font-mono font-extrabold text-brand-primary border border-brand-primary/20">
+                Roll #{student.rollNo}
+              </span>
+            )}
             {student?.batch && (
-              <span className="hidden sm:inline-flex items-center rounded-full bg-brand-primary/10 px-2.5 py-0.5 text-[10px] font-bold text-brand-primary border border-brand-primary/20">
+              <span className="hidden sm:inline-flex items-center rounded-full bg-brand-surface-tint px-2.5 py-0.5 text-[10px] font-bold text-brand-text border border-brand-border">
                 {student.batch}
               </span>
             )}
@@ -287,7 +305,14 @@ export default function StudentDashboard() {
             {/* Header Section inside main area for desktop feel */}
             {!loading && student && (
               <div className="hidden lg:flex flex-col gap-1 mb-2 animate-fadeIn">
-                <h1 className="text-2xl font-bold text-brand-primary tracking-tight">Student Dashboard</h1>
+                <div className="flex items-center gap-2.5">
+                  <h1 className="text-2xl font-bold text-brand-primary tracking-tight">{student.fullName}</h1>
+                  {student.rollNo && (
+                    <span className="font-mono text-xs font-extrabold text-brand-gold bg-brand-gold/15 px-2.5 py-0.5 rounded-full border border-brand-gold/30">
+                      Roll No: {student.rollNo}
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-brand-text-muted">
                   Welcome back, {student.fullName}! Here is an overview of your academic progress, learning materials, and fee status.
                 </p>
@@ -407,6 +432,10 @@ export default function StudentDashboard() {
                     </div>
                   </section>
                 )}
+
+                {/* ── MY PROGRESS (Comparing last 2 test marks + compliment) ── */}
+                <MyProgressCard exams={dashData?.instituteExams || []} />
+
                 <AttendanceSummaryCard attnData={attnData} onViewAll={() => setActiveTab('attendance')} />
               </div>
             )}
@@ -469,6 +498,383 @@ export default function StudentDashboard() {
         })}
       </nav>
     </div>
+  )
+}
+
+// ─── My Progress Component (Comparing last 2 test marks + Compliments) ───────
+
+function getTestProgressCompliment(latest, previous) {
+  if (!latest) {
+    return {
+      title: 'Ready for Your Next Challenge! 🚀',
+      message:
+        'No test records found yet. Once your teacher enters marks for your institute tests, your performance comparison and personalized feedback will appear right here!',
+      type: 'neutral',
+      color: 'text-brand-text',
+      bg: 'bg-brand-surface-tint border-brand-border',
+      badge: 'Getting Started',
+    }
+  }
+
+  const latestScore = latest.marksObtained
+  const latestTotal = latest.totalMarks || 100
+  const latestPct =
+    latest.isAbsent || latestScore === null
+      ? null
+      : Math.round((Number(latestScore) / latestTotal) * 100)
+
+  if (!previous) {
+    if (latest.isAbsent) {
+      return {
+        title: 'Recent Test Missed 📋',
+        message: `You were marked absent for "${latest.testName}". Be sure to ask your teacher for the test paper to practice at home!`,
+        type: 'warning',
+        color: 'text-amber-600 dark:text-amber-400',
+        bg: 'bg-amber-50/70 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/40',
+        badge: 'Absent',
+      }
+    }
+    if (latestPct >= 85) {
+      return {
+        title: 'Spectacular Debut! 🌟🏆',
+        message: `Outstanding score of ${latestPct}% (${latestScore}/${latestTotal}) on "${latest.testName}"! You have set a fantastic standard for yourself. Keep up this magnificent dedication!`,
+        type: 'praise',
+        color: 'text-emerald-600 dark:text-emerald-400',
+        bg: 'bg-emerald-50/80 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/40',
+        badge: 'Top Tier',
+      }
+    }
+    if (latestPct >= 60) {
+      return {
+        title: 'Solid Foundation! 👏✨',
+        message: `Great effort with ${latestPct}% (${latestScore}/${latestTotal}) on "${latest.testName}". Regular practice on tricky questions will elevate your next score even higher!`,
+        type: 'praise',
+        color: 'text-brand-primary',
+        bg: 'bg-brand-primary/10 border-brand-primary/20',
+        badge: 'Good Start',
+      }
+    }
+    return {
+      title: 'Step One Completed! 💪🌱',
+      message: `Scored ${latestPct}% (${latestScore}/${latestTotal}) on "${latest.testName}". Review the questions you missed, clear any doubts with your teacher, and aim higher on the next test!`,
+      type: 'encouraging',
+      color: 'text-brand-primary',
+      bg: 'bg-brand-surface-tint border-brand-border',
+      badge: 'Keep Pushing',
+    }
+  }
+
+  // Both tests exist
+  if (latest.isAbsent) {
+    return {
+      title: 'Absent in Latest Test 📋',
+      message: `You missed the latest test ("${latest.testName}"). Don't forget to practice the test questions so you don't miss any critical topics!`,
+      type: 'warning',
+      color: 'text-amber-600 dark:text-amber-400',
+      bg: 'bg-amber-50/70 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/40',
+      badge: 'Absent',
+    }
+  }
+
+  if (previous.isAbsent) {
+    return {
+      title: 'Welcome Back to the Arena! 🎯🔥',
+      message: `Splendid comeback after missing the earlier test! You scored ${latestPct}% (${latestScore}/${latestTotal}) on "${latest.testName}". Keep this consistency going!`,
+      type: 'praise',
+      color: 'text-emerald-600 dark:text-emerald-400',
+      bg: 'bg-emerald-50/80 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/40',
+      badge: 'Comeback',
+    }
+  }
+
+  const prevScore = previous.marksObtained
+  const prevTotal = previous.totalMarks || 100
+  const prevPct = Math.round((Number(prevScore) / prevTotal) * 100)
+  const diff = latestPct - prevPct
+
+  if (diff > 15) {
+    return {
+      title: 'Tremendous Leap Forward! 🚀🔥',
+      message: `Incredible improvement! You jumped by an impressive +${diff}% (rising from ${prevPct}% in "${previous.testName}" to ${latestPct}% in "${latest.testName}"). Your hard work and focused revision are visibly paying off!`,
+      type: 'praise',
+      color: 'text-emerald-600 dark:text-emerald-400',
+      bg: 'bg-emerald-50/90 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800',
+      badge: `+${diff}% Surge`,
+      diff,
+    }
+  }
+
+  if (diff > 5) {
+    return {
+      title: 'Great Upward Growth! 📈✨',
+      message: `Splendid work! You gained +${diff}% (moving from ${prevPct}% in "${previous.testName}" to ${latestPct}% in "${latest.testName}"). Consistency and smart revision are driving you forward!`,
+      type: 'praise',
+      color: 'text-emerald-600 dark:text-emerald-400',
+      bg: 'bg-emerald-50/80 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/40',
+      badge: `+${diff}% Gain`,
+      diff,
+    }
+  }
+
+  if (diff > 0) {
+    return {
+      title: 'Steady Positive Progress! 👍🌱',
+      message: `Encouraging momentum! You scored +${diff}% higher than your previous test (from ${prevPct}% in "${previous.testName}" to ${latestPct}% in "${latest.testName}"). Keep up this positive cadence—every step counts!`,
+      type: 'encouraging',
+      color: 'text-emerald-600 dark:text-emerald-400',
+      bg: 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/40',
+      badge: `+${diff}% Up`,
+      diff,
+    }
+  }
+
+  if (diff === 0) {
+    if (latestPct >= 80) {
+      return {
+        title: 'Rock-Solid Consistency! 🏆🛡️',
+        message: `Maintained a stellar ${latestPct}% across both tests ("${previous.testName}" and "${latest.testName}")! This high level of accuracy reflects deep understanding!`,
+        type: 'praise',
+        color: 'text-brand-primary',
+        bg: 'bg-brand-primary/10 border-brand-primary/20',
+        badge: 'Maintained Score',
+        diff: 0,
+      }
+    }
+    return {
+      title: 'Holding Steady Ground! 🎯',
+      message: `Maintained ${latestPct}% across your last two tests. Pick 2–3 questions you felt unsure about during revision to push this score higher on your next exam!`,
+      type: 'encouraging',
+      color: 'text-brand-primary',
+      bg: 'bg-brand-surface-tint border-brand-border',
+      badge: 'Consistent',
+      diff: 0,
+    }
+  }
+
+  // diff < 0
+  if (latestPct >= 75) {
+    return {
+      title: 'Strong High Standard! ⭐',
+      message: `Even with a minor variation of ${Math.abs(diff)}% (from ${prevPct}% in "${previous.testName}" to ${latestPct}% in "${latest.testName}"), you are holding a commendable high standard. A quick review of tricky errors will put you right back at your peak!`,
+      type: 'neutral',
+      color: 'text-brand-primary',
+      bg: 'bg-brand-surface-tint border-brand-border',
+      badge: `-${Math.abs(diff)}% Variation`,
+      diff,
+    }
+  }
+
+  return {
+    title: 'Bounce Back Stronger! 🛡️💪',
+    message: `Your score dipped by ${Math.abs(diff)}% (from ${prevPct}% in "${previous.testName}" to ${latestPct}% in "${latest.testName}"). Don't be discouraged—every test is a stepping stone. Pinpoint where marks were lost, consult your teacher, and conquer the next test!`,
+    type: 'supportive',
+    color: 'text-amber-700 dark:text-amber-400',
+    bg: 'bg-amber-50/80 dark:bg-amber-950/25 border-amber-200 dark:border-amber-900/40',
+    badge: `-${Math.abs(diff)}% Dip`,
+    diff,
+  }
+}
+
+function MyProgressCard({ exams = [] }) {
+  const latest = exams[0] || null
+  const previous = exams[1] || null
+
+  const compliment = getTestProgressCompliment(latest, previous)
+
+  const latestPct =
+    latest && !latest.isAbsent && latest.marksObtained !== null
+      ? Math.round((Number(latest.marksObtained) / (latest.totalMarks || 100)) * 100)
+      : null
+
+  const prevPct =
+    previous && !previous.isAbsent && previous.marksObtained !== null
+      ? Math.round((Number(previous.marksObtained) / (previous.totalMarks || 100)) * 100)
+      : null
+
+  const diff =
+    latestPct !== null && prevPct !== null ? latestPct - prevPct : null
+
+  return (
+    <section className="w-full rounded-2xl border border-brand-border bg-brand-surface p-5 sm:p-6 shadow-sm space-y-5">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-brand-border pb-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="p-1.5 rounded-xl bg-brand-primary/10 text-brand-primary font-bold">
+              <Trophy size={18} />
+            </span>
+            <h2 className="text-base font-extrabold text-brand-text tracking-tight">
+              My Progress
+            </h2>
+          </div>
+          <p className="text-xs text-brand-text-muted mt-0.5">
+            Test score comparison and personalized teacher compliment based on your last 2 tests
+          </p>
+        </div>
+
+        {diff !== null && (
+          <div className="flex items-center gap-1.5 self-start sm:self-auto">
+            {diff > 0 ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 text-emerald-600 px-3 py-1 text-xs font-extrabold border border-emerald-500/20">
+                <TrendingUp size={14} />
+                +{diff}% Improvement
+              </span>
+            ) : diff < 0 ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 text-amber-600 px-3 py-1 text-xs font-extrabold border border-amber-500/20">
+                <TrendingDown size={14} />
+                {diff}% Change
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded-full bg-brand-primary/10 text-brand-primary px-3 py-1 text-xs font-extrabold border border-brand-primary/20">
+                <Minus size={14} />
+                Consistent (0%)
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Tests Comparison Grid */}
+      {!latest ? (
+        <div className="rounded-xl border border-dashed border-brand-border bg-brand-surface-tint p-6 text-center">
+          <Sparkles size={28} className="mx-auto text-brand-text-muted/50 mb-2" />
+          <p className="text-xs font-bold text-brand-text">No Institute Tests Recorded Yet</p>
+          <p className="text-[11px] text-brand-text-muted mt-0.5">
+            When your teacher conducts tests and enters your scores, your last 2 test marks comparison and compliments will appear here.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_auto_1fr] items-center">
+            {/* Previous Test Card */}
+            {previous ? (
+              <div className="rounded-xl border border-brand-border bg-brand-surface-tint/60 p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-brand-text-muted">
+                    Previous Test
+                  </span>
+                  <span className="text-[10px] text-brand-text-muted">
+                    {previous.examDate ? formatDate(previous.examDate) : '—'}
+                  </span>
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-brand-text truncate">
+                    {previous.testName}
+                  </h4>
+                  <p className="text-[10px] text-brand-text-muted">{previous.subject || 'All Subjects'}</p>
+                </div>
+                <div className="flex items-baseline justify-between pt-1">
+                  <span className="text-base font-extrabold text-brand-text">
+                    {previous.isAbsent ? (
+                      <span className="text-red-500 text-xs">Absent</span>
+                    ) : (
+                      <>
+                        {previous.marksObtained}
+                        <span className="text-xs text-brand-text-muted font-normal"> / {previous.totalMarks}</span>
+                      </>
+                    )}
+                  </span>
+                  {prevPct !== null && (
+                    <span className="text-xs font-bold text-brand-text-muted bg-brand-surface px-2 py-0.5 rounded-md border border-brand-border">
+                      {prevPct}%
+                    </span>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-dashed border-brand-border bg-brand-surface-tint/40 p-4 flex flex-col items-center justify-center text-center h-full min-h-[100px]">
+                <p className="text-[11px] font-semibold text-brand-text-muted">Previous Test</p>
+                <p className="text-[10px] text-brand-text-muted/70 mt-0.5">Only 1 test recorded so far</p>
+              </div>
+            )}
+
+            {/* Comparison Bridge / Arrow */}
+            <div className="hidden lg:flex flex-col items-center justify-center px-2">
+              <div className="w-8 h-8 rounded-full bg-brand-surface border border-brand-border flex items-center justify-center text-brand-text-muted shadow-xs">
+                {diff !== null && diff > 0 ? (
+                  <TrendingUp size={16} className="text-emerald-500" />
+                ) : diff !== null && diff < 0 ? (
+                  <TrendingDown size={16} className="text-amber-500" />
+                ) : (
+                  <Sparkles size={16} className="text-brand-primary" />
+                )}
+              </div>
+              <span className="text-[9px] font-bold text-brand-text-muted mt-1 uppercase tracking-wider">
+                Trend
+              </span>
+            </div>
+
+            {/* Latest Test Card */}
+            <div className="rounded-xl border-2 border-brand-primary/30 bg-brand-primary/5 p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider text-brand-primary">
+                  <span className="w-1.5 h-1.5 rounded-full bg-brand-primary animate-pulse" />
+                  Latest Test
+                </span>
+                <span className="text-[10px] text-brand-text-muted">
+                  {latest.examDate ? formatDate(latest.examDate) : '—'}
+                </span>
+              </div>
+              <div>
+                <h4 className="text-xs font-extrabold text-brand-text truncate">
+                  {latest.testName}
+                </h4>
+                <p className="text-[10px] text-brand-text-muted">{latest.subject || 'All Subjects'}</p>
+              </div>
+              <div className="flex items-baseline justify-between pt-1">
+                <span className="text-base font-black text-brand-primary">
+                  {latest.isAbsent ? (
+                    <span className="text-red-500 text-xs">Absent</span>
+                  ) : (
+                    <>
+                      {latest.marksObtained}
+                      <span className="text-xs text-brand-text-muted font-normal"> / {latest.totalMarks}</span>
+                    </>
+                  )}
+                </span>
+                {latestPct !== null && (
+                  <span
+                    className={`text-xs font-extrabold px-2.5 py-0.5 rounded-md border ${
+                      latestPct >= 75
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        : latestPct >= 33
+                        ? 'bg-amber-50 text-amber-700 border-amber-200'
+                        : 'bg-red-50 text-red-700 border-red-200'
+                    }`}
+                  >
+                    {latestPct}%
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Compliment / Feedback Banner */}
+          <div className={`rounded-xl border p-4 sm:p-5 transition-all shadow-xs ${compliment.bg}`}>
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-xl bg-brand-surface shadow-xs border border-brand-border shrink-0 text-brand-gold">
+                <Award size={20} />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4 className={`text-xs sm:text-sm font-extrabold ${compliment.color}`}>
+                    {compliment.title}
+                  </h4>
+                  {compliment.badge && (
+                    <span className="rounded-full bg-brand-surface text-brand-text text-[9px] font-extrabold px-2 py-0.5 border border-brand-border shadow-xs">
+                      {compliment.badge}
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs leading-relaxed text-brand-text font-medium">
+                  {compliment.message}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
   )
 }
 

@@ -297,8 +297,13 @@ export default function FeeLedgerModal({ student, onClose, onPaymentCollected })
         <div className="flex items-start justify-between gap-3 px-4 sm:px-5 py-4 border-b border-brand-border bg-brand-surface-tint/80 shrink-0">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-wider text-brand-text-muted">Fee Ledger</p>
-            <h2 id="fee-ledger-title" className="text-base font-semibold text-brand-text mt-0.5">
-              {student.fullName}
+            <h2 id="fee-ledger-title" className="text-base font-semibold text-brand-text mt-0.5 flex items-center gap-2">
+              <span>{student.fullName}</span>
+              {(student.rollNo || ledger?.student?.rollNo) && (
+                <span className="rounded-md bg-brand-primary/10 text-brand-primary px-2 py-0.5 text-xs font-mono font-bold">
+                  {student.rollNo || ledger?.student?.rollNo}
+                </span>
+              )}
             </h2>
             <p className="text-[11px] text-brand-text-muted mt-0.5">
               {student.batch}
@@ -337,7 +342,7 @@ export default function FeeLedgerModal({ student, onClose, onPaymentCollected })
               {lastReceipt && (
                 <ReceiptSuccessBanner
                   receiptInfo={lastReceipt}
-                  student={student}
+                  student={{ ...student, rollNo: student.rollNo || ledger?.student?.rollNo }}
                   onDismiss={() => setLastReceipt(null)}
                 />
               )}

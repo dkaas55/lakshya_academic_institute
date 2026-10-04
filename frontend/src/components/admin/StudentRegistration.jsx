@@ -81,12 +81,13 @@ export default function StudentRegistration() {
     () =>
       buildWhatsAppInvite({
         fullName: form.fullName,
+        rollNo: success?.student?.rollNo,
         phone: form.phoneNumber,
         batch: form.batch,
         totalCourseFee: form.totalCourseFee,
         password: tempPassword,
       }),
-    [form, tempPassword]
+    [form, tempPassword, success]
   )
 
   function updateField(field, value) {
@@ -313,6 +314,11 @@ export default function StudentRegistration() {
           </div>
 
           <div className="space-y-3 text-xs">
+            {success?.student?.rollNo && (
+              <div className="rounded-xl border border-brand-primary/30 bg-brand-primary/10 p-2.5">
+                <CredentialRow label="Assigned Roll No" value={success.student.rollNo} mono highlight />
+              </div>
+            )}
             <CredentialRow label="Login username" value={loginUsername || '—'} mono />
             <CredentialRow
               label="Temporary password"

@@ -176,6 +176,7 @@ export default function ActiveStudentsList({ refreshKey = 0 }) {
             <table className="min-w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-brand-border bg-brand-surface-tint/80">
+                  <th className="px-4 py-2.5 font-semibold text-brand-text">Roll No</th>
                   <th className="px-4 py-2.5 font-semibold text-brand-text">Name</th>
                   <th className="px-4 py-2.5 font-semibold text-brand-text">Phone</th>
                   <th className="px-4 py-2.5 font-semibold text-brand-text">Batch</th>
@@ -193,6 +194,15 @@ export default function ActiveStudentsList({ refreshKey = 0 }) {
                     className={`hover:bg-brand-surface-tint/80 transition-colors cursor-pointer ${student.status === 'paused' ? 'opacity-70' : ''}`}
                     onClick={() => setSelectedStudent(student)}
                   >
+                    <td className="px-4 py-2.5 font-mono text-[11px]">
+                      {student.rollNo ? (
+                        <span className="inline-block rounded-md bg-brand-primary/10 text-brand-primary px-2 py-0.5 font-extrabold ring-1 ring-brand-primary/20">
+                          {student.rollNo}
+                        </span>
+                      ) : (
+                        <span className="text-brand-text-muted">—</span>
+                      )}
+                    </td>
                     <td className="px-4 py-2.5 font-medium text-brand-text">{student.fullName}</td>
                     <td className="px-4 py-2.5 font-mono text-[11px] text-brand-text">{student.phoneNumber}</td>
                     <td className="px-4 py-2.5 text-brand-text">{student.batch}</td>

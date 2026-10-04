@@ -8,6 +8,16 @@ const studentProfileSchema = new mongoose.Schema(
       required: [true, "User reference is required"],
       unique: true,
     },
+    rollNo: {
+      type: String,
+      trim: true,
+      uppercase: true,
+      index: true,
+    },
+    admissionSerial: {
+      type: Number,
+      index: true,
+    },
     batch: {
       type: String,
       trim: true,

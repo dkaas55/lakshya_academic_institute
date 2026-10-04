@@ -385,7 +385,14 @@ function AttendanceHistoryView({ allowedBatches }) {
                             {s.fullName.charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <span className="font-semibold text-brand-text block">{s.fullName}</span>
+                            <div className="flex items-center gap-1.5">
+                              {s.rollNo && (
+                                <span className="font-mono text-[9px] font-extrabold text-brand-primary bg-brand-primary/10 px-1.5 py-0.5 rounded ring-1 ring-brand-primary/20 shrink-0">
+                                  {s.rollNo}
+                                </span>
+                              )}
+                              <span className="font-semibold text-brand-text block">{s.fullName}</span>
+                            </div>
                             <span className="text-[9px] text-brand-text-muted block mt-0.5">Click to view detail</span>
                           </div>
                         </div>
@@ -737,7 +744,14 @@ export default function AttendanceManager({ allowedBatches = null }) {
                                 <div className="w-6 h-6 rounded-full bg-brand-primary/10 text-brand-primary flex items-center justify-center text-[10px] font-bold shrink-0">
                                   {r.fullName?.charAt(0)?.toUpperCase() ?? '?'}
                                 </div>
-                                <span className="font-semibold text-brand-text">{r.fullName}</span>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  {r.rollNo && (
+                                    <span className="font-mono text-[10px] font-extrabold text-brand-primary bg-brand-primary/10 px-1.5 py-0.5 rounded ring-1 ring-brand-primary/20 shrink-0">
+                                      {r.rollNo}
+                                    </span>
+                                  )}
+                                  <span className="font-semibold text-brand-text">{r.fullName}</span>
+                                </div>
                               </div>
                             </td>
                             <td className="px-4 py-3.5">

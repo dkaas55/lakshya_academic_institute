@@ -49,6 +49,7 @@ const getLedger = async (req, res) => {
         student: {
           id: profile._id,
           fullName: profile.user?.name ?? "Unknown",
+          rollNo: profile.rollNo ?? "",
           phoneNumber: profile.parentContact,
           batch: profile.batch,
         },
@@ -265,6 +266,7 @@ const getAllTransactions = async (req, res) => {
         transactions.push({
           id: payment._id,
           studentName: ledger.student.user?.name || "Unknown",
+          rollNo: ledger.student.rollNo || "",
           batch: ledger.student.batch,
           amount: payment.amount,
           method: payment.method,
@@ -314,6 +316,7 @@ const getPendingDues = async (req, res) => {
       pendingList.push({
         id: ledger.student._id,
         studentName: ledger.student.user?.name || "Unknown",
+        rollNo: ledger.student.rollNo || "",
         batch: ledger.student.batch,
         studentClass: ledger.student.studentClass,
         totalCourseFee: ledger.totalFee,

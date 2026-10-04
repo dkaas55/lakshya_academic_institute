@@ -6,6 +6,7 @@ const bcrypt = require("bcryptjs");
 const User = require("./models/User");
 const { processMonthlyFees } = require("./utils/feeCron");
 const { syncBatchTeacherAssignments } = require("./utils/syncBatchTeachers");
+const { syncStudentRollNumbers } = require("./utils/syncStudentRollNumbers");
 
 const SALT_ROUNDS = 12;
 const SEED_ADMIN = {
@@ -38,6 +39,7 @@ const teacherRoutes = require("./routes/teacherRoutes");
 const adminTeacherRoutes = require("./routes/adminTeacherRoutes");
 const attendanceRoutes = require("./routes/attendanceRoutes");
 const testRoutes = require("./routes/testRoutes");
+const examResultRoutes = require("./routes/examResultRoutes");
 const { adminRouter: batchAdminRoutes, publicRouter: batchPublicRoutes } = require("./routes/batchRoutes");
 
 app.use("/api/auth", authRoutes);
@@ -45,6 +47,7 @@ app.use("/api/students", studentRoutes);
 app.use("/api/fees", feeRoutes);
 app.use("/api/content", contentRoutes);
 app.use("/api/tests", testRoutes);
+app.use("/api/exam-results", examResultRoutes);
 app.use("/api/student", studentPortalRoutes);
 app.use("/api/teacher", teacherRoutes);
 app.use("/api/admin/teachers", adminTeacherRoutes);
@@ -127,6 +130,7 @@ const startServer = async () => {
     await seedAdminUser();
     await seedDefaultBatches();
     await syncBatchTeacherAssignments();
+    await syncStudentRollNumbers();
 
     // Run the automated monthly fee processor on startup
     await processMonthlyFees();

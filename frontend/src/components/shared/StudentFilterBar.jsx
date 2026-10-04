@@ -37,7 +37,8 @@ export default function StudentFilterBar({
       const matchQuery =
         !q ||
         (s.fullName  || '').toLowerCase().includes(q) ||
-        (s.username  || '').toLowerCase().includes(q)
+        (s.username  || '').toLowerCase().includes(q) ||
+        (s.rollNo    || '').toLowerCase().includes(q)
       return matchBatch && matchCls && matchQuery
     })
     onFilterChange?.(filtered)
@@ -74,7 +75,7 @@ export default function StudentFilterBar({
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by name or username…"
+            placeholder="Search by name, roll no, or username…"
             className={inputBase}
           />
         </div>

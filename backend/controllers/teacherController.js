@@ -27,6 +27,7 @@ const getTeacherDashboard = async (req, res) => {
       students = profiles.map((p) => ({
         id: p._id,
         fullName: p.user?.name ?? "Unknown",
+        rollNo: p.rollNo ?? "",
         batch: p.batch,
         studentClass: p.studentClass,
         subjects: p.subjects,

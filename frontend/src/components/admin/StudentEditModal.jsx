@@ -138,8 +138,13 @@ export default function StudentEditModal({ student, onClose, onUpdated }) {
             <p className="text-[10px] font-semibold uppercase tracking-wider text-brand-text-muted">
               Edit Profile
             </p>
-            <h2 id="student-edit-title" className="text-base font-semibold text-brand-text mt-0.5">
-              {student.fullName}
+            <h2 id="student-edit-title" className="text-base font-semibold text-brand-text mt-0.5 flex items-center gap-2">
+              <span>{student.fullName}</span>
+              {student.rollNo && (
+                <span className="rounded-md bg-brand-primary/10 text-brand-primary px-2 py-0.5 text-xs font-mono font-bold">
+                  {student.rollNo}
+                </span>
+              )}
             </h2>
           </div>
           <button

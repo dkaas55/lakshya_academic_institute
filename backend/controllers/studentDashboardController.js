@@ -2,6 +2,7 @@ const StudentProfile = require("../models/StudentProfile");
 const FeeLedger = require("../models/FeeLedger");
 const Content = require("../models/Content");
 const Test = require("../models/Test");
+const ExamResult = require("../models/ExamResult");
 const { getFeeOverview } = require("../utils/feeStatus");
 
 const getStudentDashboard = async (req, res) => {
@@ -54,13 +55,70 @@ const getStudentDashboard = async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
 
-    // 5. Return the personalised dataset
+    // 5. Fetch institute test results for this student
+    const examConditions = [
+      { "studentMarks.student": profile._id },
+    ];
+    if (profile.rollNo) {
+      examConditions.push({ "studentMarks.studentRollNo": profile.rollNo });
+    }
+    if (profile.batch) {
+      examConditions.push({
+        batch: profile.batch,
+        ...(profile.studentClass ? { studentClass: { $in: [profile.studentClass, "", "All", "All Classes", null] } } : {}),
+      });
+    }
+
+    const allExams = await ExamResult.find({ $or: examConditions })
+      .sort({ examDate: -1, createdAt: -1 })
+      .lean();
+
+    const instituteExams = [];
+    for (const exam of allExams) {
+      // If exam is specified for a specific class, skip exams meant for a different class
+      if (
+        exam.studentClass &&
+        profile.studentClass &&
+        !["all", "all classes"].includes(exam.studentClass.trim().toLowerCase()) &&
+        exam.studentClass.trim().toLowerCase() !== profile.studentClass.trim().toLowerCase()
+      ) {
+        continue;
+      }
+
+      // Strictly identify mark entry by student profile ID or unique roll number
+      // (Never fall back to student name because different students can share the same name)
+      const myMark = exam.studentMarks?.find(
+        (sm) =>
+          (sm.student && String(sm.student) === String(profile._id)) ||
+          (profile.rollNo &&
+            sm.studentRollNo &&
+            sm.studentRollNo.trim().toUpperCase() === profile.rollNo.trim().toUpperCase())
+      );
+
+      if (myMark && (myMark.marksObtained !== null || myMark.isAbsent)) {
+        instituteExams.push({
+          id: exam._id,
+          testName: exam.testName,
+          subject: exam.subject,
+          batch: exam.batch,
+          studentClass: exam.studentClass,
+          totalMarks: exam.totalMarks,
+          examDate: exam.examDate,
+          marksObtained: myMark.marksObtained,
+          isAbsent: myMark.isAbsent,
+        });
+      }
+    }
+
+    // 6. Return the personalised dataset
     res.json({
       success: true,
       data: {
         student: {
           fullName: req.user.name,
+          rollNo: profile.rollNo ?? "",
           batch: profile.batch,
+          studentClass: profile.studentClass ?? "",
           admissionDate: profile.admissionDate,
           joiningDate: profile.joiningDate ?? null,
           status: profile.status ?? "active",
@@ -68,6 +126,7 @@ const getStudentDashboard = async (req, res) => {
         fee: feeData,
         materials,
         tests,
+        instituteExams,
       },
     });
   } catch (error) {

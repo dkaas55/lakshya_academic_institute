@@ -169,7 +169,16 @@ export default function MasterFeeLedger() {
                 <tbody className="divide-y divide-brand-border">
                   {filteredPending.map((due) => (
                     <tr key={due.id} className="hover:bg-brand-surface-tint/60 transition-colors">
-                      <td className="px-4 py-3 font-medium text-brand-text">{due.studentName}</td>
+                      <td className="px-4 py-3 font-medium text-brand-text">
+                        <div className="flex items-center gap-1.5">
+                          {due.rollNo && (
+                            <span className="font-mono text-[10px] font-bold text-brand-primary bg-brand-primary/10 px-1.5 py-0.5 rounded shrink-0">
+                              {due.rollNo}
+                            </span>
+                          )}
+                          <span>{due.studentName}</span>
+                        </div>
+                      </td>
                       <td className="px-4 py-3 text-brand-text">{due.batch}</td>
                       <td className="px-4 py-3 text-brand-text">{due.studentClass || '—'}</td>
                       <td className="px-4 py-3 font-medium text-brand-text">
@@ -189,6 +198,7 @@ export default function MasterFeeLedger() {
                           onClick={() => setSelectedStudent({
                             id: due.id,
                             fullName: due.studentName,
+                            rollNo: due.rollNo,
                             batch: due.batch,
                             studentClass: due.studentClass
                           })}
@@ -233,7 +243,16 @@ export default function MasterFeeLedger() {
                           minute: '2-digit',
                         }).format(new Date(tx.paidAt))}
                       </td>
-                      <td className="px-4 py-3 font-medium text-brand-text">{tx.studentName}</td>
+                      <td className="px-4 py-3 font-medium text-brand-text">
+                        <div className="flex items-center gap-1.5">
+                          {tx.rollNo && (
+                            <span className="font-mono text-[10px] font-bold text-brand-primary bg-brand-primary/10 px-1.5 py-0.5 rounded shrink-0">
+                              {tx.rollNo}
+                            </span>
+                          )}
+                          <span>{tx.studentName}</span>
+                        </div>
+                      </td>
                       <td className="px-4 py-3 text-brand-text">{tx.batch}</td>
                       <td className="px-4 py-3 font-semibold text-brand-primary text-right">
                         {new Intl.NumberFormat('en-IN', {

@@ -7,6 +7,7 @@ import MasterFeeLedger from '../components/admin/MasterFeeLedger'
 import TeacherManagement from '../components/admin/TeacherManagement'
 import BatchManagement from '../components/admin/BatchManagement'
 import AttendanceManager from '../components/shared/AttendanceManager'
+import ExamMarks from '../components/shared/ExamMarks'
 import api from '../lib/api'
 import { useEffect } from 'react'
 import { clearToken, clearRole } from '../lib/auth'
@@ -25,6 +26,7 @@ import {
   LogOut,
   Menu,
   X,
+  ClipboardList,
 } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -35,6 +37,7 @@ const NAV_ITEMS = [
   { id: 'teachers',   label: 'Teachers',               Icon: GraduationCap,  disabled: false },
   { id: 'attendance', label: 'Attendance',             Icon: CalendarCheck,  disabled: false },
   { id: 'fees',       label: 'Fee Ledger',             Icon: IndianRupee,    disabled: false },
+  { id: 'tests',      label: 'Tests & Marks',          Icon: ClipboardList,  disabled: false },
   { id: 'content',    label: 'Content',                Icon: BookOpen,       disabled: false },
 ]
 
@@ -226,6 +229,7 @@ export default function AdminDashboard() {
             { activeTab === 'batches' && <BatchManagement /> }
             { activeTab === 'teachers' && <TeacherManagement /> }
             { activeTab === 'attendance' && <AttendanceManager /> }
+            { activeTab === 'tests' && <ExamMarks isAdmin /> }
             { activeTab === 'students' && (
               <div className="space-y-4">
                 <div>
@@ -242,6 +246,7 @@ export default function AdminDashboard() {
               activeTab !== 'batches' &&
               activeTab !== 'teachers' &&
               activeTab !== 'attendance' &&
+              activeTab !== 'tests' &&
               activeTab !== 'students' &&
               activeTab !== 'fees' && <PlaceholderPanel title={activeItem?.label} /> }
           </div>

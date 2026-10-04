@@ -5,6 +5,7 @@ import { clearToken, clearRole } from '../lib/auth'
 import AttendanceManager from '../components/shared/AttendanceManager'
 import StudentFilterBar from '../components/shared/StudentFilterBar'
 import SettingsModal from '../components/shared/SettingsModal'
+import ExamMarks from '../components/shared/ExamMarks'
 import { useTheme } from '../context/ThemeContext'
 import {
   LayoutDashboard,
@@ -17,6 +18,7 @@ import {
   X,
   Wallet,
   IndianRupee,
+  ClipboardList,
 } from 'lucide-react'
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -61,6 +63,7 @@ const NAV_ITEMS = [
   { id: 'overview',   label: 'My Dashboard',       Icon: LayoutDashboard },
   { id: 'salary',     label: 'Salary & Payments',  Icon: Wallet },
   { id: 'upload',     label: 'Upload Content',      Icon: Upload },
+  { id: 'tests',      label: 'Tests & Marks',       Icon: ClipboardList },
   { id: 'students',   label: 'My Students',         Icon: Users },
   { id: 'attendance', label: 'Take Attendance',     Icon: CalendarCheck },
 ]
@@ -310,6 +313,9 @@ export default function TeacherDashboard() {
                   assignedBatches={teacher?.assignedBatches ?? []}
                   onSuccess={() => setRefreshKey((k) => k + 1)}
                 />
+              )}
+              {activeTab === 'tests' && (
+                <ExamMarks allowedBatches={teacher?.assignedBatches ?? []} />
               )}
               {activeTab === 'students' && (
                 <StudentsTab students={dashData?.students ?? []} />
@@ -1404,6 +1410,7 @@ function StudentsTab({ students }) {
               <thead>
                 <tr className="border-b border-brand-border bg-brand-surface-tint">
                   <th className="px-4 py-3.5 font-bold text-brand-text-muted w-10">#</th>
+                  <th className="px-4 py-3.5 font-bold text-brand-text">Roll No</th>
                   <th className="px-4 py-3.5 font-bold text-brand-text">Student Name</th>
                   <th className="px-4 py-3.5 font-bold text-brand-text">Batch</th>
                   <th className="px-4 py-3.5 font-bold text-brand-text">Class</th>
@@ -1414,6 +1421,15 @@ function StudentsTab({ students }) {
                 {filtered.map((s, idx) => (
                   <tr key={s.id} className="hover:bg-brand-primary/5 transition-colors duration-150">
                     <td className="px-4 py-3 text-brand-text-muted tabular-nums">{idx + 1}</td>
+                    <td className="px-4 py-3">
+                      {s.rollNo ? (
+                        <span className="font-mono text-[10px] font-extrabold text-brand-primary bg-brand-primary/10 px-2 py-0.5 rounded ring-1 ring-brand-primary/20">
+                          {s.rollNo}
+                        </span>
+                      ) : (
+                        <span className="text-brand-text-muted">—</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-full bg-brand-primary/10 text-brand-primary flex items-center justify-center text-[10px] font-bold shrink-0">

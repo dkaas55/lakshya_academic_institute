@@ -67,6 +67,7 @@ const getAttendanceSheet = async (req, res) => {
     const records = eligibleStudents.map((s) => ({
       studentId: s._id,
       fullName: s.user?.name ?? "Unknown Student",
+      rollNo: s.rollNo ?? "",
       status: recordMap[String(s._id)] || "Present",
     }));
 
