@@ -39,7 +39,14 @@ const getAttendanceSheet = async (req, res) => {
     const targetDate = getNormalizedDate(date);
 
     // Fetch all active students currently enrolled in this batch
-    const students = await StudentProfile.find({ batch, status: { $ne: "removed" } })
+    const students = await StudentProfile.find({
+      $or: [
+        { batches: batch },
+        { batch: batch },
+        { batch: { $regex: new RegExp(`(^|,\\s*)${batch.trim()}(,\\s*|$)`) } },
+      ],
+      status: { $ne: "removed" },
+    })
       .populate("user", "name username")
       .sort({ "user.name": 1 })
       .lean();
@@ -120,7 +127,14 @@ const saveAttendanceSheet = async (req, res) => {
     const targetDate = getNormalizedDate(date);
 
     // Fetch all active students currently enrolled in this batch
-    const students = await StudentProfile.find({ batch, status: { $ne: "removed" } }).lean();
+    const students = await StudentProfile.find({
+      $or: [
+        { batches: batch },
+        { batch: batch },
+        { batch: { $regex: new RegExp(`(^|,\\s*)${batch.trim()}(,\\s*|$)`) } },
+      ],
+      status: { $ne: "removed" },
+    }).lean();
 
     // Determine which student IDs are eligible to have attendance for this targetDate
     const eligibleStudentIds = new Set(
@@ -191,7 +205,14 @@ const updateAttendanceSheet = async (req, res) => {
     const targetDate = getNormalizedDate(date);
 
     // Fetch all active students currently enrolled in this batch
-    const students = await StudentProfile.find({ batch, status: { $ne: "removed" } }).lean();
+    const students = await StudentProfile.find({
+      $or: [
+        { batches: batch },
+        { batch: batch },
+        { batch: { $regex: new RegExp(`(^|,\\s*)${batch.trim()}(,\\s*|$)`) } },
+      ],
+      status: { $ne: "removed" },
+    }).lean();
 
     // Determine which student IDs are eligible to have attendance for this targetDate
     const eligibleStudentIds = new Set(
@@ -256,7 +277,16 @@ const getMyAttendanceHistory = async (req, res) => {
       });
     }
 
-    const attendanceLogs = await Attendance.find({ batch: profile.batch })
+    const studentBatches = Array.isArray(profile.batches) && profile.batches.length > 0
+      ? profile.batches
+      : (profile.batch ? profile.batch.split(",").map((b) => b.trim()).filter(Boolean) : []);
+
+    const queryBatch = req.query.batch;
+    const logQuery = queryBatch
+      ? { batch: queryBatch }
+      : { batch: { $in: studentBatches } };
+
+    const attendanceLogs = await Attendance.find(logQuery)
       .sort({ date: -1 })
       .lean();
 
@@ -279,7 +309,7 @@ const getMyAttendanceHistory = async (req, res) => {
         if (status === "Present") presentCount++;
         else if (status === "Late") lateCount++;
         else if (status === "Absent") absentCount++;
-        history.push({ date: log.date, status });
+        history.push({ date: log.date, batch: log.batch, status });
       }
     });
 
@@ -338,19 +368,31 @@ const getAttendanceHistory = async (req, res) => {
     const logs = await Attendance.find(query).sort({ date: -1 }).lean();
 
     // Fetch all students in this batch (excluding removed)
-    const students = await StudentProfile.find({ batch, status: { $ne: "removed" } })
+    const students = await StudentProfile.find({
+      $or: [
+        { batches: batch },
+        { batch: batch },
+        { batch: { $regex: new RegExp(`(^|,\\s*)${batch.trim()}(,\\s*|$)`) } },
+      ],
+      status: { $ne: "removed" },
+    })
       .populate("user", "name username")
       .lean();
 
     // Build per-student summary
     const summaryMap = {};
     students.forEach((s) => {
+      const sBatches = Array.isArray(s.batches) && s.batches.length > 0
+        ? s.batches
+        : (s.batch ? s.batch.split(",").map((b) => b.trim()).filter(Boolean) : []);
+
       summaryMap[String(s._id)] = {
         studentId: String(s._id),
         fullName: s.user?.name ?? "Unknown",
         username: s.user?.username ?? "",
         studentClass: s.studentClass ?? "",
         batch: s.batch,
+        batches: sBatches,
         present: 0,
         late: 0,
         absent: 0,
@@ -417,10 +459,15 @@ const getStudentAttendanceHistoryDetail = async (req, res) => {
       });
     }
 
+    const studentBatches = Array.isArray(profile.batches) && profile.batches.length > 0
+      ? profile.batches
+      : (profile.batch ? profile.batch.split(",").map((b) => b.trim()).filter(Boolean) : []);
+
     // Auth & Batch Scope Check for Teachers
     if (req.user.role === "teacher") {
       const assigned = req.user.assignedBatches || [];
-      if (!assigned.includes(profile.batch)) {
+      const hasOverlap = studentBatches.some((b) => assigned.includes(b));
+      if (!hasOverlap) {
         return res.status(403).json({
           success: false,
           message: "You are not authorized to view attendance for this student",
@@ -433,7 +480,11 @@ const getStudentAttendanceHistoryDetail = async (req, res) => {
       });
     }
 
-    const attendanceLogs = await Attendance.find({ batch: profile.batch })
+    const logQuery = req.query.batch
+      ? { batch: req.query.batch }
+      : { batch: { $in: studentBatches } };
+
+    const attendanceLogs = await Attendance.find(logQuery)
       .sort({ date: -1 })
       .lean();
 
@@ -456,7 +507,7 @@ const getStudentAttendanceHistoryDetail = async (req, res) => {
         if (status === "Present") presentCount++;
         else if (status === "Late") lateCount++;
         else if (status === "Absent") absentCount++;
-        history.push({ date: log.date, status });
+        history.push({ date: log.date, batch: log.batch, status });
       }
     });
 
@@ -471,6 +522,7 @@ const getStudentAttendanceHistoryDetail = async (req, res) => {
       studentInfo: {
         fullName: profile.user?.name ?? "Unknown Student",
         batch: profile.batch,
+        batches: studentBatches,
         studentClass: profile.studentClass ?? "",
         username: profile.user?.username ?? "",
       },

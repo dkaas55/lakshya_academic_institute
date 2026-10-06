@@ -18,10 +18,21 @@ export default function StudentFilterBar({
   const [cls,   setCls]         = useState('all')
 
   // ── Derive unique option lists from the student array ──────────────────────
-  const batches = useMemo(
-    () => [...new Set(students.map((s) => s.batch).filter(Boolean))].sort(),
-    [students]
-  )
+  const batches = useMemo(() => {
+    const set = new Set()
+    students.forEach((s) => {
+      if (Array.isArray(s.batches) && s.batches.length > 0) {
+        s.batches.forEach((b) => {
+          if (b && b.trim()) set.add(b.trim())
+        })
+      } else if (s.batch) {
+        s.batch.split(',').forEach((b) => {
+          if (b && b.trim()) set.add(b.trim())
+        })
+      }
+    })
+    return [...set].sort()
+  }, [students])
   const classes = useMemo(
     () =>
       [...new Set(students.map((s) => s.studentClass).filter(Boolean))].sort(),
@@ -32,7 +43,10 @@ export default function StudentFilterBar({
   useEffect(() => {
     const q = query.trim().toLowerCase()
     const filtered = students.filter((s) => {
-      const matchBatch = batch === 'all' || s.batch === batch
+      const matchBatch =
+        batch === 'all' ||
+        (Array.isArray(s.batches) && s.batches.includes(batch)) ||
+        (s.batch && s.batch.split(',').map((b) => b.trim()).includes(batch))
       const matchCls   = cls   === 'all' || s.studentClass === cls
       const matchQuery =
         !q ||

@@ -51,7 +51,7 @@ const SUBJECT_OPTIONS = [
 const initialForm = {
   fullName: '',
   phoneNumber: '',
-  batch: '',
+  batches: [],
   studentClass: '',
   subjects: '',
   totalCourseFee: '',
@@ -83,7 +83,8 @@ export default function StudentRegistration() {
         fullName: form.fullName,
         rollNo: success?.student?.rollNo,
         phone: form.phoneNumber,
-        batch: form.batch,
+        batches: form.batches,
+        batch: form.batches.join(', '),
         totalCourseFee: form.totalCourseFee,
         password: tempPassword,
       }),
@@ -97,6 +98,29 @@ export default function StudentRegistration() {
     setCopiedInvite(false)
   }
 
+  function toggleBatch(batchName) {
+    setForm((prev) => {
+      const exists = prev.batches.includes(batchName)
+      const newBatches = exists
+        ? prev.batches.filter((b) => b !== batchName)
+        : [...prev.batches, batchName]
+      return { ...prev, batches: newBatches }
+    })
+    setError('')
+    setSuccess(null)
+    setCopiedInvite(false)
+  }
+
+  function selectAllBatches() {
+    setForm((prev) => ({ ...prev, batches: [...BATCH_OPTIONS] }))
+    setError('')
+  }
+
+  function clearAllBatches() {
+    setForm((prev) => ({ ...prev, batches: [] }))
+    setError('')
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
@@ -107,13 +131,19 @@ export default function StudentRegistration() {
       return
     }
 
+    if (form.batches.length === 0) {
+      setError('Please select at least one batch for the student.')
+      return
+    }
+
     setLoading(true)
 
     try {
       const { data } = await api.post('/students/register', {
         fullName: form.fullName.trim(),
         phoneNumber: form.phoneNumber.trim(),
-        batch: form.batch,
+        batches: form.batches,
+        batch: form.batches.join(', '),
         studentClass: form.studentClass.trim(),
         subjects: form.subjects.trim(),
         totalCourseFee: Number(form.totalCourseFee),
@@ -175,7 +205,7 @@ export default function StudentRegistration() {
             {success.student?.fullName} registered successfully.
           </p>
           <p className="mt-1 text-brand-primary">
-            Login username: {success.student?.username} · Batch: {success.student?.batch}
+            Login username: {success.student?.username} · Batch{success.student?.batches?.length > 1 ? 'es' : ''}: {success.student?.batches?.join(', ') || success.student?.batch}
           </p>
         </div>
       )}
@@ -210,21 +240,85 @@ export default function StudentRegistration() {
               />
             </Field>
 
-            <Field label="Selected Batch" htmlFor="batch">
-              <select
-                id="batch"
-                required
-                value={form.batch}
-                onChange={(e) => updateField('batch', e.target.value)}
-                className={inputClass}
-              >
-                {BATCH_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </Field>
+            <div className="sm:col-span-2 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-semibold text-brand-text">
+                  Enrolled Batches <span className="text-red-500">*</span>
+                </label>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-medium text-brand-text-muted">
+                    {form.batches.length} selected
+                  </span>
+                  <button
+                    type="button"
+                    onClick={selectAllBatches}
+                    className="text-[11px] text-brand-primary hover:underline font-semibold"
+                  >
+                    Select All
+                  </button>
+                  <span className="text-brand-border">|</span>
+                  <button
+                    type="button"
+                    onClick={clearAllBatches}
+                    className="text-[11px] text-brand-text-muted hover:text-brand-text font-semibold"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+
+              {BATCH_OPTIONS.length === 0 ? (
+                <p className="text-xs text-brand-text-muted">No active batches available. Please create a batch first.</p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-2.5 rounded-xl border border-brand-border bg-brand-surface-tint/40 max-h-48 overflow-y-auto">
+                  {BATCH_OPTIONS.map((option) => {
+                    const isSelected = form.batches.includes(option)
+                    return (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() => toggleBatch(option)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-left transition-all border cursor-pointer ${
+                          isSelected
+                            ? 'bg-brand-primary/10 border-brand-primary text-brand-primary shadow-xs font-bold'
+                            : 'bg-brand-surface border-brand-border text-brand-text hover:bg-brand-surface-tint'
+                        }`}
+                      >
+                        <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[10px] ${
+                          isSelected
+                            ? 'border-brand-primary bg-brand-primary text-white font-bold'
+                            : 'border-brand-border bg-brand-surface'
+                        }`}>
+                          {isSelected ? '✓' : ''}
+                        </span>
+                        <span className="truncate">{option}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+
+              {form.batches.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {form.batches.map((b) => (
+                    <span
+                      key={b}
+                      className="inline-flex items-center gap-1 rounded-md bg-brand-primary/10 text-brand-primary border border-brand-primary/20 px-2.5 py-1 text-xs font-semibold"
+                    >
+                      <span>{b}</span>
+                      <button
+                        type="button"
+                        onClick={() => toggleBatch(b)}
+                        className="hover:text-red-500 transition-colors ml-0.5 text-xs font-bold"
+                        title="Remove"
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
 
             <Field label="Class" htmlFor="studentClass">
               <select

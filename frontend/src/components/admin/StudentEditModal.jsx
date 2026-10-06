@@ -46,7 +46,7 @@ export default function StudentEditModal({ student, onClose, onUpdated, onRemove
   const [form, setForm] = useState({
     fullName: '',
     phoneNumber: '',
-    batch: '',
+    batches: [],
     studentClass: '',
     subjects: '',
   })
@@ -57,10 +57,14 @@ export default function StudentEditModal({ student, onClose, onUpdated, onRemove
 
   useEffect(() => {
     if (student) {
+      const initialBatches = Array.isArray(student.batches) && student.batches.length > 0
+        ? student.batches
+        : (student.batch ? student.batch.split(',').map((b) => b.trim()).filter(Boolean) : []);
+
       setForm({
         fullName: student.fullName || '',
         phoneNumber: student.phoneNumber || '',
-        batch: student.batch || BATCH_OPTIONS[0] || '',
+        batches: initialBatches,
         studentClass: student.studentClass || '',
         subjects: student.subjects || '',
       })
@@ -123,16 +127,44 @@ export default function StudentEditModal({ student, onClose, onUpdated, onRemove
     setError('')
   }
 
+  function toggleBatch(batchName) {
+    setForm((prev) => {
+      const exists = prev.batches.includes(batchName)
+      const newBatches = exists
+        ? prev.batches.filter((b) => b !== batchName)
+        : [...prev.batches, batchName]
+      return { ...prev, batches: newBatches }
+    })
+    setError('')
+  }
+
+  function selectAllBatches() {
+    setForm((prev) => ({ ...prev, batches: [...BATCH_OPTIONS] }))
+    setError('')
+  }
+
+  function clearAllBatches() {
+    setForm((prev) => ({ ...prev, batches: [] }))
+    setError('')
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
+
+    if (form.batches.length === 0) {
+      setError('Please select at least one batch for the student.')
+      return
+    }
+
     setLoading(true)
 
     try {
       const { data } = await api.put(`/students/${student.id}`, {
         fullName: form.fullName.trim(),
         phoneNumber: form.phoneNumber.trim(),
-        batch: form.batch,
+        batches: form.batches,
+        batch: form.batches.join(', '),
         studentClass: form.studentClass.trim(),
         subjects: form.subjects.trim(),
       })
@@ -238,22 +270,79 @@ export default function StudentEditModal({ student, onClose, onUpdated, onRemove
             </div>
 
             <div>
-              <label htmlFor="edit-batch" className="block text-xs font-medium text-brand-text mb-1">
-                Batch
-              </label>
-              <select
-                id="edit-batch"
-                required
-                value={form.batch}
-                onChange={(e) => updateField('batch', e.target.value)}
-                className="w-full rounded-lg border border-brand-border px-3 py-2 text-sm text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-brand-primary"
-              >
-                {BATCH_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-brand-text">
+                  Enrolled Batches <span className="text-red-500">*</span>
+                </label>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-brand-text-muted">
+                    {form.batches.length} selected
+                  </span>
+                  <button
+                    type="button"
+                    onClick={selectAllBatches}
+                    className="text-[10px] text-brand-primary hover:underline font-semibold"
+                  >
+                    Select All
+                  </button>
+                  <span className="text-brand-border text-xs">|</span>
+                  <button
+                    type="button"
+                    onClick={clearAllBatches}
+                    className="text-[10px] text-brand-text-muted hover:text-brand-text font-semibold"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 p-2 rounded-xl border border-brand-border bg-brand-surface-tint/40 max-h-40 overflow-y-auto">
+                {BATCH_OPTIONS.map((option) => {
+                  const isSelected = form.batches.includes(option)
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => toggleBatch(option)}
+                      className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-left transition-all border cursor-pointer ${
+                        isSelected
+                          ? 'bg-brand-primary/10 border-brand-primary text-brand-primary font-bold'
+                          : 'bg-brand-surface border-brand-border text-brand-text hover:bg-brand-surface-tint'
+                      }`}
+                    >
+                      <span className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border text-[9px] ${
+                        isSelected
+                          ? 'border-brand-primary bg-brand-primary text-white font-bold'
+                          : 'border-brand-border bg-brand-surface'
+                      }`}>
+                        {isSelected ? '✓' : ''}
+                      </span>
+                      <span className="truncate">{option}</span>
+                    </button>
+                  )
+                })}
+              </div>
+
+              {form.batches.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {form.batches.map((b) => (
+                    <span
+                      key={b}
+                      className="inline-flex items-center gap-1 rounded-md bg-brand-primary/10 text-brand-primary border border-brand-primary/20 px-2 py-0.5 text-[11px] font-semibold"
+                    >
+                      <span>{b}</span>
+                      <button
+                        type="button"
+                        onClick={() => toggleBatch(b)}
+                        className="hover:text-red-500 transition-colors ml-0.5 text-[11px] font-bold"
+                        title="Remove"
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div>
@@ -293,76 +382,58 @@ export default function StudentEditModal({ student, onClose, onUpdated, onRemove
             </div>
           </div>
 
-          {/* Student Status & Actions (Pause / Remove) */}
-          <div className="pt-3 border-t border-brand-border">
-            <div className="rounded-xl border border-brand-border bg-brand-surface-tint/40 p-3 space-y-2.5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-xs font-semibold text-brand-text">Student Status & Actions</h4>
-                  <p className="text-[10px] text-brand-text-muted">
-                    {currentStatus === 'paused'
-                      ? 'Student is paused and cannot access the portal.'
-                      : 'Student has active access to the portal.'}
-                  </p>
-                </div>
-                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ring-1 ${
-                  currentStatus === 'paused'
-                    ? 'bg-amber-50 text-amber-800 ring-amber-200'
-                    : 'bg-brand-primary/10 text-brand-primary ring-emerald-200'
-                }`}>
-                  {currentStatus === 'paused' ? '⏸ Paused' : '● Active'}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2 pt-1">
-                {currentStatus === 'paused' ? (
-                  <button
-                    type="button"
-                    disabled={!!statusLoading || loading}
-                    onClick={() => handleStatusChange('active')}
-                    className="flex-1 rounded-lg border border-emerald-200 bg-brand-primary/10 px-3 py-1.5 text-xs font-semibold text-brand-primary hover:bg-emerald-100 disabled:opacity-50 transition-colors text-center"
-                  >
-                    {statusLoading === 'active' ? 'Resuming…' : '▶ Resume Student'}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    disabled={!!statusLoading || loading}
-                    onClick={() => handleStatusChange('paused')}
-                    className="flex-1 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-100 disabled:opacity-50 transition-colors text-center"
-                  >
-                    {statusLoading === 'paused' ? 'Pausing…' : '⏸ Pause Student'}
-                  </button>
-                )}
-
+          {/* Action buttons row: Pause, Delete, Cancel, Save Changes */}
+          <div className="pt-3 border-t border-brand-border flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+            {/* Left: Pause / Delete */}
+            <div className="flex items-center gap-2">
+              {currentStatus === 'paused' ? (
                 <button
                   type="button"
                   disabled={!!statusLoading || loading}
-                  onClick={() => handleStatusChange('removed')}
-                  className="flex-1 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100 disabled:opacity-50 transition-colors text-center"
+                  onClick={() => handleStatusChange('active')}
+                  className="rounded-lg border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 px-3 py-2 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 disabled:opacity-50 transition-colors cursor-pointer"
                 >
-                  {statusLoading === 'removed' ? 'Removing…' : '✕ Remove Student'}
+                  {statusLoading === 'active' ? 'Resuming…' : '▶ Resume Student'}
                 </button>
-              </div>
-            </div>
-          </div>
+              ) : (
+                <button
+                  type="button"
+                  disabled={!!statusLoading || loading}
+                  onClick={() => handleStatusChange('paused')}
+                  className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 text-xs font-semibold text-amber-700 dark:text-amber-400 hover:bg-amber-100 disabled:opacity-50 transition-colors cursor-pointer"
+                >
+                  {statusLoading === 'paused' ? 'Pausing…' : '⏸ Pause Student'}
+                </button>
+              )}
 
-          <div className="pt-2 flex justify-end gap-2 border-t border-brand-border">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={loading || !!statusLoading}
-              className="rounded-lg px-4 py-2 text-xs font-medium text-brand-text hover:bg-brand-surface-tint transition-colors disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading || !!statusLoading}
-              className="rounded-lg bg-brand-primary px-4 py-2 text-xs font-semibold text-brand-surface hover:bg-brand-primary/100 transition-colors disabled:opacity-50"
-            >
-              {loading ? 'Saving…' : 'Save Changes'}
-            </button>
+              <button
+                type="button"
+                disabled={!!statusLoading || loading}
+                onClick={() => handleStatusChange('removed')}
+                className="rounded-lg border border-rose-200 bg-rose-50 dark:bg-rose-950/20 px-3 py-2 text-xs font-semibold text-rose-700 dark:text-rose-400 hover:bg-rose-100 disabled:opacity-50 transition-colors cursor-pointer"
+              >
+                {statusLoading === 'removed' ? 'Deleting…' : '✕ Delete Student'}
+              </button>
+            </div>
+
+            {/* Right: Cancel / Save Changes */}
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={loading || !!statusLoading}
+                className="rounded-lg px-3.5 py-2 text-xs font-medium text-brand-text hover:bg-brand-surface-tint border border-brand-border/60 transition-colors disabled:opacity-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading || !!statusLoading}
+                className="rounded-lg bg-brand-primary px-4 py-2 text-xs font-semibold text-white hover:bg-brand-primary/100 transition-colors disabled:opacity-50 cursor-pointer shadow-sm"
+              >
+                {loading ? 'Saving…' : 'Save Changes'}
+              </button>
+            </div>
           </div>
         </form>
       </div>

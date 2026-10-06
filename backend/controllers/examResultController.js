@@ -88,7 +88,14 @@ const createExamResult = async (req, res) => {
       }
     } else {
       // Fetch students of the batch/class
-      const query = { batch: batch.trim(), status: { $ne: "removed" } };
+      const query = {
+        $or: [
+          { batches: batch.trim() },
+          { batch: batch.trim() },
+          { batch: { $regex: new RegExp(`(^|,\\s*)${batch.trim()}(,\\s*|$)`) } },
+        ],
+        status: { $ne: "removed" },
+      };
       if (studentClass?.trim() && !["All", "All Classes"].includes(studentClass.trim())) {
         query.studentClass = studentClass.trim();
       }
@@ -217,7 +224,14 @@ const getStudentsByBatch = async (req, res) => {
   }
 
   try {
-    const query = { batch: batch.trim(), status: { $ne: "removed" } };
+    const query = {
+      $or: [
+        { batches: batch.trim() },
+        { batch: batch.trim() },
+        { batch: { $regex: new RegExp(`(^|,\\s*)${batch.trim()}(,\\s*|$)`) } },
+      ],
+      status: { $ne: "removed" },
+    };
     if (studentClass && studentClass.trim() && !["All", "All Classes"].includes(studentClass.trim())) {
       query.studentClass = studentClass.trim();
     }
@@ -226,13 +240,20 @@ const getStudentsByBatch = async (req, res) => {
       .populate("user", "name")
       .lean();
 
-    const students = profiles.map((p) => ({
-      id: p._id,
-      name: p.user?.name ?? "Unknown",
-      rollNo: p.rollNo || "",
-      batch: p.batch,
-      studentClass: p.studentClass || "",
-    })).sort((a, b) => (a.rollNo || a.name).localeCompare(b.rollNo || b.name));
+    const students = profiles.map((p) => {
+      const sBatches = Array.isArray(p.batches) && p.batches.length > 0
+        ? p.batches
+        : (p.batch ? p.batch.split(",").map((b) => b.trim()).filter(Boolean) : []);
+
+      return {
+        id: p._id,
+        name: p.user?.name ?? "Unknown",
+        rollNo: p.rollNo || "",
+        batch: p.batch || sBatches.join(", "),
+        batches: sBatches,
+        studentClass: p.studentClass || "",
+      };
+    }).sort((a, b) => (a.rollNo || a.name).localeCompare(b.rollNo || b.name));
 
     res.json({ success: true, data: students });
   } catch (error) {

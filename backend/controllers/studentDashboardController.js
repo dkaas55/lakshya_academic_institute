@@ -26,13 +26,26 @@ const getStudentDashboard = async (req, res) => {
       });
     }
 
-    // Fetch batch timing if batch is assigned
+    const studentBatches = Array.isArray(profile.batches) && profile.batches.length > 0
+      ? profile.batches
+      : (profile.batch ? profile.batch.split(",").map((b) => b.trim()).filter(Boolean) : []);
+
+    // Fetch batch timing if batches are assigned
     let batchTiming = "";
-    if (profile.batch) {
-      const batchDoc = await Batch.findOne({ name: profile.batch }).lean();
-      if (batchDoc && batchDoc.timing) {
-        batchTiming = batchDoc.timing;
-      }
+    let batchTimingsList = [];
+    if (studentBatches.length > 0) {
+      const batchDocs = await Batch.find({ name: { $in: studentBatches } }).lean();
+      batchTimingsList = studentBatches.map((bName) => {
+        const found = batchDocs.find((d) => d.name === bName);
+        return {
+          name: bName,
+          timing: found?.timing || "Regular Hours",
+        };
+      });
+      const timingsWithBatch = batchDocs
+        .filter((b) => b.timing)
+        .map((b) => `${b.name}: ${b.timing}`);
+      batchTiming = timingsWithBatch.join(" | ") || (batchDocs[0]?.timing || "");
     }
 
     // 2. Fetch the fee ledger for this profile
@@ -55,13 +68,13 @@ const getStudentDashboard = async (req, res) => {
         }
       : null;
 
-    // 3. Fetch study materials scoped to this student's batch
-    const materials = await Content.find({ batch: profile.batch })
+    // 3. Fetch study materials scoped to this student's batches
+    const materials = await Content.find({ batch: { $in: studentBatches } })
       .sort({ createdAt: -1 })
       .lean();
 
-    // 4. Fetch practice tests scoped to this student's batch
-    const tests = await Test.find({ batch: profile.batch })
+    // 4. Fetch practice tests scoped to this student's batches
+    const tests = await Test.find({ batch: { $in: studentBatches } })
       .sort({ createdAt: -1 })
       .lean();
 
@@ -72,9 +85,9 @@ const getStudentDashboard = async (req, res) => {
     if (profile.rollNo) {
       examConditions.push({ "studentMarks.studentRollNo": profile.rollNo });
     }
-    if (profile.batch) {
+    if (studentBatches.length > 0) {
       examConditions.push({
-        batch: profile.batch,
+        batch: { $in: studentBatches },
         ...(profile.studentClass ? { studentClass: { $in: [profile.studentClass, "", "All", "All Classes", null] } } : {}),
       });
     }
@@ -127,8 +140,10 @@ const getStudentDashboard = async (req, res) => {
         student: {
           fullName: req.user.name,
           rollNo: profile.rollNo ?? "",
-          batch: profile.batch,
+          batch: profile.batch || studentBatches.join(", "),
+          batches: studentBatches,
           batchTiming: batchTiming,
+          batchTimingsList: batchTimingsList,
           subjects: profile.subjects ?? "",
           studentClass: profile.studentClass ?? "",
           admissionDate: profile.admissionDate,

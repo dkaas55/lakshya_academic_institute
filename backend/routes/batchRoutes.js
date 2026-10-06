@@ -5,6 +5,7 @@ const {
   updateBatch,
   deleteBatch,
   listActiveBatches,
+  updateBatchEnrollments,
 } = require("../controllers/batchController");
 const { protect } = require("../middleware/authMiddleware");
 
@@ -15,6 +16,7 @@ const adminRouter = express.Router();
 adminRouter.get("/", protect, getBatches);
 adminRouter.post("/", protect, createBatch);
 adminRouter.put("/:id", protect, updateBatch);
+adminRouter.put("/:id/students", protect, updateBatchEnrollments);
 adminRouter.delete("/:id", protect, deleteBatch);
 
 const publicRouter = express.Router();

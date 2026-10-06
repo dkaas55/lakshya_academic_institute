@@ -290,7 +290,7 @@ export default function FeeLedgerModal({ student, onClose, onPaymentCollected })
       />
 
       <div
-        className="relative z-10 w-full max-w-lg max-h-[92vh] sm:max-h-[88vh] overflow-hidden flex flex-col rounded-t-2xl sm:rounded-2xl border border-brand-border bg-brand-surface shadow-xl"
+        className="relative z-10 w-full max-w-xl lg:max-w-2xl max-h-[92vh] sm:max-h-[88vh] overflow-hidden flex flex-col rounded-t-2xl sm:rounded-2xl border border-brand-border bg-brand-surface shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* ── Modal Header ─────────────────────────────────────────────── */}
@@ -354,14 +354,14 @@ export default function FeeLedgerModal({ student, onClose, onPaymentCollected })
               </div>
 
               {/* ── 4 Summary Cards: Monthly Fee, Amount to be Paid, Fee Pending for Month, Payment Time ── */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <div className="rounded-xl border border-brand-border bg-brand-surface-tint/80 px-3 py-2.5 flex flex-col justify-between">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <div className="rounded-xl border border-brand-border bg-brand-surface-tint/80 px-3 py-2.5 flex flex-col justify-between min-h-[80px]">
                   <p className="text-[10px] font-medium text-brand-text-muted uppercase tracking-wide">Monthly Fee</p>
                   <p className="text-sm font-semibold text-brand-text mt-1">
                     {formatCurrency(ledgerData.monthlyFeeAmount || ledgerData.totalCourseFee)}
                   </p>
                 </div>
-                <div className={`rounded-xl border px-3 py-2.5 flex flex-col justify-between ${
+                <div className={`rounded-xl border px-3 py-2.5 flex flex-col justify-between min-h-[80px] ${
                   amountDue > 0
                     ? 'border-amber-200 bg-amber-50/50 dark:border-amber-800/40 dark:bg-amber-950/20'
                     : 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-800/40 dark:bg-emerald-950/20'
@@ -373,13 +373,29 @@ export default function FeeLedgerModal({ student, onClose, onPaymentCollected })
                     amountDue > 0 ? 'text-amber-900 dark:text-amber-300' : 'text-emerald-900 dark:text-emerald-300'
                   }`}>{formatCurrency(amountDue)}</p>
                 </div>
-                <div className="rounded-xl border border-brand-border bg-brand-surface-tint/80 px-3 py-2.5 flex flex-col justify-between">
+                <div className="rounded-xl border border-brand-border bg-brand-surface-tint/80 px-3 py-2.5 flex flex-col justify-between min-h-[80px]">
                   <p className="text-[10px] font-medium text-brand-text-muted uppercase tracking-wide">Fee Pending for Month</p>
-                  <p className="text-xs font-semibold text-brand-text mt-1 leading-snug line-clamp-2" title={ledgerData.feePendingForMonth || 'None'}>
-                    {ledgerData.feePendingForMonth || 'None'}
-                  </p>
+                  {(() => {
+                    const text = ledgerData.feePendingForMonth || 'None'
+                    const match = text.match(/^(.*?)\s*\((.*?)\)$/)
+                    if (match) {
+                      return (
+                        <div className="mt-1" title={text}>
+                          <p className="text-xs font-bold text-brand-text">{match[1]}</p>
+                          <p className="text-[10px] font-medium text-emerald-700 dark:text-emerald-400 mt-0.5 leading-snug break-words">
+                            {match[2]}
+                          </p>
+                        </div>
+                      )
+                    }
+                    return (
+                      <p className="text-xs font-semibold text-brand-text mt-1 leading-snug break-words" title={text}>
+                        {text}
+                      </p>
+                    )
+                  })()}
                 </div>
-                <div className="rounded-xl border border-brand-border bg-brand-surface-tint/80 px-3 py-2.5 flex flex-col justify-between">
+                <div className="rounded-xl border border-brand-border bg-brand-surface-tint/80 px-3 py-2.5 flex flex-col justify-between min-h-[80px]">
                   <p className="text-[10px] font-medium text-brand-text-muted uppercase tracking-wide">Payment Time</p>
                   <p className="text-xs font-semibold text-brand-text mt-1">
                     {ledgerData.paymentTiming === 'advance'

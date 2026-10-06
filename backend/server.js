@@ -7,6 +7,7 @@ const User = require("./models/User");
 const { processMonthlyFees } = require("./utils/feeCron");
 const { syncBatchTeacherAssignments } = require("./utils/syncBatchTeachers");
 const { syncStudentRollNumbers } = require("./utils/syncStudentRollNumbers");
+const { syncStudentBatches } = require("./utils/syncStudentBatches");
 
 const SALT_ROUNDS = 12;
 const SEED_ADMIN = {
@@ -131,6 +132,7 @@ const startServer = async () => {
     await seedDefaultBatches();
     await syncBatchTeacherAssignments();
     await syncStudentRollNumbers();
+    await syncStudentBatches();
 
     // Run the automated monthly fee processor on startup
     await processMonthlyFees();

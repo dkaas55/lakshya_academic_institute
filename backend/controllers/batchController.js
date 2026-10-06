@@ -148,10 +148,25 @@ const updateBatch = async (req, res) => {
         { role: "teacher", assignedBatches: oldName },
         { $set: { "assignedBatches.$": newName } }
       );
-      await StudentProfile.updateMany(
-        { batch: oldName },
-        { $set: { batch: newName } }
-      );
+
+      const affectedStudents = await StudentProfile.find({
+        $or: [
+          { batches: oldName },
+          { batch: { $regex: new RegExp(`(^|,\\s*)${oldName}(,\\s*|$)`, "i") } },
+        ],
+      });
+      for (const s of affectedStudents) {
+        if (Array.isArray(s.batches) && s.batches.length > 0) {
+          s.batches = s.batches.map((b) => (b === oldName ? newName : b));
+        } else if (s.batch) {
+          s.batches = s.batch
+            .split(",")
+            .map((b) => (b.trim() === oldName ? newName : b.trim()))
+            .filter(Boolean);
+        }
+        s.batch = s.batches ? s.batches.join(", ") : "";
+        await s.save();
+      }
     }
 
     if (subject !== undefined) batch.subject = subject?.trim() || "";
@@ -208,11 +223,28 @@ const deleteBatch = async (req, res) => {
       return res.status(404).json({ success: false, message: "Batch not found" });
     }
 
-    // Unassign students in this batch
-    const studentRes = await StudentProfile.updateMany(
-      { batch: batch.name },
-      { $set: { batch: "" } }
-    );
+    // Unassign this batch from students who have it
+    const affectedStudents = await StudentProfile.find({
+      $or: [
+        { batches: batch.name },
+        { batch: { $regex: new RegExp(`(^|,\\s*)${batch.name}(,\\s*|$)`, "i") } },
+      ],
+    });
+
+    let modifiedCount = 0;
+    for (const s of affectedStudents) {
+      if (Array.isArray(s.batches) && s.batches.length > 0) {
+        s.batches = s.batches.filter((b) => b !== batch.name);
+      } else if (s.batch) {
+        s.batches = s.batch
+          .split(",")
+          .map((b) => b.trim())
+          .filter((b) => b && b !== batch.name);
+      }
+      s.batch = s.batches ? s.batches.join(", ") : "";
+      await s.save();
+      modifiedCount++;
+    }
 
     // Unassign teachers from this batch
     const teacherRes = await User.updateMany(
@@ -224,7 +256,7 @@ const deleteBatch = async (req, res) => {
 
     res.json({
       success: true,
-      message: `Batch "${batch.name}" deleted successfully. Unassigned ${studentRes.modifiedCount} student(s) and updated teacher allocations.`,
+      message: `Batch "${batch.name}" deleted successfully. Unassigned ${modifiedCount} student(s) and updated teacher allocations.`,
     });
   } catch (error) {
     console.error("deleteBatch error:", error);
@@ -250,4 +282,74 @@ const listActiveBatches = async (req, res) => {
   }
 };
 
-module.exports = { getBatches, createBatch, updateBatch, deleteBatch, listActiveBatches };
+// ── PUT /api/admin/batches/:id/students ────────────────────────────────────────
+const updateBatchEnrollments = async (req, res) => {
+  if (req.user.role !== "admin") {
+    return res.status(403).json({ success: false, message: "Admin access required" });
+  }
+
+  const { id } = req.params;
+  const { studentIds } = req.body;
+
+  if (!Array.isArray(studentIds)) {
+    return res.status(400).json({ success: false, message: "studentIds must be an array of student IDs" });
+  }
+
+  try {
+    const batch = await Batch.findById(id);
+    if (!batch) {
+      return res.status(404).json({ success: false, message: "Batch not found" });
+    }
+
+    const batchName = batch.name;
+    const targetSet = new Set(studentIds.map(String));
+
+    const allStudents = await StudentProfile.find({ status: { $ne: "removed" } });
+
+    let addedCount = 0;
+    let removedCount = 0;
+
+    for (const student of allStudents) {
+      const studentIdStr = String(student._id);
+      const isTarget = targetSet.has(studentIdStr);
+      let currentBatches = Array.isArray(student.batches) ? [...student.batches] : [];
+      if (!currentBatches.length && student.batch) {
+        currentBatches = student.batch.split(",").map((b) => b.trim()).filter(Boolean);
+      }
+
+      const hasBatch = currentBatches.includes(batchName);
+
+      if (isTarget && !hasBatch) {
+        currentBatches.push(batchName);
+        student.batches = currentBatches;
+        student.batch = currentBatches.join(", ");
+        await student.save();
+        addedCount++;
+      } else if (!isTarget && hasBatch) {
+        currentBatches = currentBatches.filter((b) => b !== batchName);
+        student.batches = currentBatches;
+        student.batch = currentBatches.join(", ");
+        await student.save();
+        removedCount++;
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Batch enrollments updated successfully (+${addedCount} enrolled, -${removedCount} removed)`,
+      data: { addedCount, removedCount },
+    });
+  } catch (error) {
+    console.error("updateBatchEnrollments error:", error);
+    res.status(500).json({ success: false, message: "Failed to update batch enrollments" });
+  }
+};
+
+module.exports = {
+  getBatches,
+  createBatch,
+  updateBatch,
+  deleteBatch,
+  listActiveBatches,
+  updateBatchEnrollments,
+};

@@ -80,7 +80,19 @@ function AttendanceHistoryView({ allowedBatches }) {
 
   // ── Derive unique option lists from student registry ────────────────────────
   const uniqueBatches = useMemo(() => {
-    return [...new Set(studentList.map((s) => s.batch).filter(Boolean))].sort()
+    const set = new Set()
+    studentList.forEach((s) => {
+      if (Array.isArray(s.batches) && s.batches.length > 0) {
+        s.batches.forEach((b) => {
+          if (b && b.trim()) set.add(b.trim())
+        })
+      } else if (s.batch) {
+        s.batch.split(',').forEach((b) => {
+          if (b && b.trim()) set.add(b.trim())
+        })
+      }
+    })
+    return [...set].sort()
   }, [studentList])
 
   const uniqueClasses = useMemo(() => {
@@ -91,7 +103,10 @@ function AttendanceHistoryView({ allowedBatches }) {
   const q = searchQuery.trim().toLowerCase()
   const filteredSearchList = useMemo(() => {
     return studentList.filter((s) => {
-      const matchBatch = filterBatch === 'all' || s.batch === filterBatch
+      const matchBatch =
+        filterBatch === 'all' ||
+        (Array.isArray(s.batches) && s.batches.includes(filterBatch)) ||
+        (s.batch && s.batch.split(',').map((b) => b.trim()).includes(filterBatch))
       const matchClass = filterClass === 'all' || s.studentClass === filterClass
       const matchText = !q ||
         (s.fullName || '').toLowerCase().includes(q) ||
@@ -267,7 +282,11 @@ function AttendanceHistoryView({ allowedBatches }) {
                     <div className="min-w-0 flex-1">
                       <p className="text-xs font-semibold text-brand-text truncate">{s.fullName}</p>
                       <p className="text-[10px] text-brand-text-muted truncate">
-                        Batch: <span className="font-semibold text-brand-text">{s.batch}</span> {s.studentClass ? `· Class ${s.studentClass}` : ''}
+                        Batch: <span className="font-semibold text-brand-text">
+                          {Array.isArray(s.batches) && s.batches.length > 0
+                            ? s.batches.join(', ')
+                            : (s.batch || '—')}
+                        </span> {s.studentClass ? `· Class ${s.studentClass}` : ''}
                       </p>
                     </div>
                   </button>

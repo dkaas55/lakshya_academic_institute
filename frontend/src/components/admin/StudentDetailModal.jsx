@@ -102,6 +102,10 @@ export default function StudentDetailModal({
   const ledger = ledgerData?.ledger
   const overview = ledgerData?.overview
 
+  const studentBatches = Array.isArray(student.batches) && student.batches.length > 0
+    ? student.batches
+    : (student.batch || '').split(',').map((b) => b.trim()).filter(Boolean)
+
   const totalFee = overview?.totalCourseFee ?? ledger?.totalCourseFee ?? 0
   const amountPaid = overview?.amountPaid ?? ledger?.amountPaid ?? 0
   const amountDue = overview?.amountDue ?? ledger?.amountDue ?? 0
@@ -173,10 +177,10 @@ export default function StudentDetailModal({
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-brand-text-muted mt-0.5 flex items-center gap-1.5">
+                <p className="text-xs text-brand-text-muted mt-0.5 flex items-center gap-1.5 flex-wrap">
                   <span>@{student.username || 'student'}</span>
                   <span>•</span>
-                  <span>{student.batch || 'Unassigned Batch'}</span>
+                  <span>{studentBatches.length > 0 ? studentBatches.join(', ') : 'Unassigned Batch'}</span>
                 </p>
               </div>
             </div>
@@ -241,14 +245,25 @@ export default function StudentDetailModal({
             </div>
 
             {/* Batch */}
-            <div className="rounded-xl border border-brand-border bg-brand-surface-tint/30 p-3 space-y-1">
+            <div className="rounded-xl border border-brand-border bg-brand-surface-tint/30 p-3 space-y-1.5">
               <div className="flex items-center gap-1.5 text-[11px] font-semibold text-brand-text-muted">
                 <BookOpen className="h-3.5 w-3.5" />
-                <span>Assigned Batch</span>
+                <span>Enrolled Batch{studentBatches.length > 1 ? 'es' : ''}</span>
               </div>
-              <p className="text-xs font-bold text-brand-text">
-                {student.batch || '—'}
-              </p>
+              {studentBatches.length > 0 ? (
+                <div className="flex flex-wrap gap-1">
+                  {studentBatches.map((bName, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center rounded-md bg-brand-surface border border-brand-border px-2 py-0.5 text-xs font-semibold text-brand-primary"
+                    >
+                      {bName}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs font-bold text-brand-text">—</p>
+              )}
             </div>
 
             {/* Joining Date */}

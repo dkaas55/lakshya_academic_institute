@@ -17,23 +17,33 @@ const getTeacherDashboard = async (req, res) => {
     let students = [];
     if (assignedBatches.length > 0) {
       const profiles = await StudentProfile.find({
-        batch: { $in: assignedBatches },
+        $or: [
+          { batches: { $in: assignedBatches } },
+          { batch: { $in: assignedBatches } },
+        ],
         status: { $ne: "removed" }, // exclude removed students
       })
         .populate("user", "name username")
         .sort({ batch: 1, createdAt: -1 })
         .lean();
 
-      students = profiles.map((p) => ({
-        id: p._id,
-        fullName: p.user?.name ?? "Unknown",
-        rollNo: p.rollNo ?? "",
-        batch: p.batch,
-        studentClass: p.studentClass,
-        subjects: p.subjects,
-        joiningDate: p.joiningDate,
-        status: p.status ?? "active",
-      }));
+      students = profiles.map((p) => {
+        const sBatches = Array.isArray(p.batches) && p.batches.length > 0
+          ? p.batches
+          : (p.batch ? p.batch.split(",").map((b) => b.trim()).filter(Boolean) : []);
+
+        return {
+          id: p._id,
+          fullName: p.user?.name ?? "Unknown",
+          rollNo: p.rollNo ?? "",
+          batch: p.batch || sBatches.join(", "),
+          batches: sBatches,
+          studentClass: p.studentClass,
+          subjects: p.subjects,
+          joiningDate: p.joiningDate,
+          status: p.status ?? "active",
+        };
+      });
     }
 
     // ── Materials uploaded by this teacher ─────────────────────────────────

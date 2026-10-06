@@ -620,7 +620,11 @@ function OverviewTab({ teacher, materials, tests, onNavigateTab }) {
                     {calcDetails.students.map((s) => (
                       <tr key={s.id} className="hover:bg-brand-surface-tint/50">
                         <td className="py-2 px-3 font-medium text-brand-text">{s.name}</td>
-                        <td className="py-2 px-3 text-brand-text-muted">{s.batch}</td>
+                        <td className="py-2 px-3 text-brand-text-muted">
+                          {Array.isArray(s.batches) && s.batches.length > 0
+                            ? s.batches.join(', ')
+                            : (s.batch || '—')}
+                        </td>
                         <td className="py-2 px-3 font-medium text-brand-text">₹{s.monthlyFee?.toLocaleString('en-IN')}</td>
                         <td className="py-2 px-3 font-bold text-brand-primary text-right">₹{s.teacherShare?.toLocaleString('en-IN')}</td>
                       </tr>
@@ -993,7 +997,11 @@ function SalaryTab({ teacher }) {
                       {calcDetails.students.map((s) => (
                         <tr key={s.id} className="hover:bg-brand-surface-tint/50">
                           <td className="py-2 px-3 font-medium text-brand-text">{s.name}</td>
-                          <td className="py-2 px-3 text-brand-text-muted">{s.batch}</td>
+                          <td className="py-2 px-3 text-brand-text-muted">
+                            {Array.isArray(s.batches) && s.batches.length > 0
+                              ? s.batches.join(', ')
+                              : (s.batch || '—')}
+                          </td>
                           <td className="py-2 px-3 font-medium text-brand-text">₹{s.monthlyFee?.toLocaleString('en-IN')}</td>
                           <td className="py-2 px-3 font-bold text-brand-primary text-right">₹{s.teacherShare?.toLocaleString('en-IN')}</td>
                         </tr>
@@ -1553,9 +1561,19 @@ function StudentsTab({ students }) {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${batchPill(s.batch)}`}>
-                        {s.batch}
-                      </span>
+                      <div className="flex flex-wrap gap-1">
+                        {(Array.isArray(s.batches) && s.batches.length > 0
+                          ? s.batches
+                          : (s.batch || '').split(',').map((b) => b.trim()).filter(Boolean)
+                        ).map((bName, bIdx) => (
+                          <span
+                            key={bIdx}
+                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${batchPill(bName)}`}
+                          >
+                            {bName}
+                          </span>
+                        ))}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-brand-text">{s.studentClass || <span className="text-brand-text-muted/50">—</span>}</td>
                     <td className="px-4 py-3 text-brand-text">{s.subjects || <span className="text-brand-text-muted/50">—</span>}</td>

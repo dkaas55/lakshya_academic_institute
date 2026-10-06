@@ -179,7 +179,10 @@ const calculateTeacherSalaryForMonth = async (teacherOrId, monthInput) => {
 
   // 2. Find all active students in teacher's batches
   const students = await StudentProfile.find({
-    batch: { $in: teacherBatchNames },
+    $or: [
+      { batches: { $in: teacherBatchNames } },
+      { batch: { $in: teacherBatchNames } },
+    ],
     status: { $ne: "removed" },
     joiningDate: { $lte: monthObj.endDate },
   })
@@ -209,7 +212,12 @@ const calculateTeacherSalaryForMonth = async (teacherOrId, monthInput) => {
     const bSubject = bDoc?.subject || teacher.subject || "";
     const feePerStudent = bDoc?.feePerStudent != null ? Number(bDoc.feePerStudent) : 0;
 
-    const bStudents = students.filter((s) => s.batch === bName);
+    const bStudents = students.filter((s) => {
+      if (Array.isArray(s.batches) && s.batches.length > 0) {
+        return s.batches.includes(bName);
+      }
+      return s.batch === bName || (s.batch && s.batch.split(",").map((x) => x.trim()).includes(bName));
+    });
     const studentCount = bStudents.length;
 
     let batchTotalFee = 0;
@@ -243,10 +251,15 @@ const calculateTeacherSalaryForMonth = async (teacherOrId, monthInput) => {
       }
       totalCollectedThisMonth += collectedForMonth;
 
+      const sBatches = Array.isArray(s.batches) && s.batches.length > 0
+        ? s.batches
+        : (s.batch ? s.batch.split(",").map((x) => x.trim()).filter(Boolean) : []);
+
       const studentItem = {
         id: s._id,
         name: s.user?.name || "Unknown",
         batch: s.batch,
+        batches: sBatches,
         monthlyFee,
         teacherShare: isProrated ? Math.round(sShare * prorationRatio) : sShare,
         baseTeacherShare: sShare,

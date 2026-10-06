@@ -482,7 +482,11 @@ export default function TeacherSalaryModal({ teacher, onClose, onPaymentRecorded
                             {calcDetails.students.map((st) => (
                               <tr key={st.id} className="hover:bg-brand-surface-tint/40">
                                 <td className="py-2 px-3 font-medium text-brand-text">{st.name}</td>
-                                <td className="py-2 px-3 text-brand-text-muted">{st.batch}</td>
+                                <td className="py-2 px-3 text-brand-text-muted">
+                                  {Array.isArray(st.batches) && st.batches.length > 0
+                                    ? st.batches.join(', ')
+                                    : (st.batch || '—')}
+                                </td>
                                 <td className="py-2 px-3 font-medium text-brand-text">
                                   {formatCurrency(st.monthlyFee)}
                                 </td>

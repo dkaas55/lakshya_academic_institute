@@ -191,9 +191,21 @@ export default function ActiveStudentsList({ refreshKey = 0 }) {
                       )}
                     </td>
                     <td className="px-4 py-2.5 font-medium text-brand-text">{student.fullName}</td>
-                    <td className="px-4 py-2.5 font-mono text-[11px] text-brand-text">{student.phoneNumber}</td>
-                    <td className="px-4 py-2.5 text-brand-text">{student.batch}</td>
-                    <td className="px-4 py-2.5 text-brand-text">{student.studentClass || '—'}</td>
+                    <td className="px-4 py-2.5 text-brand-text">
+                      <div className="flex flex-wrap gap-1 max-w-[220px]">
+                        {(student.batches && student.batches.length > 0
+                          ? student.batches
+                          : (student.batch ? student.batch.split(',').map((b) => b.trim()).filter(Boolean) : [])
+                        ).map((b, i) => (
+                          <span
+                            key={i}
+                            className="inline-flex items-center rounded-md bg-brand-surface-tint border border-brand-border px-1.5 py-0.5 text-[10px] font-medium text-brand-text"
+                          >
+                            {b}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
                     <td className="px-4 py-2.5 text-brand-text-muted whitespace-nowrap">{student.joiningDate ? new Date(student.joiningDate).toLocaleDateString('en-GB') : '—'}</td>
                     <td className="px-4 py-2.5"><AccountStatusBadge status={student.status ?? 'active'} /></td>
                     <td className="px-4 py-2.5"><FeeStatusBadge status={student.feeStatus} /></td>

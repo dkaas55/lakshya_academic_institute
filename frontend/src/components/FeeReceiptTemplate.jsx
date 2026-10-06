@@ -147,7 +147,9 @@ export default function FeeReceiptTemplate({ receiptInfo, student }) {
                 Batch
               </p>
               <p className="text-sm font-semibold text-slate-900 mt-1">
-                {student.batch}
+                {Array.isArray(student.batches) && student.batches.length > 0
+                  ? student.batches.join(', ')
+                  : (student.batch || '—')}
               </p>
             </div>
             <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">

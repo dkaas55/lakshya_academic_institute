@@ -52,6 +52,7 @@ const getLedger = async (req, res) => {
           rollNo: profile.rollNo ?? "",
           phoneNumber: profile.parentContact,
           batch: profile.batch,
+          batches: profile.batches || (profile.batch ? profile.batch.split(",").map((b) => b.trim()).filter(Boolean) : []),
         },
         ledger: {
           id: ledger._id,
@@ -262,12 +263,17 @@ const getAllTransactions = async (req, res) => {
     for (const ledger of ledgers) {
       if (!ledger.student || ledger.student.status === "removed") continue;
 
+      const sBatches = Array.isArray(ledger.student.batches) && ledger.student.batches.length > 0
+        ? ledger.student.batches
+        : (ledger.student.batch ? ledger.student.batch.split(",").map((b) => b.trim()).filter(Boolean) : []);
+
       for (const payment of ledger.paymentHistory || []) {
         transactions.push({
           id: payment._id,
           studentName: ledger.student.user?.name || "Unknown",
           rollNo: ledger.student.rollNo || "",
-          batch: ledger.student.batch,
+          batch: ledger.student.batch || sBatches.join(", "),
+          batches: sBatches,
           amount: payment.amount,
           method: payment.method,
           paidAt: payment.paidAt,
@@ -313,11 +319,16 @@ const getPendingDues = async (req, res) => {
       const overview = getFeeOverview(ledger, ledger.student);
       if (!overview || overview.amountDue <= 0) continue;
 
+      const sBatches = Array.isArray(ledger.student.batches) && ledger.student.batches.length > 0
+        ? ledger.student.batches
+        : (ledger.student.batch ? ledger.student.batch.split(",").map((b) => b.trim()).filter(Boolean) : []);
+
       pendingList.push({
         id: ledger.student._id,
         studentName: ledger.student.user?.name || "Unknown",
         rollNo: ledger.student.rollNo || "",
-        batch: ledger.student.batch,
+        batch: ledger.student.batch || sBatches.join(", "),
+        batches: sBatches,
         studentClass: ledger.student.studentClass,
         totalCourseFee: ledger.totalFee,
         monthlyFeeAmount: overview.monthlyFeeAmount,

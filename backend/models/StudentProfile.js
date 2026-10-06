@@ -18,6 +18,10 @@ const studentProfileSchema = new mongoose.Schema(
       type: Number,
       index: true,
     },
+    batches: {
+      type: [String],
+      default: [],
+    },
     batch: {
       type: String,
       trim: true,
@@ -55,6 +59,15 @@ const studentProfileSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+studentProfileSchema.pre("save", function () {
+  if (Array.isArray(this.batches) && this.batches.length > 0) {
+    this.batches = [...new Set(this.batches.map((b) => String(b).trim()).filter(Boolean))];
+    this.batch = this.batches.join(", ");
+  } else if (this.batch && (!this.batches || this.batches.length === 0)) {
+    this.batches = this.batch.split(",").map((b) => b.trim()).filter(Boolean);
+  }
+});
 
 module.exports = mongoose.model("StudentProfile", studentProfileSchema);
 

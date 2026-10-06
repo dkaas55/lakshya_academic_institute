@@ -31,10 +31,18 @@ export default function BatchManagement() {
   const [batches, setBatches] = useState([])
   const [teachers, setTeachers] = useState([])
   const [studentCounts, setStudentCounts] = useState({})
+  const [allStudents, setAllStudents] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [editingBatch, setEditingBatch] = useState(null)
+
+  // Enrollment modal state
+  const [enrollModalBatch, setEnrollModalBatch] = useState(null)
+  const [selectedStudentIds, setSelectedStudentIds] = useState([])
+  const [enrollSearch, setEnrollSearch] = useState('')
+  const [enrollFilter, setEnrollFilter] = useState('all') // 'all' | 'enrolled' | 'not_enrolled'
+  const [savingEnroll, setSavingEnroll] = useState(false)
 
   const [form, setForm] = useState(initialForm)
   const [submitting, setSubmitting] = useState(false)
@@ -75,9 +83,17 @@ export default function BatchManagement() {
     try {
       const { data } = await api.get('/students')
       if (data.success) {
+        const studentList = data.data.students || []
+        setAllStudents(studentList)
         const counts = {}
-        for (const s of data.data.students) {
-          counts[s.batch] = (counts[s.batch] || 0) + 1
+        for (const s of studentList) {
+          const studentBatches = Array.isArray(s.batches) && s.batches.length > 0
+            ? s.batches
+            : (s.batch || '').split(',').map((b) => b.trim()).filter(Boolean)
+
+          for (const bName of studentBatches) {
+            counts[bName] = (counts[bName] || 0) + 1
+          }
         }
         setStudentCounts(counts)
       }
@@ -112,6 +128,49 @@ export default function BatchManagement() {
     })
     setFormError('')
     setShowModal(true)
+  }
+
+  const openEnrollModal = (batch) => {
+    setEnrollModalBatch(batch)
+    const enrolledIds = allStudents
+      .filter((s) => {
+        const sBatches = Array.isArray(s.batches) && s.batches.length > 0
+          ? s.batches
+          : (s.batch || '').split(',').map((b) => b.trim()).filter(Boolean)
+        return sBatches.includes(batch.name)
+      })
+      .map((s) => s.id)
+    setSelectedStudentIds(enrolledIds)
+    setEnrollSearch('')
+    setEnrollFilter('all')
+  }
+
+  const handleToggleStudentEnroll = (studentId) => {
+    setSelectedStudentIds((prev) =>
+      prev.includes(studentId)
+        ? prev.filter((id) => id !== studentId)
+        : [...prev, studentId]
+    )
+  }
+
+  const handleSaveEnrollments = async () => {
+    if (!enrollModalBatch) return
+    setSavingEnroll(true)
+    try {
+      const { data } = await api.put(`/admin/batches/${enrollModalBatch.id}/students`, {
+        studentIds: selectedStudentIds,
+      })
+      if (data.success) {
+        await loadStudentCounts()
+        setEnrollModalBatch(null)
+      } else {
+        alert(data.message || 'Failed to update batch enrollments.')
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to update batch enrollments.')
+    } finally {
+      setSavingEnroll(false)
+    }
   }
 
   /* ---- CRUD ---- */
@@ -296,6 +355,13 @@ export default function BatchManagement() {
                         )}
                       </td>
                       <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={() => openEnrollModal(b)}
+                          className="inline-flex items-center gap-1 rounded-lg bg-brand-primary/10 hover:bg-brand-primary/20 text-brand-primary px-2.5 py-1 text-xs font-semibold mr-3 transition-colors cursor-pointer"
+                          title="Enroll or remove students in this batch"
+                        >
+                          <span>👥 Enroll Students</span>
+                        </button>
                         <button
                           onClick={() => openEditModal(b)}
                           className="text-brand-primary hover:text-indigo-800 font-medium mr-3 cursor-pointer"
@@ -489,6 +555,247 @@ export default function BatchManagement() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Enroll Students Modal */}
+      {enrollModalBatch && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-text/30 backdrop-blur-sm">
+          <div
+            className="bg-brand-surface rounded-2xl border border-brand-border shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-brand-border bg-brand-surface-tint/50 shrink-0">
+              <div>
+                <h3 className="font-semibold text-brand-text">
+                  Enroll Students — {enrollModalBatch.name}
+                </h3>
+                <p className="text-xs text-brand-text-muted mt-0.5">
+                  Select students to enroll in this batch. Students can be enrolled in multiple batches simultaneously.
+                </p>
+              </div>
+              <button
+                onClick={() => setEnrollModalBatch(null)}
+                className="text-brand-text-muted/75 hover:text-brand-text text-sm p-1 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Filter and Search Bar */}
+            <div className="p-4 border-b border-brand-border/60 bg-brand-surface space-y-3 shrink-0">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 justify-between">
+                <input
+                  type="search"
+                  value={enrollSearch}
+                  onChange={(e) => setEnrollSearch(e.target.value)}
+                  placeholder="Search students by name, roll no, or phone..."
+                  className="w-full sm:flex-1 rounded-xl border border-brand-border px-3 py-2 text-xs focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
+                />
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const q = enrollSearch.trim().toLowerCase()
+                      const matchingIds = allStudents
+                        .filter((s) => {
+                          if (!q) return true
+                          return (
+                            (s.fullName || '').toLowerCase().includes(q) ||
+                            (s.rollNo || '').toLowerCase().includes(q) ||
+                            (s.phoneNumber || '').includes(q)
+                          )
+                        })
+                        .map((s) => s.id)
+                      setSelectedStudentIds((prev) => [...new Set([...prev, ...matchingIds])])
+                    }}
+                    className="text-[11px] font-semibold text-brand-primary hover:underline px-1 py-0.5"
+                  >
+                    Select All
+                  </button>
+                  <span className="text-brand-border">|</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const q = enrollSearch.trim().toLowerCase()
+                      if (!q) {
+                        setSelectedStudentIds([])
+                      } else {
+                        const matchingIds = new Set(
+                          allStudents
+                            .filter((s) => {
+                              return (
+                                (s.fullName || '').toLowerCase().includes(q) ||
+                                (s.rollNo || '').toLowerCase().includes(q) ||
+                                (s.phoneNumber || '').includes(q)
+                              )
+                            })
+                            .map((s) => s.id)
+                        )
+                        setSelectedStudentIds((prev) => prev.filter((id) => !matchingIds.has(id)))
+                      }
+                    }}
+                    className="text-[11px] font-semibold text-brand-text-muted hover:text-brand-text px-1 py-0.5"
+                  >
+                    Clear All
+                  </button>
+                </div>
+              </div>
+
+              {/* Status Filter Tabs */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEnrollFilter('all')}
+                  className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                    enrollFilter === 'all'
+                      ? 'bg-brand-primary text-white font-bold'
+                      : 'bg-brand-surface-tint text-brand-text-muted hover:text-brand-text'
+                  }`}
+                >
+                  All ({allStudents.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEnrollFilter('enrolled')}
+                  className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                    enrollFilter === 'enrolled'
+                      ? 'bg-brand-primary text-white font-bold'
+                      : 'bg-brand-surface-tint text-brand-text-muted hover:text-brand-text'
+                  }`}
+                >
+                  Enrolled ({selectedStudentIds.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEnrollFilter('not_enrolled')}
+                  className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                    enrollFilter === 'not_enrolled'
+                      ? 'bg-brand-primary text-white font-bold'
+                      : 'bg-brand-surface-tint text-brand-text-muted hover:text-brand-text'
+                  }`}
+                >
+                  Not Enrolled ({Math.max(0, allStudents.length - selectedStudentIds.length)})
+                </button>
+              </div>
+            </div>
+
+            {/* Students List */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-2 divide-y divide-brand-border/40">
+              {(() => {
+                const q = enrollSearch.trim().toLowerCase()
+                const filtered = allStudents.filter((s) => {
+                  const isEnrolled = selectedStudentIds.includes(s.id)
+                  if (enrollFilter === 'enrolled' && !isEnrolled) return false
+                  if (enrollFilter === 'not_enrolled' && isEnrolled) return false
+                  if (!q) return true
+                  return (
+                    (s.fullName || '').toLowerCase().includes(q) ||
+                    (s.rollNo || '').toLowerCase().includes(q) ||
+                    (s.phoneNumber || '').includes(q) ||
+                    (s.username || '').toLowerCase().includes(q)
+                  )
+                })
+
+                if (filtered.length === 0) {
+                  return (
+                    <div className="py-12 text-center text-xs text-brand-text-muted">
+                      No students found matching your search.
+                    </div>
+                  )
+                }
+
+                return filtered.map((s) => {
+                  const isSelected = selectedStudentIds.includes(s.id)
+                  const studentOtherBatches = (
+                    Array.isArray(s.batches) && s.batches.length > 0
+                      ? s.batches
+                      : (s.batch || '').split(',').map((b) => b.trim()).filter(Boolean)
+                  ).filter((b) => b !== enrollModalBatch.name)
+
+                  return (
+                    <div
+                      key={s.id}
+                      onClick={() => handleToggleStudentEnroll(s.id)}
+                      className={`flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-colors ${
+                        isSelected
+                          ? 'bg-brand-primary/5 border border-brand-primary/30'
+                          : 'hover:bg-brand-surface-tint/60 border border-transparent'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleToggleStudentEnroll(s.id)}
+                          className="h-4 w-4 rounded text-brand-primary border-brand-border focus:ring-brand-primary"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-xs text-brand-text truncate">
+                              {s.fullName}
+                            </span>
+                            {s.rollNo && (
+                              <span className="font-mono text-[10px] bg-brand-primary/10 text-brand-primary px-1.5 py-0.2 rounded font-bold">
+                                {s.rollNo}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                            <span className="text-[10px] text-brand-text-muted">
+                              {s.studentClass || 'No class'} · {s.phoneNumber || 'No phone'}
+                            </span>
+                            {studentOtherBatches.length > 0 && (
+                              <span className="text-[10px] text-brand-text-muted/80">
+                                (Also in: {studentOtherBatches.join(', ')})
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        {isSelected ? (
+                          <span className="inline-flex items-center rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 px-2 py-0.5 text-[10px] font-bold">
+                            ✓ Enrolled
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-brand-text-muted">Not in batch</span>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })
+              })()}
+            </div>
+
+            {/* Footer */}
+            <div className="px-5 py-3.5 border-t border-brand-border bg-brand-surface-tint/50 flex items-center justify-between gap-3 shrink-0">
+              <p className="text-xs font-semibold text-brand-text">
+                <span className="text-brand-primary font-bold">{selectedStudentIds.length}</span> student{selectedStudentIds.length !== 1 ? 's' : ''} enrolled in this batch
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEnrollModalBatch(null)}
+                  className="rounded-lg px-4 py-2 text-xs font-medium text-brand-text hover:bg-brand-surface-tint cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveEnrollments}
+                  disabled={savingEnroll}
+                  className="rounded-lg bg-brand-primary px-5 py-2 text-xs font-semibold text-white hover:bg-brand-primary/100 disabled:opacity-60 cursor-pointer shadow-xs"
+                >
+                  {savingEnroll ? 'Saving...' : 'Save Enrollments'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

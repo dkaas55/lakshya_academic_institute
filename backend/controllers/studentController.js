@@ -30,12 +30,15 @@ const registerStudent = async (req, res) => {
     });
   }
 
-  const { fullName, phoneNumber, batch, studentClass, subjects, totalCourseFee, password, joiningDate } = req.body;
+  const { fullName, phoneNumber, batch, batches: incomingBatches, studentClass, subjects, totalCourseFee, password, joiningDate } = req.body;
 
-  if (!fullName?.trim() || !phoneNumber?.trim() || !batch?.trim()) {
+  const rawBatches = incomingBatches || (batch ? (Array.isArray(batch) ? batch : batch.split(",")) : []);
+  const batches = [...new Set(rawBatches.map((b) => String(b).trim()).filter(Boolean))];
+
+  if (!fullName?.trim() || !phoneNumber?.trim() || batches.length === 0) {
     return res.status(400).json({
       success: false,
-      message: "Full name, phone number, and batch are required",
+      message: "Full name, phone number, and at least one batch are required",
     });
   }
 
@@ -92,7 +95,8 @@ const registerStudent = async (req, res) => {
       user: user._id,
       rollNo,
       admissionSerial: nextSerial,
-      batch: batch.trim(),
+      batches,
+      batch: batches.join(", "),
       studentClass: studentClass?.trim(),
       subjects: subjects?.trim(),
       parentContact: normalizedPhone,
@@ -123,6 +127,7 @@ const registerStudent = async (req, res) => {
           rollNo: profile.rollNo,
           phoneNumber: profile.parentContact,
           batch: profile.batch,
+          batches: profile.batches || batches,
           studentClass: profile.studentClass,
           subjects: profile.subjects,
           admissionDate: profile.admissionDate,
@@ -169,7 +174,11 @@ const getStudents = async (req, res) => {
   try {
     const query = { status: { $ne: "removed" } };
     if (req.user.role === "teacher") {
-      query.batch = { $in: req.user.assignedBatches || [] };
+      const assigned = req.user.assignedBatches || [];
+      query.$or = [
+        { batches: { $in: assigned } },
+        { batch: { $in: assigned } },
+      ];
     }
 
     // Exclude 'removed' students from the active roster
@@ -190,6 +199,9 @@ const getStudents = async (req, res) => {
     const students = profiles.map((profile) => {
       const ledger = ledgerByStudent[String(profile._id)];
       const feeStatus = deriveFeeStatus(ledger, profile);
+      const sBatches = Array.isArray(profile.batches) && profile.batches.length > 0
+        ? profile.batches
+        : (profile.batch ? profile.batch.split(",").map((b) => b.trim()).filter(Boolean) : []);
 
       return {
         id: profile._id,
@@ -197,7 +209,8 @@ const getStudents = async (req, res) => {
         username: profile.user?.username ?? "",
         rollNo: profile.rollNo ?? "",
         phoneNumber: profile.parentContact,
-        batch: profile.batch,
+        batch: profile.batch || sBatches.join(", "),
+        batches: sBatches,
         studentClass: profile.studentClass,
         subjects: profile.subjects,
         feeStatus,
@@ -228,7 +241,7 @@ const updateStudent = async (req, res) => {
   }
 
   const { id } = req.params;
-  const { fullName, phoneNumber, batch, studentClass, subjects } = req.body;
+  const { fullName, phoneNumber, batch, batches: incomingBatches, studentClass, subjects } = req.body;
 
   try {
     const profile = await StudentProfile.findById(id).populate("user");
@@ -251,8 +264,14 @@ const updateStudent = async (req, res) => {
       }
     }
 
-    if (batch && batch.trim()) {
-      profile.batch = batch.trim();
+    const rawBatches = incomingBatches !== undefined
+      ? incomingBatches
+      : (batch !== undefined ? (Array.isArray(batch) ? batch : batch.split(",")) : null);
+
+    if (rawBatches !== null) {
+      const cleanBatches = [...new Set(rawBatches.map((b) => String(b).trim()).filter(Boolean))];
+      profile.batches = cleanBatches;
+      profile.batch = cleanBatches.join(", ");
     }
 
     if (studentClass !== undefined) {
@@ -265,6 +284,10 @@ const updateStudent = async (req, res) => {
 
     await profile.save();
 
+    const sBatches = Array.isArray(profile.batches) && profile.batches.length > 0
+      ? profile.batches
+      : (profile.batch ? profile.batch.split(",").map((b) => b.trim()).filter(Boolean) : []);
+
     res.json({
       success: true,
       message: "Student updated successfully",
@@ -273,7 +296,8 @@ const updateStudent = async (req, res) => {
         fullName: profile.user.name,
         rollNo: profile.rollNo ?? "",
         phoneNumber: profile.parentContact,
-        batch: profile.batch,
+        batch: profile.batch || sBatches.join(", "),
+        batches: sBatches,
         studentClass: profile.studentClass,
         subjects: profile.subjects,
         joiningDate: profile.joiningDate ?? null,

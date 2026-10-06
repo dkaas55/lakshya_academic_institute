@@ -19,6 +19,7 @@ export function buildWhatsAppInvite({
   rollNo,
   phone,
   batch,
+  batches,
   totalCourseFee,
   password,
 }) {
@@ -27,6 +28,12 @@ export function buildWhatsAppInvite({
     totalCourseFee === '' || totalCourseFee == null
       ? '—'
       : `₹${Number(totalCourseFee).toLocaleString('en-IN')}`
+
+  const batchList = Array.isArray(batches) && batches.length > 0
+    ? batches
+    : (batch ? (Array.isArray(batch) ? batch : String(batch).split(',').map((b) => b.trim()).filter(Boolean)) : [])
+  const batchLabel = batchList.length > 0 ? batchList.join(', ') : '—'
+  const batchPrefix = batchList.length > 1 ? 'Batches' : 'Batch'
 
   return [
     `Hello!`,
@@ -39,7 +46,7 @@ export function buildWhatsAppInvite({
     `Temporary password: ${password || '—'}`,
     ``,
     `*Enrollment*`,
-    `Batch: ${batch || '—'}`,
+    `${batchPrefix}: ${batchLabel}`,
     `Monthly fee: ${feeLabel}`,
     ``,
     `Please sign in and change the password after first login.`,

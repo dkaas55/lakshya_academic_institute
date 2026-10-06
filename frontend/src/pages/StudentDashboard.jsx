@@ -134,6 +134,39 @@ function formatSubjects(subjects) {
 function StudentWelcomeBanner({ student, attnData, exams }) {
   const remark = getStudentRemark(student, attnData, exams)
 
+  // Derive list of batches with timing for bullet point display
+  const batchList = (() => {
+    if (Array.isArray(student?.batchTimingsList) && student.batchTimingsList.length > 0) {
+      return student.batchTimingsList
+    }
+
+    if (student?.batchTiming) {
+      const parts = student.batchTiming.split('|').map((p) => p.trim()).filter(Boolean)
+      if (parts.length > 0) {
+        return parts.map((part) => {
+          const colonIdx = part.indexOf(':')
+          if (colonIdx !== -1) {
+            return {
+              name: part.slice(0, colonIdx).trim(),
+              timing: part.slice(colonIdx + 1).trim(),
+            }
+          }
+          return { name: part, timing: '' }
+        })
+      }
+    }
+
+    const rawBatches = Array.isArray(student?.batches) && student.batches.length > 0
+      ? student.batches
+      : (student?.batch ? student.batch.split(',').map((b) => b.trim()).filter(Boolean) : [])
+
+    if (rawBatches.length > 0) {
+      return rawBatches.map((b) => ({ name: b, timing: '' }))
+    }
+
+    return [{ name: 'Unassigned Batch', timing: '' }]
+  })()
+
   return (
     <div className="md:col-span-2 rounded-2xl bg-[#141824] dark:bg-[#0c1017] border border-slate-800/80 p-6 text-white shadow-sm flex flex-col justify-between relative overflow-hidden group">
       {/* Subtle background ambient glow */}
@@ -156,25 +189,35 @@ function StudentWelcomeBanner({ student, attnData, exams }) {
 
         {/* Student details chips: Subject opted & Batch timing */}
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
-          <div className="flex items-center gap-2.5 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5">
-            <BookOpen size={16} className="text-sky-400 shrink-0" />
-            <div className="min-w-0">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block leading-tight">Subject Opted</span>
-              <span className="font-semibold text-slate-100 truncate block">
+          <div className="flex items-start gap-2.5 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5">
+            <BookOpen size={16} className="text-sky-400 shrink-0 mt-0.5" />
+            <div className="min-w-0 flex-1">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block leading-tight mb-1">Subject Opted</span>
+              <span className="font-semibold text-slate-100 block break-words">
                 {formatSubjects(student?.subjects)}
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5">
-            <Clock size={16} className="text-emerald-400 shrink-0" />
-            <div className="min-w-0">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block leading-tight">Batch Timing</span>
-              <span className="font-semibold text-slate-100 truncate block">
-                {student?.batchTiming
-                  ? `${student.batchTiming} (${student?.batch || 'Batch'})`
-                  : (student?.batch ? `${student.batch} · Regular Hours` : 'Regular Hours')}
+          <div className="flex items-start gap-2.5 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5">
+            <Clock size={16} className="text-emerald-400 shrink-0 mt-0.5" />
+            <div className="min-w-0 flex-1">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block leading-tight mb-1">
+                Batch(es) &amp; Timing
               </span>
+              <ul className="space-y-1 text-xs">
+                {batchList.map((item, idx) => (
+                  <li key={idx} className="flex items-start gap-1.5 text-slate-100 font-medium leading-snug">
+                    <span className="text-emerald-400 font-bold shrink-0 leading-tight">•</span>
+                    <span className="break-words">
+                      <span className="font-semibold text-white">{item.name}</span>
+                      {item.timing ? (
+                        <span className="text-slate-300 ml-1">({item.timing})</span>
+                      ) : null}
+                    </span>
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
         </div>
@@ -401,11 +444,14 @@ export default function StudentDashboard() {
             </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-3 text-xs font-semibold text-brand-text-muted">
-            {student?.batch && (
-              <span className="hidden sm:inline-flex items-center rounded-full bg-brand-surface-tint px-2.5 py-0.5 text-[10px] font-bold text-brand-text border border-brand-border">
-                {student.batch}
+            {(student?.batches?.length > 0
+              ? student.batches
+              : (student?.batch ? student.batch.split(',').map((b) => b.trim()).filter(Boolean) : [])
+            ).map((b) => (
+              <span key={b} className="hidden sm:inline-flex items-center rounded-full bg-brand-surface-tint px-2.5 py-0.5 text-[10px] font-bold text-brand-text border border-brand-border">
+                {b}
               </span>
-            )}
+            ))}
             
             <button
               type="button"
