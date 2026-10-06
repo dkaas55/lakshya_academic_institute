@@ -184,11 +184,18 @@ export default function TeacherSalaryModal({ teacher, onClose, onPaymentRecorded
               <IndianRupee size={20} strokeWidth={2.5} />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="font-bold text-base text-brand-text">{teacher.name}</h3>
+                {teacher.subject && (
+                  <span className="rounded-md bg-brand-primary/10 text-brand-primary border border-brand-primary/20 px-2 py-0.5 text-[10px] font-bold">
+                    {teacher.subject}
+                  </span>
+                )}
                 <span className="rounded-full bg-brand-primary/10 px-2 py-0.5 text-[10px] font-bold text-brand-primary">
                   {teacher.compensationType === 'fixed'
                     ? `Fixed: ${formatCurrency(teacher.salaryAmount || teacher.fixedSalary)}/mo`
+                    : teacher.compensationType === 'batch_based'
+                    ? `Batch Calculation (${teacher.studentPercentage || teacher.salaryPercentage || 100}%)`
                     : `${teacher.studentPercentage || teacher.salaryPercentage || 0}% Fee Split`}
                 </span>
               </div>
@@ -337,74 +344,156 @@ export default function TeacherSalaryModal({ teacher, onClose, onPaymentRecorded
                 </div>
               )}
 
-              {/* Student Breakdown (for Percentage Split teachers only) */}
-              {teacher.compensationType === 'percentage' && (
-                <div className="rounded-2xl border border-brand-border bg-brand-surface p-4 shadow-sm space-y-3">
-                  <div className="flex items-center justify-between">
+              {/* Batch-wise Calculation Breakdown (for Batch-based & Percentage teachers) */}
+              {teacher.compensationType !== 'fixed' && (calcDetails.batches?.length > 0 || calcDetails.students?.length > 0) && (
+                <div className="rounded-2xl border border-brand-border bg-brand-surface p-4 sm:p-5 shadow-sm space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-brand-border/60 pb-3">
                     <div className="flex items-center gap-2">
-                      <Users size={16} className="text-brand-primary" />
-                      <h4 className="text-xs font-bold text-brand-text">
-                        Calculation Breakdown ({data?.selectedMonth || selectedMonth})
-                      </h4>
-                      <span className="text-[10px] text-brand-text-muted">
-                        Total Pool: {formatCurrency(calcDetails.totalMonthlyFee)} ×{' '}
-                        {teacher.studentPercentage || teacher.salaryPercentage || 0}% ={' '}
-                        <strong className="text-brand-primary">{formatCurrency(summary.projectedSalary)}</strong>
-                      </span>
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-primary/10 text-brand-primary">
+                        <Users size={16} />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-brand-text">
+                          Batch-Wise Fee Calculation ({data?.selectedMonth || selectedMonth})
+                        </h4>
+                        <p className="text-[10px] text-brand-text-muted">
+                          Salary is calculated from batches taught: Active Students in Batch × Fee Per Student × Share %
+                        </p>
+                      </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowBreakdown(!showBreakdown)}
-                      className="text-xs font-semibold text-brand-primary flex items-center gap-1 hover:underline cursor-pointer"
-                    >
-                      {showBreakdown ? (
-                        <>
-                          Hide Students <ChevronUp size={14} />
-                        </>
-                      ) : (
-                        <>
-                          Show Students ({calcDetails.students?.length || 0}) <ChevronDown size={14} />
-                        </>
-                      )}
-                    </button>
+                    <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
+                      <span className="text-[11px] font-bold text-brand-primary bg-brand-primary/10 px-2.5 py-1 rounded-lg border border-brand-primary/20">
+                        Total Pool: {formatCurrency(calcDetails.totalBatchFeePool || calcDetails.totalMonthlyFee)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setShowBreakdown(!showBreakdown)}
+                        className="text-xs font-semibold text-brand-primary flex items-center gap-1 hover:underline cursor-pointer bg-brand-surface-tint border border-brand-border px-2.5 py-1 rounded-lg"
+                      >
+                        {showBreakdown ? (
+                          <>
+                            Hide Student List <ChevronUp size={14} />
+                          </>
+                        ) : (
+                          <>
+                            View Students ({calcDetails.students?.length || 0}) <ChevronDown size={14} />
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
 
-                  {showBreakdown && (
-                    <div className="overflow-x-auto pt-2 border-t border-brand-border/60">
+                  {/* Batches Breakdown Table */}
+                  {calcDetails.batches?.length > 0 ? (
+                    <div className="overflow-x-auto rounded-xl border border-brand-border">
                       <table className="min-w-full text-left text-xs">
                         <thead>
-                          <tr className="border-b border-brand-border text-brand-text-muted text-[10px] uppercase">
-                            <th className="py-2 px-3 font-semibold">Student</th>
-                            <th className="py-2 px-3 font-semibold">Batch</th>
-                            <th className="py-2 px-3 font-semibold">Monthly Fee</th>
-                            <th className="py-2 px-3 font-semibold">
-                              Teacher Share ({teacher.studentPercentage || teacher.salaryPercentage || 0}%)
+                          <tr className="border-b border-brand-border bg-brand-surface-tint text-brand-text-muted text-[10px] uppercase">
+                            <th className="py-2.5 px-3 font-semibold">Batch</th>
+                            <th className="py-2.5 px-3 font-semibold">Subject</th>
+                            <th className="py-2.5 px-3 font-semibold">Fee / Student</th>
+                            <th className="py-2.5 px-3 font-semibold">Active Students</th>
+                            <th className="py-2.5 px-3 font-semibold">Batch Total Fee</th>
+                            <th className="py-2.5 px-3 font-semibold text-right">
+                              Teacher Share ({teacher.studentPercentage || teacher.salaryPercentage || 100}%)
                             </th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-brand-border/60">
-                          {calcDetails.students && calcDetails.students.length > 0 ? (
-                            calcDetails.students.map((st) => (
+                          {calcDetails.batches.map((b) => (
+                            <tr key={b.batchName} className="hover:bg-brand-surface-tint/40">
+                              <td className="py-2.5 px-3 font-bold text-brand-text">
+                                {b.batchName}
+                              </td>
+                              <td className="py-2.5 px-3">
+                                {b.subject ? (
+                                  <span className="rounded-md bg-brand-primary/10 text-brand-primary px-2 py-0.5 text-[10px] font-semibold border border-brand-primary/20">
+                                    {b.subject}
+                                  </span>
+                                ) : (
+                                  <span className="text-brand-text-muted italic text-[10px]">—</span>
+                                )}
+                              </td>
+                              <td className="py-2.5 px-3 font-medium text-brand-text">
+                                {b.feePerStudent > 0 ? formatCurrency(b.feePerStudent) : (
+                                  <span className="text-brand-text-muted italic text-[10px]">From Student Fees</span>
+                                )}
+                              </td>
+                              <td className="py-2.5 px-3 font-semibold text-brand-text">
+                                {b.studentCount} student{b.studentCount !== 1 ? 's' : ''}
+                              </td>
+                              <td className="py-2.5 px-3 font-bold text-brand-text">
+                                {formatCurrency(b.batchTotalFee)}
+                              </td>
+                              <td className="py-2.5 px-3 font-bold text-brand-primary text-right">
+                                {formatCurrency(b.teacherShare)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                        <tfoot>
+                          <tr className="bg-brand-surface-tint/80 border-t border-brand-border font-bold">
+                            <td colSpan={3} className="py-2.5 px-3 text-brand-text">
+                              Total Across All Batches ({calcDetails.batches.length} batch{calcDetails.batches.length !== 1 ? 'es' : ''})
+                            </td>
+                            <td className="py-2.5 px-3 text-brand-text">
+                              {calcDetails.studentCount} students
+                            </td>
+                            <td className="py-2.5 px-3 text-brand-text">
+                              {formatCurrency(calcDetails.totalBatchFeePool || calcDetails.totalMonthlyFee)}
+                            </td>
+                            <td className="py-2.5 px-3 text-brand-primary text-right text-sm">
+                              {formatCurrency(summary.monthlySalary ?? summary.projectedSalary)}
+                            </td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="py-4 text-center text-xs text-brand-text-muted italic border rounded-xl border-brand-border">
+                      No batches assigned or no students enrolled for {data?.selectedMonth || selectedMonth}.
+                    </div>
+                  )}
+
+                  {/* Individual Enrolled Students Table (Collapsible) */}
+                  {showBreakdown && calcDetails.students?.length > 0 && (
+                    <div className="pt-2 border-t border-brand-border/60">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-[11px] font-bold text-brand-text-muted uppercase tracking-wider">
+                          Individual Enrolled Students
+                        </p>
+                        <span className="text-[10px] text-brand-text-muted">
+                          {calcDetails.students.length} student{calcDetails.students.length !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      <div className="overflow-x-auto rounded-xl border border-brand-border">
+                        <table className="min-w-full text-left text-xs">
+                          <thead>
+                            <tr className="border-b border-brand-border bg-brand-surface-tint text-brand-text-muted text-[10px] uppercase">
+                              <th className="py-2 px-3 font-semibold">Student</th>
+                              <th className="py-2 px-3 font-semibold">Batch</th>
+                              <th className="py-2 px-3 font-semibold">Monthly Fee</th>
+                              <th className="py-2 px-3 font-semibold text-right">
+                                Teacher Share ({teacher.studentPercentage || teacher.salaryPercentage || 100}%)
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-brand-border/60">
+                            {calcDetails.students.map((st) => (
                               <tr key={st.id} className="hover:bg-brand-surface-tint/40">
                                 <td className="py-2 px-3 font-medium text-brand-text">{st.name}</td>
                                 <td className="py-2 px-3 text-brand-text-muted">{st.batch}</td>
                                 <td className="py-2 px-3 font-medium text-brand-text">
                                   {formatCurrency(st.monthlyFee)}
                                 </td>
-                                <td className="py-2 px-3 font-bold text-brand-primary">
+                                <td className="py-2 px-3 font-bold text-brand-primary text-right">
                                   {formatCurrency(st.teacherShare)}
                                 </td>
                               </tr>
-                            ))
-                          ) : (
-                            <tr>
-                              <td colSpan={4} className="py-4 text-center text-brand-text-muted italic">
-                                No students were enrolled in assigned batches during {data?.selectedMonth}.
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   )}
                 </div>

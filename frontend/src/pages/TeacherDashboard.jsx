@@ -395,9 +395,6 @@ function OverviewTab({ teacher, materials, tests, onNavigateTab }) {
 
         {/* Earnings Card */}
         <div className="rounded-2xl border border-brand-border bg-brand-surface p-6 shadow-sm flex flex-col justify-between relative overflow-hidden group hover:shadow-md transition-all duration-300">
-          <div className="absolute top-0 right-0 p-3 opacity-15 text-6xl pointer-events-none group-hover:scale-110 transition-transform duration-300">
-            🪙
-          </div>
           <div className="flex items-center justify-between gap-2">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-wider text-brand-accent">
@@ -488,17 +485,21 @@ function OverviewTab({ teacher, materials, tests, onNavigateTab }) {
                   </div>
                 )}
 
-                <div className="mt-2 flex items-center justify-between gap-1.5">
+                <div className="mt-2 flex items-center justify-between gap-1.5 flex-wrap">
                   <span className="inline-flex items-center rounded-full bg-brand-primary/10 px-2 py-0.5 text-[9px] font-bold text-brand-primary ring-1 ring-brand-primary/20">
-                    {salaryData.compensationType === 'fixed' ? 'Fixed Salary' : `${salaryData.salaryPercentage}% Fee Split`}
+                    {salaryData.compensationType === 'fixed'
+                      ? 'Fixed Salary'
+                      : salaryData.compensationType === 'batch_based'
+                      ? `Batch Calculation (${salaryData.salaryPercentage || 100}%)`
+                      : `${salaryData.salaryPercentage}% Fee Split`}
                   </span>
-                  {salaryData.compensationType === 'percentage' && calcDetails.students?.length > 0 && (
+                  {salaryData.compensationType !== 'fixed' && (calcDetails.batches?.length > 0 || calcDetails.students?.length > 0) && (
                     <button
                       type="button"
                       onClick={() => setShowBreakdown(!showBreakdown)}
                       className="text-[10px] font-bold text-brand-primary hover:underline cursor-pointer"
                     >
-                      {showBreakdown ? 'Hide Breakdown' : `Breakdown (${calcDetails.studentCount} students)`}
+                      {showBreakdown ? 'Hide Breakdown' : `Breakdown (${calcDetails.batches?.length || 0} batches)`}
                     </button>
                   )}
                 </div>
@@ -534,39 +535,101 @@ function OverviewTab({ teacher, materials, tests, onNavigateTab }) {
         </div>
       )}
 
-      {/* Percentage Calculation Student Breakdown */}
-      {showBreakdown && salaryData?.compensationType === 'percentage' && (
-        <div className="rounded-2xl border border-brand-border bg-brand-surface p-4 shadow-sm space-y-2 animate-fadeIn">
-          <div className="flex items-center justify-between">
-            <h4 className="text-xs font-bold text-brand-text">
-              Salary Calculation Breakdown for {salaryData.selectedMonth}
-            </h4>
-            <span className="text-[10px] text-brand-text-muted">
-              Total Student Pool: ₹{calcDetails.totalMonthlyFee?.toLocaleString('en-IN')} × {salaryData.salaryPercentage}% = <strong className="text-brand-primary">₹{salaryData.salary.toLocaleString('en-IN')}</strong>
+      {/* Batch & Student Calculation Breakdown */}
+      {showBreakdown && salaryData?.compensationType !== 'fixed' && (
+        <div className="rounded-2xl border border-brand-border bg-brand-surface p-4 sm:p-5 shadow-sm space-y-4 animate-fadeIn">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-brand-border/60 pb-3">
+            <div>
+              <h4 className="text-xs font-bold text-brand-text">
+                Salary Calculation Breakdown for {salaryData.selectedMonth}
+              </h4>
+              <p className="text-[10px] text-brand-text-muted mt-0.5">
+                Calculated from assigned batches: (Active Students × Fee Per Student) × {salaryData.salaryPercentage || 100}%
+              </p>
+            </div>
+            <span className="text-[11px] font-bold text-brand-primary bg-brand-primary/10 px-2.5 py-1 rounded-lg border border-brand-primary/20 self-start sm:self-auto">
+              Total Batch Pool: ₹{(calcDetails.totalBatchFeePool || calcDetails.totalMonthlyFee)?.toLocaleString('en-IN')}
             </span>
           </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-brand-border text-brand-text-muted text-[10px] uppercase">
-                  <th className="py-2 px-3 font-semibold">Student Name</th>
-                  <th className="py-2 px-3 font-semibold">Batch</th>
-                  <th className="py-2 px-3 font-semibold">Monthly Fee</th>
-                  <th className="py-2 px-3 font-semibold">Your Share ({salaryData.salaryPercentage}%)</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-brand-border/60">
-                {calcDetails.students?.map((s) => (
-                  <tr key={s.id} className="hover:bg-brand-surface-tint/50">
-                    <td className="py-2 px-3 font-medium text-brand-text">{s.name}</td>
-                    <td className="py-2 px-3 text-brand-text-muted">{s.batch}</td>
-                    <td className="py-2 px-3 font-medium text-brand-text">₹{s.monthlyFee?.toLocaleString('en-IN')}</td>
-                    <td className="py-2 px-3 font-bold text-brand-primary">₹{s.teacherShare?.toLocaleString('en-IN')}</td>
+
+          {/* Batches Table */}
+          {calcDetails.batches?.length > 0 && (
+            <div className="overflow-x-auto rounded-xl border border-brand-border">
+              <table className="min-w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-brand-border bg-brand-surface-tint text-brand-text-muted text-[10px] uppercase">
+                    <th className="py-2.5 px-3 font-semibold">Batch</th>
+                    <th className="py-2.5 px-3 font-semibold">Subject</th>
+                    <th className="py-2.5 px-3 font-semibold">Fee / Student</th>
+                    <th className="py-2.5 px-3 font-semibold">Active Students</th>
+                    <th className="py-2.5 px-3 font-semibold">Batch Total Fee</th>
+                    <th className="py-2.5 px-3 font-semibold text-right">
+                      Your Share ({salaryData.salaryPercentage || 100}%)
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-brand-border/60">
+                  {calcDetails.batches.map((b) => (
+                    <tr key={b.batchName} className="hover:bg-brand-surface-tint/40">
+                      <td className="py-2.5 px-3 font-bold text-brand-text">{b.batchName}</td>
+                      <td className="py-2.5 px-3">
+                        {b.subject ? (
+                          <span className="rounded-md bg-brand-primary/10 text-brand-primary px-2 py-0.5 text-[10px] font-semibold border border-brand-primary/20">
+                            {b.subject}
+                          </span>
+                        ) : (
+                          <span className="text-brand-text-muted italic text-[10px]">—</span>
+                        )}
+                      </td>
+                      <td className="py-2.5 px-3 font-medium text-brand-text">
+                        {b.feePerStudent > 0 ? `₹${b.feePerStudent.toLocaleString('en-IN')}` : '—'}
+                      </td>
+                      <td className="py-2.5 px-3 font-semibold text-brand-text">
+                        {b.studentCount} student{b.studentCount !== 1 ? 's' : ''}
+                      </td>
+                      <td className="py-2.5 px-3 font-bold text-brand-text">
+                        ₹{b.batchTotalFee?.toLocaleString('en-IN')}
+                      </td>
+                      <td className="py-2.5 px-3 font-bold text-brand-primary text-right">
+                        ₹{b.teacherShare?.toLocaleString('en-IN')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Student details if available */}
+          {calcDetails.students?.length > 0 && (
+            <div className="pt-2 border-t border-brand-border/60">
+              <p className="text-[11px] font-bold text-brand-text-muted uppercase tracking-wider mb-2">
+                Enrolled Students ({calcDetails.students.length})
+              </p>
+              <div className="overflow-x-auto rounded-xl border border-brand-border">
+                <table className="min-w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-brand-border bg-brand-surface-tint text-brand-text-muted text-[10px] uppercase">
+                      <th className="py-2 px-3 font-semibold">Student Name</th>
+                      <th className="py-2 px-3 font-semibold">Batch</th>
+                      <th className="py-2 px-3 font-semibold">Monthly Fee</th>
+                      <th className="py-2 px-3 font-semibold text-right">Your Share ({salaryData.salaryPercentage || 100}%)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-brand-border/60">
+                    {calcDetails.students.map((s) => (
+                      <tr key={s.id} className="hover:bg-brand-surface-tint/50">
+                        <td className="py-2 px-3 font-medium text-brand-text">{s.name}</td>
+                        <td className="py-2 px-3 text-brand-text-muted">{s.batch}</td>
+                        <td className="py-2 px-3 font-medium text-brand-text">₹{s.monthlyFee?.toLocaleString('en-IN')}</td>
+                        <td className="py-2 px-3 font-bold text-brand-primary text-right">₹{s.teacherShare?.toLocaleString('en-IN')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -829,7 +892,6 @@ function SalaryTab({ teacher }) {
                 <p className="text-[11px] font-bold uppercase tracking-wider text-brand-primary">
                   Total Outstanding Balance
                 </p>
-                <span className="text-base">🪙</span>
               </div>
               <p className="text-2xl font-black text-brand-primary mt-2">
                 ₹{(salaryData?.totalSalaryToBePaid ?? salaryData?.totalAccumulatedDue ?? 0).toLocaleString('en-IN')}
@@ -843,36 +905,88 @@ function SalaryTab({ teacher }) {
             </div>
           </div>
 
-          {/* Student breakdown if percentage */}
-          {salaryData?.compensationType === 'percentage' && calcDetails.students?.length > 0 && (
-            <div className="rounded-2xl border border-brand-border bg-brand-surface p-4 shadow-sm space-y-3">
-              <div className="flex items-center justify-between">
+          {/* Batch & Student breakdown */}
+          {salaryData?.compensationType !== 'fixed' && (calcDetails.batches?.length > 0 || calcDetails.students?.length > 0) && (
+            <div className="rounded-2xl border border-brand-border bg-brand-surface p-4 sm:p-5 shadow-sm space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-brand-border/60 pb-3">
                 <div>
                   <h4 className="text-xs font-bold text-brand-text">
-                    Student Pool Share ({salaryData.selectedMonth})
+                    Batch-Wise Fee Calculation ({salaryData.selectedMonth})
                   </h4>
-                  <p className="text-[11px] text-brand-text-muted">
-                    Total Student Pool: ₹{calcDetails.totalMonthlyFee?.toLocaleString('en-IN')} × {salaryData.salaryPercentage}% = <strong className="text-brand-primary">₹{salaryData.salary?.toLocaleString('en-IN')}</strong>
+                  <p className="text-[11px] text-brand-text-muted mt-0.5">
+                    Total Batch Pool: ₹{(calcDetails.totalBatchFeePool || calcDetails.totalMonthlyFee)?.toLocaleString('en-IN')} × {salaryData.salaryPercentage || 100}% = <strong className="text-brand-primary">₹{(salaryData.salary || 0).toLocaleString('en-IN')}</strong>
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowBreakdown(!showBreakdown)}
-                  className="rounded-xl border border-brand-border bg-brand-surface-tint px-2.5 py-1 text-xs font-bold text-brand-primary hover:bg-brand-primary/10 transition-colors cursor-pointer"
+                  className="rounded-xl border border-brand-border bg-brand-surface-tint px-2.5 py-1 text-xs font-bold text-brand-primary hover:bg-brand-primary/10 transition-colors cursor-pointer self-start sm:self-auto"
                 >
-                  {showBreakdown ? 'Hide List' : `View ${calcDetails.studentCount} Students`}
+                  {showBreakdown ? 'Hide Details' : `View Breakdown (${calcDetails.batches?.length || 0} Batches)`}
                 </button>
               </div>
 
-              {showBreakdown && (
+              {/* Batches Table */}
+              {calcDetails.batches?.length > 0 && (
+                <div className="overflow-x-auto rounded-xl border border-brand-border">
+                  <table className="min-w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-brand-border bg-brand-surface-tint text-brand-text-muted text-[10px] uppercase">
+                        <th className="py-2.5 px-3 font-semibold">Batch</th>
+                        <th className="py-2.5 px-3 font-semibold">Subject</th>
+                        <th className="py-2.5 px-3 font-semibold">Fee / Student</th>
+                        <th className="py-2.5 px-3 font-semibold">Active Students</th>
+                        <th className="py-2.5 px-3 font-semibold">Batch Total Fee</th>
+                        <th className="py-2.5 px-3 font-semibold text-right">
+                          Your Share ({salaryData.salaryPercentage || 100}%)
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-brand-border/60">
+                      {calcDetails.batches.map((b) => (
+                        <tr key={b.batchName} className="hover:bg-brand-surface-tint/40">
+                          <td className="py-2.5 px-3 font-bold text-brand-text">{b.batchName}</td>
+                          <td className="py-2.5 px-3">
+                            {b.subject ? (
+                              <span className="rounded-md bg-brand-primary/10 text-brand-primary px-2 py-0.5 text-[10px] font-semibold border border-brand-primary/20">
+                                {b.subject}
+                              </span>
+                            ) : (
+                              <span className="text-brand-text-muted italic text-[10px]">—</span>
+                            )}
+                          </td>
+                          <td className="py-2.5 px-3 font-medium text-brand-text">
+                            {b.feePerStudent > 0 ? `₹${b.feePerStudent.toLocaleString('en-IN')}` : '—'}
+                          </td>
+                          <td className="py-2.5 px-3 font-semibold text-brand-text">
+                            {b.studentCount} student{b.studentCount !== 1 ? 's' : ''}
+                          </td>
+                          <td className="py-2.5 px-3 font-bold text-brand-text">
+                            ₹{b.batchTotalFee?.toLocaleString('en-IN')}
+                          </td>
+                          <td className="py-2.5 px-3 font-bold text-brand-primary text-right">
+                            ₹{b.teacherShare?.toLocaleString('en-IN')}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Student details if toggled on */}
+              {showBreakdown && calcDetails.students?.length > 0 && (
                 <div className="overflow-x-auto border-t border-brand-border pt-3">
+                  <p className="text-[11px] font-bold text-brand-text-muted uppercase tracking-wider mb-2">
+                    Enrolled Students ({calcDetails.students.length})
+                  </p>
                   <table className="min-w-full text-left text-xs">
                     <thead>
                       <tr className="border-b border-brand-border text-brand-text-muted text-[10px] uppercase">
                         <th className="py-2 px-3 font-semibold">Student Name</th>
                         <th className="py-2 px-3 font-semibold">Batch</th>
                         <th className="py-2 px-3 font-semibold">Monthly Fee</th>
-                        <th className="py-2 px-3 font-semibold">Your Share ({salaryData.salaryPercentage}%)</th>
+                        <th className="py-2 px-3 font-semibold text-right">Your Share ({salaryData.salaryPercentage || 100}%)</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-brand-border/60">
@@ -881,7 +995,7 @@ function SalaryTab({ teacher }) {
                           <td className="py-2 px-3 font-medium text-brand-text">{s.name}</td>
                           <td className="py-2 px-3 text-brand-text-muted">{s.batch}</td>
                           <td className="py-2 px-3 font-medium text-brand-text">₹{s.monthlyFee?.toLocaleString('en-IN')}</td>
-                          <td className="py-2 px-3 font-bold text-brand-primary">₹{s.teacherShare?.toLocaleString('en-IN')}</td>
+                          <td className="py-2 px-3 font-bold text-brand-primary text-right">₹{s.teacherShare?.toLocaleString('en-IN')}</td>
                         </tr>
                       ))}
                     </tbody>

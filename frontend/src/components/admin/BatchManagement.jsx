@@ -1,8 +1,28 @@
 import { useEffect, useState } from 'react'
 import api from '../../lib/api'
 
+const SUBJECT_OPTIONS = [
+  'Mathematics',
+  'Physics',
+  'Chemistry',
+  'Biology',
+  'Science',
+  'English',
+  'Hindi',
+  'History',
+  'Geography',
+  'Economics',
+  'Computer Science',
+  'Accountancy',
+  'Business Studies',
+  'Political Science',
+  'Psychology',
+]
+
 const initialForm = {
   name: '',
+  subject: '',
+  feePerStudent: '',
   timing: '',
   assignedTeachers: [],
 }
@@ -85,6 +105,8 @@ export default function BatchManagement() {
     setEditingBatch(batch)
     setForm({
       name: batch.name || '',
+      subject: batch.subject || '',
+      feePerStudent: batch.feePerStudent != null ? batch.feePerStudent : '',
       timing: batch.timing || '',
       assignedTeachers: (batch.assignedTeachers || []).map((t) => String(t.id || t._id || t)),
     })
@@ -127,6 +149,8 @@ export default function BatchManagement() {
     try {
       const payload = {
         name: form.name.trim(),
+        subject: form.subject.trim(),
+        feePerStudent: form.feePerStudent !== '' ? Math.max(0, Number(form.feePerStudent)) : 0,
         timing: form.timing.trim() || null,
         assignedTeachers: form.assignedTeachers,
       }
@@ -158,8 +182,6 @@ export default function BatchManagement() {
     }
   }
 
-
-
   /* ---- Render ---- */
 
   return (
@@ -169,12 +191,12 @@ export default function BatchManagement() {
         <div>
           <h2 className="text-base font-semibold text-brand-text">Batch Management</h2>
           <p className="text-xs text-brand-text-muted mt-0.5">
-            Create, edit and manage batches, timings, and teacher assignments.
+            Create, edit and manage batches, subjects, per-student fees, and teacher assignments.
           </p>
         </div>
         <button
           onClick={openAddModal}
-          className="rounded-lg bg-brand-primary px-4 py-2 text-xs font-semibold text-brand-surface hover:bg-brand-primary/100 transition-colors"
+          className="rounded-lg bg-brand-primary px-4 py-2 text-xs font-semibold text-brand-surface hover:bg-brand-primary/100 transition-colors cursor-pointer"
         >
           + Create Batch
         </button>
@@ -199,65 +221,97 @@ export default function BatchManagement() {
             <table className="min-w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-brand-border bg-brand-surface-tint">
-                  <th className="px-4 py-3 font-semibold text-brand-text">Batch Name</th>
+                  <th className="px-4 py-3 font-semibold text-brand-text">Batch &amp; Subject</th>
+                  <th className="px-4 py-3 font-semibold text-brand-text">Fee / Student</th>
                   <th className="px-4 py-3 font-semibold text-brand-text">Timing</th>
                   <th className="px-4 py-3 font-semibold text-brand-text">Assigned Teachers</th>
-                  <th className="px-4 py-3 font-semibold text-brand-text">Students</th>
+                  <th className="px-4 py-3 font-semibold text-brand-text">Students &amp; Pool</th>
                   <th className="px-4 py-3 font-semibold text-brand-text text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-brand-border">
-                {batches.map((b) => (
-                  <tr key={b.id} className="hover:bg-brand-surface-tint/50 transition-colors">
-                    <td className="px-4 py-3">
-                      <p className="font-semibold text-brand-text">{b.name}</p>
-                    </td>
-                    <td className="px-4 py-3">
-                      {b.timing ? (
-                        <p className="text-brand-text">{b.timing}</p>
-                      ) : (
-                        <span className="text-brand-text-muted/75 italic text-[10px]">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex flex-wrap gap-1">
-                        {b.assignedTeachers?.length > 0 ? (
-                          b.assignedTeachers.map((t) => (
-                            <span
-                              key={t.id || t}
-                              className="rounded-full bg-brand-surface-tint px-2 py-0.5 text-[10px] text-brand-text border border-brand-border"
-                            >
-                              {t.name || t.username || t}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-brand-text-muted/75 italic text-[10px]">
-                            No teachers
+                {batches.map((b) => {
+                  const studentCount = studentCounts[b.name] ?? 0
+                  const pool = studentCount * (b.feePerStudent || 0)
+                  return (
+                    <tr key={b.id} className="hover:bg-brand-surface-tint/50 transition-colors">
+                      <td className="px-4 py-3">
+                        <p className="font-semibold text-brand-text">{b.name}</p>
+                        {b.subject ? (
+                          <span className="inline-block mt-0.5 rounded-md bg-brand-primary/10 text-brand-primary px-2 py-0.5 text-[10px] font-semibold border border-brand-primary/20">
+                            {b.subject}
                           </span>
+                        ) : (
+                          <span className="text-brand-text-muted/75 italic text-[10px]">No subject</span>
                         )}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <p className="font-medium text-brand-text">
-                        {studentCounts[b.name] != null ? studentCounts[b.name] : '—'}
-                      </p>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <button
-                        onClick={() => openEditModal(b)}
-                        className="text-brand-primary hover:text-indigo-800 font-medium mr-3"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(b.id, b.name)}
-                        className="text-red-600 hover:text-red-800 font-medium"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="px-4 py-3">
+                        {b.feePerStudent > 0 ? (
+                          <p className="font-semibold text-brand-text">
+                            ₹{b.feePerStudent.toLocaleString('en-IN')}{' '}
+                            <span className="text-[10px] text-brand-text-muted/75 font-normal">/ mo</span>
+                          </p>
+                        ) : (
+                          <span className="text-brand-text-muted/75 italic text-[10px]">₹0 (not set)</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {b.timing ? (
+                          <p className="text-brand-text">{b.timing}</p>
+                        ) : (
+                          <span className="text-brand-text-muted/75 italic text-[10px]">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap gap-1">
+                          {b.assignedTeachers?.length > 0 ? (
+                            b.assignedTeachers.map((t) => (
+                              <span
+                                key={t.id || t}
+                                className="inline-flex items-center gap-1 rounded-md bg-brand-surface-tint px-2 py-0.5 text-[10px] text-brand-text border border-brand-border"
+                              >
+                                <span className="font-medium">{t.name || t.username || t}</span>
+                                {t.subject && (
+                                  <span className="text-brand-primary font-semibold">
+                                    ({t.subject})
+                                  </span>
+                                )}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-brand-text-muted/75 italic text-[10px]">
+                              No teachers
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <p className="font-medium text-brand-text">
+                          {studentCount} student{studentCount !== 1 ? 's' : ''}
+                        </p>
+                        {b.feePerStudent > 0 && (
+                          <p className="text-[10px] text-brand-primary font-medium mt-0.5">
+                            Pool: ₹{pool.toLocaleString('en-IN')} / mo
+                          </p>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={() => openEditModal(b)}
+                          className="text-brand-primary hover:text-indigo-800 font-medium mr-3 cursor-pointer"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(b.id, b.name)}
+                          className="text-red-600 hover:text-red-800 font-medium cursor-pointer"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
@@ -298,7 +352,7 @@ export default function BatchManagement() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label className="block text-xs font-medium text-brand-text mb-1">
-                      Batch Name
+                      Batch Name <span className="text-red-500">*</span>
                     </label>
                     <input
                       required
@@ -308,6 +362,43 @@ export default function BatchManagement() {
                       placeholder="e.g. Morning Batch A"
                       className="w-full rounded-lg border border-brand-border px-3 py-2 text-sm focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
                     />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-brand-text mb-1">
+                      Teaching Subject
+                    </label>
+                    <input
+                      type="text"
+                      list="batch-subjects-list"
+                      value={form.subject}
+                      onChange={(e) => setForm({ ...form, subject: e.target.value })}
+                      placeholder="e.g. Mathematics, Physics"
+                      className="w-full rounded-lg border border-brand-border px-3 py-2 text-sm text-brand-text focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
+                    />
+                    <datalist id="batch-subjects-list">
+                      {SUBJECT_OPTIONS.map((s) => (
+                        <option key={s} value={s} />
+                      ))}
+                    </datalist>
+                    <p className="text-[10px] text-brand-text-muted/75 mt-1">
+                      Assigning a subject matches teachers with this specialty
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-brand-text mb-1">
+                      Fee Per Student (₹ / month)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={form.feePerStudent}
+                      onChange={(e) => setForm({ ...form, feePerStudent: e.target.value })}
+                      placeholder="e.g. 1500"
+                      className="w-full rounded-lg border border-brand-border px-3 py-2 text-sm focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
+                    />
+                    <p className="text-[10px] text-brand-text-muted/75 mt-1">
+                      Used for teacher salary calculation: (Enrolled Students × Fee Per Student)
+                    </p>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-brand-text mb-1">Timing</label>
@@ -338,25 +429,44 @@ export default function BatchManagement() {
                         const isSelected = form.assignedTeachers.some(
                           (id) => String(id) === String(t.id)
                         )
+                        const isSubjectMatch = Boolean(
+                          form.subject &&
+                          t.subject &&
+                          t.subject.toLowerCase() === form.subject.toLowerCase()
+                        )
                         return (
                           <button
                             key={t.id}
                             type="button"
                             onClick={() => handleTeacherToggle(t.id)}
-                            className={`rounded-full px-3 py-1.5 text-xs font-medium border transition-colors ${
+                            className={`rounded-xl px-3 py-1.5 text-xs font-medium border text-left transition-all ${
                               isSelected
-                                ? 'bg-brand-primary/10 border-indigo-200 text-brand-primary'
-                                : 'bg-brand-surface border-brand-border text-brand-text hover:border-brand-border'
+                                ? 'bg-brand-primary/10 border-brand-primary text-brand-primary ring-1 ring-brand-primary/20'
+                                : 'bg-brand-surface border-brand-border text-brand-text hover:bg-brand-surface-tint'
                             }`}
                           >
-                            {isSelected && <span className="mr-1">✓</span>}
-                            {t.name}
+                            <span className="font-semibold">
+                              {isSelected && <span className="mr-1 font-bold">✓</span>}
+                              {t.name}
+                            </span>
+                            {t.subject && (
+                              <span className={`ml-1.5 text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                                isSelected ? 'bg-brand-primary/20 text-brand-primary' : 'bg-brand-surface-tint text-brand-text-muted'
+                              }`}>
+                                {t.subject}
+                              </span>
+                            )}
+                            {isSubjectMatch && (
+                              <span className="ml-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-200">
+                                Match
+                              </span>
+                            )}
                           </button>
                         )
                       })}
                     </div>
                     <p className="text-[10px] text-brand-text-muted/75 mt-2">
-                      Select the teachers responsible for this batch.
+                      Select the teachers responsible for this batch. Teacher subjects help make batch assignment easy and accurate.
                     </p>
                   </>
                 )}

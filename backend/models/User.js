@@ -32,6 +32,12 @@ const userSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    // For teachers: teaching subject
+    subject: {
+      type: String,
+      trim: true,
+      default: "",
+    },
     // Teacher payroll & onboarding fields
     joiningDate: {
       type: Date,
@@ -40,10 +46,10 @@ const userSchema = new mongoose.Schema(
     compensationType: {
       type: String,
       enum: {
-        values: ["fixed", "percentage"],
+        values: ["fixed", "percentage", "batch_based"],
         message: "{VALUE} is not a valid compensation type",
       },
-      default: null,
+      default: "batch_based",
     },
     salaryAmount: {
       type: Number,

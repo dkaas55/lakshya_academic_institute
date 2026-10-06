@@ -8,6 +8,16 @@ const batchSchema = new mongoose.Schema(
       unique: true,
       trim: true,
     },
+    subject: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    feePerStudent: {
+      type: Number,
+      min: 0,
+      default: 0,
+    },
     timing: {
       type: String,
       trim: true,

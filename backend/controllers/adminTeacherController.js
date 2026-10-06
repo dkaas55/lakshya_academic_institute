@@ -12,6 +12,7 @@ function formatTeacher(user) {
     id: user._id,
     name: user.name,
     username: user.username,
+    subject: user.subject ?? "",
     assignedBatches: user.assignedBatches ?? [],
     joiningDate: user.joiningDate,
     compensationType: user.compensationType,
@@ -88,6 +89,7 @@ const createTeacher = async (req, res) => {
     name,
     username,
     password,
+    subject,
     assignedBatches = [],
     joiningDate,
     compensationType,
@@ -110,10 +112,10 @@ const createTeacher = async (req, res) => {
     });
   }
 
-  if (compensationType && !["fixed", "percentage"].includes(compensationType)) {
+  if (compensationType && !["fixed", "percentage", "batch_based"].includes(compensationType)) {
     return res.status(400).json({
       success: false,
-      message: "Compensation type must be 'fixed' or 'percentage'",
+      message: "Compensation type must be 'batch_based', 'percentage', or 'fixed'",
     });
   }
 
@@ -144,6 +146,7 @@ const createTeacher = async (req, res) => {
       username: username.trim().toLowerCase(),
       passwordHash,
       role: "teacher",
+      subject: subject?.trim() || "",
       assignedBatches: assignedBatches ?? [],
       joiningDate: joiningDate ? new Date(joiningDate) : new Date(),
       compensationType: compensationType || null,
@@ -188,6 +191,7 @@ const updateTeacher = async (req, res) => {
   const { id } = req.params;
   const {
     name,
+    subject,
     assignedBatches,
     joiningDate,
     compensationType,
@@ -198,11 +202,11 @@ const updateTeacher = async (req, res) => {
   if (
     compensationType !== undefined &&
     compensationType !== null &&
-    !["fixed", "percentage"].includes(compensationType)
+    !["fixed", "percentage", "batch_based"].includes(compensationType)
   ) {
     return res.status(400).json({
       success: false,
-      message: "Compensation type must be 'fixed' or 'percentage'",
+      message: "Compensation type must be 'batch_based', 'percentage', or 'fixed'",
     });
   }
 
@@ -226,6 +230,7 @@ const updateTeacher = async (req, res) => {
     }
 
     if (name?.trim()) teacher.name = name.trim();
+    if (subject !== undefined) teacher.subject = subject.trim();
     if (assignedBatches !== undefined) {
       teacher.assignedBatches = assignedBatches;
 

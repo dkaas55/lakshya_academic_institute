@@ -208,10 +208,6 @@ function StudentFeeDueCard({ fee, onViewLedger }) {
 
   return (
     <div className="rounded-2xl border border-brand-border bg-brand-surface p-6 shadow-sm flex flex-col justify-between relative overflow-hidden group hover:shadow-md transition-all duration-300">
-      <div className="absolute top-0 right-0 p-3 opacity-15 text-6xl pointer-events-none group-hover:scale-110 transition-transform duration-300">
-        🪙
-      </div>
-
       <div className="flex items-center justify-between gap-2">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-wider text-brand-accent">
@@ -256,7 +252,6 @@ function StudentFeeDueCard({ fee, onViewLedger }) {
         onClick={onViewLedger}
         className="mt-4 w-full rounded-xl border border-brand-border bg-brand-surface-tint hover:bg-brand-surface py-2.5 px-3 text-xs font-bold text-brand-text flex items-center justify-center gap-2 hover:border-brand-primary/40 transition-all cursor-pointer shadow-xs"
       >
-        <span>👛</span>
         <span>View Full Fee &amp; Payment Ledger →</span>
       </button>
     </div>
@@ -503,63 +498,6 @@ export default function StudentDashboard() {
                   />
                 </div>
 
-                {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Attendance Card */}
-                  <div className="bg-brand-surface rounded-2xl border border-brand-border shadow-sm p-5 flex flex-col justify-between">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-brand-text-muted/80">Attendance</span>
-                      <div className="rounded-lg bg-brand-primary/10 p-2 rounded-xl">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4.5 w-4.5 text-brand-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="mt-3">
-                      <p className="text-2xl font-bold text-brand-text">{attnData?.summary?.attendancePercentage ?? 0}%</p>
-                      <p className="text-xs text-brand-text-muted mt-1">
-                        {attnData?.summary ? `Present: ${attnData.summary.present}/${attnData.summary.totalClasses} classes` : 'No records'}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Study Materials Vault Card */}
-                  <div className="bg-brand-surface rounded-2xl border border-brand-border shadow-sm p-5 flex flex-col justify-between">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-brand-text-muted/80">Study Vault</span>
-                      <div className="rounded-lg bg-brand-primary/10 p-2 rounded-xl">
-                        <BookOpen size={18} className="text-brand-primary" />
-                      </div>
-                    </div>
-                    <div className="mt-3">
-                      <p className="text-2xl font-bold text-brand-text">{materials.length} Resources</p>
-                      <p className="text-xs text-brand-text-muted mt-1 truncate">
-                        {materials[0] ? `Latest: ${materials[0].title}` : 'No materials yet'}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Next Exam Card */}
-                  <div className="bg-brand-surface rounded-2xl border border-brand-border shadow-sm p-5 flex flex-col justify-between">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-brand-text-muted/80">Next Practice Test</span>
-                      <div className="rounded-lg bg-brand-primary/10 p-2 rounded-xl">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4.5 w-4.5 text-brand-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="mt-3">
-                      <p className="text-lg font-bold text-brand-text truncate" title={tests[0]?.subject ?? 'No Practice Test'}>
-                        {tests[0]?.subject ?? 'No Practice Test'}
-                      </p>
-                      <p className="text-xs text-brand-text-muted mt-1 truncate" title={tests[0]?.testTitle ?? 'All caught up!'}>
-                        {tests[0]?.testTitle ?? 'All caught up!'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
                 {/* Quick materials preview */}
                 {materials.length > 0 && (
                   <section className="bg-brand-surface rounded-2xl border border-brand-border shadow-sm p-6 flex flex-col gap-4">
@@ -586,6 +524,9 @@ export default function StudentDashboard() {
 
                 {/* ── MY PROGRESS (Comparing last 2 test marks + compliment) ── */}
                 <MyProgressCard exams={dashData?.instituteExams || []} />
+
+                {/* ── PRACTICE TESTS BLOCK (Below My Progress) ── */}
+                <PracticeTestsPreviewBlock tests={tests} onViewAll={() => setActiveTab('tests')} />
 
                 <AttendanceSummaryCard attnData={attnData} onViewAll={() => setActiveTab('attendance')} />
               </div>
@@ -1027,6 +968,95 @@ function MyProgressCard({ exams = [] }) {
               </div>
             </div>
           </div>
+        </div>
+      )}
+    </section>
+  )
+}
+
+// ─── Practice Tests Preview Block (Overview tab - Below My Progress) ──────────
+
+function PracticeTestsPreviewBlock({ tests, onViewAll }) {
+  return (
+    <section className="bg-brand-surface rounded-2xl border border-brand-border shadow-sm p-5 sm:p-6 flex flex-col gap-4">
+      <div className="flex items-center justify-between border-b border-brand-border pb-3 flex-wrap gap-2">
+        <div className="flex items-center gap-2.5">
+          <span className="p-1.5 rounded-xl bg-brand-primary/10 text-brand-primary font-bold">
+            <ClipboardList size={18} />
+          </span>
+          <div>
+            <h2 className="text-base font-extrabold text-brand-text tracking-tight">Practice Tests</h2>
+            <p className="text-xs text-brand-text-muted mt-0.5">Test papers and assignments uploaded for your batch</p>
+          </div>
+        </div>
+        {tests && tests.length > 0 && (
+          <button
+            type="button"
+            onClick={onViewAll}
+            className="text-xs font-semibold text-brand-primary hover:underline cursor-pointer"
+          >
+            View all ({tests.length}) →
+          </button>
+        )}
+      </div>
+
+      {tests && tests.length > 0 ? (
+        <div className="grid gap-4 sm:grid-cols-2">
+          {tests.slice(0, 2).map((test) => (
+            <div
+              key={test._id}
+              className="w-full flex flex-col justify-between rounded-xl border border-brand-border bg-brand-surface-tint p-4 shadow-sm hover:shadow-md hover:border-brand-border/80 transition-all"
+            >
+              <div>
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="rounded-md bg-brand-surface border border-brand-border px-2 py-0.5 text-[10px] font-bold text-brand-primary">
+                      {test.subject || 'General'}
+                    </span>
+                    {test.chapter && (
+                      <span className="rounded-md bg-brand-accent/10 border border-brand-accent/20 px-2 py-0.5 text-[10px] font-semibold text-brand-accent">
+                        {test.chapter}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-brand-text-muted/80">{formatDate(test.createdAt)}</span>
+                </div>
+
+                <h3 className="text-sm font-bold text-brand-text leading-snug line-clamp-2">
+                  {test.testTitle}
+                </h3>
+
+                {test.totalQuestions && (
+                  <p className="text-[11px] text-brand-text-muted mt-1.5 flex items-center gap-1">
+                    <span className="font-semibold text-brand-text">{test.totalQuestions}</span> Questions
+                  </p>
+                )}
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-brand-border/60 flex items-center justify-between gap-2">
+                <span className="text-[10px] font-semibold text-brand-text-muted uppercase tracking-wider">
+                  Practice Paper
+                </span>
+                <a
+                  href={test.documentUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-lg bg-brand-accent px-3 py-1.5 text-[11px] font-bold text-white dark:text-brand-bg hover:bg-brand-accent-hover transition-colors shadow-sm inline-flex items-center gap-1.5"
+                >
+                  <span>Open Test</span>
+                  <span>↗</span>
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="rounded-xl border border-dashed border-brand-border bg-brand-surface-tint p-6 text-center">
+          <ClipboardList size={28} className="mx-auto text-brand-text-muted/50 mb-2" />
+          <p className="text-xs font-bold text-brand-text">No Practice Tests Uploaded Yet</p>
+          <p className="text-[11px] text-brand-text-muted mt-0.5">
+            When your teachers post practice tests and papers for your batch, they will appear right here.
+          </p>
         </div>
       )}
     </section>

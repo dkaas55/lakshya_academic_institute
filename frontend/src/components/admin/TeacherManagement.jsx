@@ -25,14 +25,33 @@ const generateSecurePassword = () => {
   return password.split('').sort(() => 0.5 - Math.random()).join('')
 }
 
+const SUBJECT_OPTIONS = [
+  'Mathematics',
+  'Physics',
+  'Chemistry',
+  'Biology',
+  'Science',
+  'English',
+  'Hindi',
+  'History',
+  'Geography',
+  'Economics',
+  'Computer Science',
+  'Accountancy',
+  'Business Studies',
+  'Political Science',
+  'Psychology',
+]
+
 const initialForm = {
   name: '',
   username: '',
   password: '',
+  subject: '',
   joiningDate: new Date().toISOString().split('T')[0],
-  compensationType: 'fixed',
+  compensationType: 'batch_based',
   salaryAmount: '',
-  studentPercentage: '',
+  studentPercentage: '100',
   assignedBatches: [],
 }
 
@@ -91,10 +110,11 @@ export default function TeacherManagement() {
       name: teacher.name,
       username: teacher.username, // Readonly in edit usually, but keeping it simple
       password: '', // Blank for update
+      subject: teacher.subject || '',
       joiningDate: teacher.joiningDate ? new Date(teacher.joiningDate).toISOString().split('T')[0] : '',
-      compensationType: teacher.compensationType || 'fixed',
+      compensationType: teacher.compensationType || 'batch_based',
       salaryAmount: teacher.salaryAmount ?? '',
-      studentPercentage: teacher.studentPercentage ?? '',
+      studentPercentage: teacher.studentPercentage ?? (teacher.salaryPercentage ?? 100),
       assignedBatches: teacher.assignedBatches || [],
     })
     setFormError('')
@@ -133,6 +153,7 @@ export default function TeacherManagement() {
     try {
       const payload = {
         name: form.name.trim(),
+        subject: form.subject.trim(),
         assignedBatches: form.assignedBatches,
         joiningDate: form.joiningDate || null,
         compensationType: form.compensationType,
@@ -141,6 +162,9 @@ export default function TeacherManagement() {
       if (form.compensationType === 'fixed') {
         payload.salaryAmount = form.salaryAmount !== '' ? Number(form.salaryAmount) : null
         payload.studentPercentage = null
+      } else if (form.compensationType === 'batch_based') {
+        payload.studentPercentage = form.studentPercentage !== '' ? Number(form.studentPercentage) : 100
+        payload.salaryAmount = null
       } else if (form.compensationType === 'percentage') {
         payload.studentPercentage = form.studentPercentage !== '' ? Number(form.studentPercentage) : null
         payload.salaryAmount = null
@@ -226,7 +250,14 @@ export default function TeacherManagement() {
                 {teachers.map(t => (
                   <tr key={t.id} className="hover:bg-brand-surface-tint/50 transition-colors">
                     <td className="px-4 py-3">
-                      <p className="font-semibold text-brand-text">{t.name}</p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-semibold text-brand-text">{t.name}</p>
+                        {t.subject && (
+                          <span className="rounded-md bg-brand-primary/10 text-brand-primary px-2 py-0.5 text-[10px] font-semibold border border-brand-primary/20">
+                            {t.subject}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-[10px] text-brand-text-muted">{t.username}</p>
                     </td>
                     <td className="px-4 py-3">
@@ -235,7 +266,14 @@ export default function TeacherManagement() {
                       ) : t.compensationType === 'percentage' ? (
                         <p className="font-medium text-brand-primary">{t.studentPercentage ?? 0}% <span className="text-[10px] text-brand-text-muted/75 font-normal">split</span></p>
                       ) : (
-                        <p className="text-brand-text-muted/75 text-[10px] italic">Not set</p>
+                        <div>
+                          <span className="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2 py-0.5 text-[10px] font-bold text-brand-primary border border-indigo-200">
+                            Batch Calculation
+                          </span>
+                          <p className="text-[10px] text-brand-text-muted font-medium mt-0.5">
+                            {t.studentPercentage ?? 100}% of batch fee pool
+                          </p>
+                        </div>
                       )}
                       {t.joiningDate && (
                         <p className="text-[10px] text-brand-text-muted/75 mt-0.5">Joined {new Date(t.joiningDate).toLocaleDateString()}</p>
@@ -334,6 +372,23 @@ export default function TeacherManagement() {
                       className="w-full rounded-lg border border-brand-border px-3 py-2 text-sm focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
                     />
                   </div>
+                  <div>
+                    <label className="block text-xs font-medium text-brand-text mb-1">Teaching Subject</label>
+                    <input
+                      type="text"
+                      list="teacher-subjects-list"
+                      value={form.subject}
+                      onChange={e => setForm({...form, subject: e.target.value})}
+                      placeholder="e.g. Mathematics, Physics"
+                      className="w-full rounded-lg border border-brand-border px-3 py-2 text-sm text-brand-text focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
+                    />
+                    <datalist id="teacher-subjects-list">
+                      {SUBJECT_OPTIONS.map((s) => <option key={s} value={s} />)}
+                    </datalist>
+                    <p className="text-[10px] text-brand-text-muted/75 mt-1">
+                      Makes allocating batches fast and accurate
+                    </p>
+                  </div>
                   {!editingTeacher && (
                     <>
                       <div>
@@ -393,41 +448,68 @@ export default function TeacherManagement() {
 
               {/* Payroll Configuration */}
               <div>
-                <h4 className="text-[10px] font-bold uppercase tracking-wider text-brand-text-muted/75 mb-3 border-b pb-1">Payroll Configuration</h4>
+                <h4 className="text-[10px] font-bold uppercase tracking-wider text-brand-text-muted/75 mb-3 border-b pb-1">
+                  Payroll Configuration
+                </h4>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="block text-xs font-medium text-brand-text mb-1">Compensation Type</label>
+                    <label className="block text-xs font-medium text-brand-text mb-1">
+                      Compensation Type
+                    </label>
                     <select
                       value={form.compensationType}
-                      onChange={e => setForm({...form, compensationType: e.target.value})}
+                      onChange={(e) => setForm({ ...form, compensationType: e.target.value })}
                       className="w-full rounded-lg border border-brand-border px-3 py-2 text-sm focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
                     >
+                      <option value="batch_based">Batch Fee Calculation (From Batches Taught)</option>
                       <option value="fixed">Fixed Monthly Salary</option>
-                      <option value="percentage">Percentage Split (per student)</option>
+                      <option value="percentage">Student Fee Percentage Split</option>
                     </select>
                   </div>
-                  
+
                   {form.compensationType === 'fixed' ? (
                     <div>
-                      <label className="block text-xs font-medium text-brand-text mb-1">Monthly Salary (₹)</label>
+                      <label className="block text-xs font-medium text-brand-text mb-1">
+                        Monthly Salary (₹)
+                      </label>
                       <input
                         type="number"
                         min="0"
                         value={form.salaryAmount}
-                        onChange={e => setForm({...form, salaryAmount: e.target.value})}
+                        onChange={(e) => setForm({ ...form, salaryAmount: e.target.value })}
                         className="w-full rounded-lg border border-brand-border px-3 py-2 text-sm focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
                         placeholder="e.g. 50000"
                       />
                     </div>
+                  ) : form.compensationType === 'batch_based' ? (
+                    <div>
+                      <label className="block text-xs font-medium text-brand-text mb-1">
+                        Batch Fee Share (%)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="100"
+                        value={form.studentPercentage}
+                        onChange={(e) => setForm({ ...form, studentPercentage: e.target.value })}
+                        className="w-full rounded-lg border border-brand-border px-3 py-2 text-sm focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
+                        placeholder="100 (Default is 100%)"
+                      />
+                      <p className="text-[10px] text-brand-text-muted/75 mt-1">
+                        Calculates salary dynamically: (Students in Batch × Fee Per Student) × {form.studentPercentage || 100}%
+                      </p>
+                    </div>
                   ) : (
                     <div>
-                      <label className="block text-xs font-medium text-brand-text mb-1">Student Percentage Split (%)</label>
+                      <label className="block text-xs font-medium text-brand-text mb-1">
+                        Student Percentage Split (%)
+                      </label>
                       <input
                         type="number"
                         min="0"
                         max="100"
                         value={form.studentPercentage}
-                        onChange={e => setForm({...form, studentPercentage: e.target.value})}
+                        onChange={(e) => setForm({ ...form, studentPercentage: e.target.value })}
                         className="w-full rounded-lg border border-brand-border px-3 py-2 text-sm focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
                         placeholder="e.g. 30"
                       />
@@ -438,7 +520,14 @@ export default function TeacherManagement() {
 
               {/* Batch Allocation */}
               <div>
-                <h4 className="text-[10px] font-bold uppercase tracking-wider text-brand-text-muted/75 mb-3 border-b pb-1">Batch Allocation</h4>
+                <div className="flex items-center justify-between mb-3 border-b pb-1">
+                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-brand-text-muted/75">Batch Allocation</h4>
+                  {form.subject && (
+                    <span className="text-[10px] font-semibold text-brand-primary bg-brand-primary/10 px-2 py-0.5 rounded-md border border-brand-primary/20">
+                      Subject: {form.subject}
+                    </span>
+                  )}
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {BATCH_OPTIONS.map(b => {
                     const isSelected = form.assignedBatches.includes(b)
@@ -459,7 +548,9 @@ export default function TeacherManagement() {
                     )
                   })}
                 </div>
-                <p className="text-[10px] text-brand-text-muted/75 mt-2">Select the batches this teacher is responsible for handling.</p>
+                <p className="text-[10px] text-brand-text-muted/75 mt-2">
+                  Select the batches this {form.subject ? `${form.subject} teacher` : 'teacher'} is responsible for handling.
+                </p>
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-brand-border">

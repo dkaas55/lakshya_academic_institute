@@ -53,6 +53,7 @@ const getTeacherDashboard = async (req, res) => {
           id: teacher._id,
           name: teacher.name,
           username: teacher.username,
+          subject: teacher.subject || "",
           assignedBatches,
         },
         students,

@@ -41,7 +41,7 @@ const SUBJECT_OPTIONS = [
   'Psychology',
 ]
 
-export default function StudentEditModal({ student, onClose, onUpdated }) {
+export default function StudentEditModal({ student, onClose, onUpdated, onRemoved }) {
   const { batches: BATCH_OPTIONS } = useBatches()
   const [form, setForm] = useState({
     fullName: '',
@@ -50,7 +50,9 @@ export default function StudentEditModal({ student, onClose, onUpdated }) {
     studentClass: '',
     subjects: '',
   })
+  const [currentStatus, setCurrentStatus] = useState(student?.status || 'active')
   const [loading, setLoading] = useState(false)
+  const [statusLoading, setStatusLoading] = useState(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -62,8 +64,47 @@ export default function StudentEditModal({ student, onClose, onUpdated }) {
         studentClass: student.studentClass || '',
         subjects: student.subjects || '',
       })
+      setCurrentStatus(student.status || 'active')
     }
   }, [student, BATCH_OPTIONS])
+
+  async function handleStatusChange(newStatus) {
+    if (!student?.id) return
+
+    if (newStatus === 'removed') {
+      const confirmed = window.confirm(
+        `Are you sure you want to REMOVE ${student.fullName}? They will be hidden from all dashboards and blocked from login.`
+      )
+      if (!confirmed) return
+    } else if (newStatus === 'paused') {
+      const confirmed = window.confirm(
+        `Are you sure you want to PAUSE ${student.fullName}? They will not be able to log in until resumed.`
+      )
+      if (!confirmed) return
+    }
+
+    setStatusLoading(newStatus)
+    setError('')
+
+    try {
+      const { data } = await api.patch(`/students/${student.id}/status`, { status: newStatus })
+      if (data.success) {
+        if (newStatus === 'removed') {
+          onRemoved?.(student.id)
+          onClose()
+        } else {
+          setCurrentStatus(newStatus)
+          onUpdated?.({ ...student, status: newStatus })
+        }
+      } else {
+        setError(data.message || 'Failed to update student status.')
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to update student status.')
+    } finally {
+      setStatusLoading(null)
+    }
+  }
 
   useEffect(() => {
     function onKeyDown(e) {
@@ -130,7 +171,7 @@ export default function StudentEditModal({ student, onClose, onUpdated }) {
       />
 
       <div
-        className="relative w-full max-w-md overflow-hidden flex flex-col rounded-t-2xl sm:rounded-2xl border border-brand-border bg-brand-surface shadow-xl"
+        className="relative w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col rounded-t-2xl sm:rounded-2xl border border-brand-border bg-brand-surface shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3 px-4 sm:px-5 py-4 border-b border-brand-border bg-brand-surface-tint/80 shrink-0">
@@ -157,7 +198,7 @@ export default function StudentEditModal({ student, onClose, onUpdated }) {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-4">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-4 overflow-y-auto">
           {error && (
             <p
               role="alert"
@@ -252,18 +293,72 @@ export default function StudentEditModal({ student, onClose, onUpdated }) {
             </div>
           </div>
 
-          <div className="pt-2 flex justify-end gap-2">
+          {/* Student Status & Actions (Pause / Remove) */}
+          <div className="pt-3 border-t border-brand-border">
+            <div className="rounded-xl border border-brand-border bg-brand-surface-tint/40 p-3 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-semibold text-brand-text">Student Status & Actions</h4>
+                  <p className="text-[10px] text-brand-text-muted">
+                    {currentStatus === 'paused'
+                      ? 'Student is paused and cannot access the portal.'
+                      : 'Student has active access to the portal.'}
+                  </p>
+                </div>
+                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ring-1 ${
+                  currentStatus === 'paused'
+                    ? 'bg-amber-50 text-amber-800 ring-amber-200'
+                    : 'bg-brand-primary/10 text-brand-primary ring-emerald-200'
+                }`}>
+                  {currentStatus === 'paused' ? '⏸ Paused' : '● Active'}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                {currentStatus === 'paused' ? (
+                  <button
+                    type="button"
+                    disabled={!!statusLoading || loading}
+                    onClick={() => handleStatusChange('active')}
+                    className="flex-1 rounded-lg border border-emerald-200 bg-brand-primary/10 px-3 py-1.5 text-xs font-semibold text-brand-primary hover:bg-emerald-100 disabled:opacity-50 transition-colors text-center"
+                  >
+                    {statusLoading === 'active' ? 'Resuming…' : '▶ Resume Student'}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={!!statusLoading || loading}
+                    onClick={() => handleStatusChange('paused')}
+                    className="flex-1 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-100 disabled:opacity-50 transition-colors text-center"
+                  >
+                    {statusLoading === 'paused' ? 'Pausing…' : '⏸ Pause Student'}
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  disabled={!!statusLoading || loading}
+                  onClick={() => handleStatusChange('removed')}
+                  className="flex-1 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100 disabled:opacity-50 transition-colors text-center"
+                >
+                  {statusLoading === 'removed' ? 'Removing…' : '✕ Remove Student'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-2 flex justify-end gap-2 border-t border-brand-border">
             <button
               type="button"
               onClick={onClose}
-              disabled={loading}
+              disabled={loading || !!statusLoading}
               className="rounded-lg px-4 py-2 text-xs font-medium text-brand-text hover:bg-brand-surface-tint transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !!statusLoading}
               className="rounded-lg bg-brand-primary px-4 py-2 text-xs font-semibold text-brand-surface hover:bg-brand-primary/100 transition-colors disabled:opacity-50"
             >
               {loading ? 'Saving…' : 'Save Changes'}

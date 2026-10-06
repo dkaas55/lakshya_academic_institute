@@ -11,11 +11,14 @@ function formatBatch(batch) {
   return {
     id: batch._id,
     name: batch.name,
+    subject: batch.subject || "",
+    feePerStudent: batch.feePerStudent ?? 0,
     timing: batch.timing || "",
     assignedTeachers: teachers.map((t) => ({
       id: t._id || t.id || t,
       name: t.name || "",
       username: t.username || "",
+      subject: t.subject || "",
     })),
     isActive: batch.isActive,
     createdAt: batch.createdAt,
@@ -32,7 +35,7 @@ const getBatches = async (req, res) => {
     await syncBatchTeacherAssignments();
 
     const batches = await Batch.find()
-      .populate("assignedTeachers", "name username")
+      .populate("assignedTeachers", "name username subject")
       .sort({ createdAt: 1 })
       .lean();
 
@@ -52,7 +55,7 @@ const createBatch = async (req, res) => {
     return res.status(403).json({ success: false, message: "Admin access required" });
   }
 
-  const { name, timing, assignedTeachers } = req.body;
+  const { name, subject, feePerStudent, timing, assignedTeachers } = req.body;
 
   if (!name?.trim()) {
     return res.status(400).json({
@@ -74,6 +77,8 @@ const createBatch = async (req, res) => {
 
     let batch = await Batch.create({
       name: name.trim(),
+      subject: subject?.trim() || "",
+      feePerStudent: feePerStudent != null ? Math.max(0, Number(feePerStudent)) : 0,
       timing: timing?.trim() || "",
       assignedTeachers: assignedTeachers || [],
     });
@@ -87,7 +92,7 @@ const createBatch = async (req, res) => {
     }
 
     batch = await Batch.findById(batch._id)
-      .populate("assignedTeachers", "name username")
+      .populate("assignedTeachers", "name username subject")
       .lean();
 
     res.status(201).json({
@@ -114,7 +119,7 @@ const updateBatch = async (req, res) => {
   }
 
   const { id } = req.params;
-  const { name, timing, assignedTeachers } = req.body;
+  const { name, subject, feePerStudent, timing, assignedTeachers } = req.body;
 
   try {
     const batch = await Batch.findById(id);
@@ -149,6 +154,10 @@ const updateBatch = async (req, res) => {
       );
     }
 
+    if (subject !== undefined) batch.subject = subject?.trim() || "";
+    if (feePerStudent !== undefined) {
+      batch.feePerStudent = feePerStudent != null ? Math.max(0, Number(feePerStudent)) : 0;
+    }
     if (timing !== undefined) batch.timing = timing?.trim() || "";
 
     if (assignedTeachers !== undefined) {
@@ -171,7 +180,7 @@ const updateBatch = async (req, res) => {
     await batch.save();
 
     const populated = await Batch.findById(batch._id)
-      .populate("assignedTeachers", "name username")
+      .populate("assignedTeachers", "name username subject")
       .lean();
 
     res.json({

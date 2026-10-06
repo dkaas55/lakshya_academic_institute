@@ -1,4 +1,5 @@
 const User = require("../models/User");
+const Batch = require("../models/Batch");
 const StudentProfile = require("../models/StudentProfile");
 const FeeLedger = require("../models/FeeLedger");
 const TeacherSalaryPayment = require("../models/TeacherSalaryPayment");
@@ -165,52 +166,76 @@ const calculateTeacherSalaryForMonth = async (teacherOrId, monthInput) => {
   }
   const prorationRatio = isProrated ? daysWorked / totalDaysInMonth : 1;
 
-  if (teacher.compensationType === "fixed") {
-    const fixedAmount = teacher.fixedSalary ?? teacher.salaryAmount ?? 0;
-    const proratedSalary = isProrated ? Math.round(fixedAmount * prorationRatio) : fixedAmount;
-    return {
-      salary: proratedSalary,
-      fullSalary: fixedAmount,
-      isProrated,
-      daysWorked,
-      totalDaysInMonth,
-      month: targetMonthStr,
-      compensationType: "fixed",
-      fixedSalary: fixedAmount,
-      studentCount: 0,
-      students: [],
-    };
+  // 1. Identify teacher's assigned batches
+  const teacherBatchNames = teacher.assignedBatches || [];
+  const batches = await Batch.find({
+    name: { $in: teacherBatchNames },
+  }).lean();
+
+  const batchDocMap = new Map();
+  for (const b of batches) {
+    batchDocMap.set(b.name, b);
   }
 
-  if (teacher.compensationType === "percentage") {
-    const students = await StudentProfile.find({
-      batch: { $in: teacher.assignedBatches || [] },
-      status: { $ne: "removed" },
-      joiningDate: { $lte: monthObj.endDate },
-    })
-      .populate("user", "name")
-      .lean();
+  // 2. Find all active students in teacher's batches
+  const students = await StudentProfile.find({
+    batch: { $in: teacherBatchNames },
+    status: { $ne: "removed" },
+    joiningDate: { $lte: monthObj.endDate },
+  })
+    .populate("user", "name")
+    .lean();
 
-    const studentIds = students.map((s) => s._id);
-    const ledgers = await FeeLedger.find({ student: { $in: studentIds } }).lean();
-    const ledgerMap = new Map();
-    for (const l of ledgers) {
-      ledgerMap.set(l.student.toString(), l);
+  const studentIds = students.map((s) => s._id);
+  const ledgers = await FeeLedger.find({ student: { $in: studentIds } }).lean();
+  const ledgerMap = new Map();
+  for (const l of ledgers) {
+    ledgerMap.set(l.student.toString(), l);
+  }
+
+  // 3. Determine split percentage
+  const isFixed = teacher.compensationType === "fixed";
+  const percentage = isFixed ? 100 : (teacher.salaryPercentage ?? teacher.studentPercentage ?? 100);
+
+  // 4. Calculate batch-by-batch
+  const batchBreakdown = [];
+  const studentBreakdown = [];
+  let totalBatchFeePool = 0;
+  let totalCalculatedSalaryFromBatches = 0;
+  let totalCollectedThisMonth = 0;
+
+  for (const bName of teacherBatchNames) {
+    const bDoc = batchDocMap.get(bName);
+    const bSubject = bDoc?.subject || teacher.subject || "";
+    const feePerStudent = bDoc?.feePerStudent != null ? Number(bDoc.feePerStudent) : 0;
+
+    const bStudents = students.filter((s) => s.batch === bName);
+    const studentCount = bStudents.length;
+
+    let batchTotalFee = 0;
+    if (feePerStudent > 0) {
+      batchTotalFee = studentCount * feePerStudent;
+    } else {
+      // Fallback: sum of students' individual ledger amounts
+      batchTotalFee = bStudents.reduce((sum, s) => {
+        const l = ledgerMap.get(s._id.toString());
+        return sum + (l?.monthlyFeeAmount || l?.totalFee || 0);
+      }, 0);
     }
 
-    const percentage = teacher.salaryPercentage ?? teacher.studentPercentage ?? 0;
-    const studentBreakdown = [];
-    let totalMonthlyFee = 0;
-    let totalCollectedThisMonth = 0;
+    totalBatchFeePool += batchTotalFee;
 
-    for (const s of students) {
-      const ledger = ledgerMap.get(s._id.toString());
-      const monthlyFee = ledger?.monthlyFeeAmount || ledger?.totalFee || 0;
-      totalMonthlyFee += monthlyFee;
+    const teacherBatchShare = batchTotalFee * (percentage / 100);
+    totalCalculatedSalaryFromBatches += teacherBatchShare;
+
+    const bStudentsDetails = bStudents.map((s) => {
+      const l = ledgerMap.get(s._id.toString());
+      const monthlyFee = feePerStudent > 0 ? feePerStudent : (l?.monthlyFeeAmount || l?.totalFee || 0);
+      const sShare = monthlyFee * (percentage / 100);
 
       let collectedForMonth = 0;
-      if (ledger?.paymentHistory) {
-        for (const p of ledger.paymentHistory) {
+      if (l?.paymentHistory) {
+        for (const p of l.paymentHistory) {
           if (p.paidAt && p.paidAt >= monthObj.startDate && p.paidAt <= monthObj.endDate) {
             collectedForMonth += p.amount || 0;
           }
@@ -218,54 +243,62 @@ const calculateTeacherSalaryForMonth = async (teacherOrId, monthInput) => {
       }
       totalCollectedThisMonth += collectedForMonth;
 
-      const baseTeacherShare = monthlyFee * (percentage / 100);
-      const proratedTeacherShare = isProrated ? Math.round(baseTeacherShare * prorationRatio) : baseTeacherShare;
-
-      studentBreakdown.push({
+      const studentItem = {
         id: s._id,
         name: s.user?.name || "Unknown",
         batch: s.batch,
         monthlyFee,
-        teacherShare: proratedTeacherShare,
-        baseTeacherShare,
+        teacherShare: isProrated ? Math.round(sShare * prorationRatio) : sShare,
+        baseTeacherShare: sShare,
         feeCollectedThisMonth: collectedForMonth,
         teacherShareOfCollected: collectedForMonth * (percentage / 100),
-      });
-    }
+      };
+      studentBreakdown.push(studentItem);
+      return studentItem;
+    });
 
-    const baseCalculatedSalary = totalMonthlyFee * (percentage / 100);
-    const finalSalary = isProrated ? Math.round(baseCalculatedSalary * prorationRatio) : baseCalculatedSalary;
-
-    return {
-      salary: finalSalary,
-      fullSalary: baseCalculatedSalary,
-      isProrated,
-      daysWorked,
-      totalDaysInMonth,
-      month: targetMonthStr,
-      compensationType: "percentage",
-      salaryPercentage: percentage,
-      totalMonthlyFee,
-      studentCount: students.length,
-      students: studentBreakdown,
-      totalCollectedThisMonth,
-      teacherShareOfCollected: totalCollectedThisMonth * (percentage / 100),
-    };
+    batchBreakdown.push({
+      batchName: bName,
+      subject: bSubject,
+      feePerStudent,
+      studentCount,
+      batchTotalFee,
+      splitPercentage: percentage,
+      teacherShare: isProrated ? Math.round(teacherBatchShare * prorationRatio) : teacherBatchShare,
+      baseTeacherShare: teacherBatchShare,
+      students: bStudentsDetails,
+    });
   }
 
-  // Fallback
-  const fallbackSalary = teacher.fixedSalary ?? teacher.salaryAmount ?? 0;
-  const proratedFallback = isProrated ? Math.round(fallbackSalary * prorationRatio) : fallbackSalary;
+  // 5. Final salary for the month
+  let baseSalary = 0;
+  if (isFixed) {
+    baseSalary = teacher.fixedSalary ?? teacher.salaryAmount ?? 0;
+  } else {
+    baseSalary = totalCalculatedSalaryFromBatches;
+  }
+
+  const finalSalary = isProrated ? Math.round(baseSalary * prorationRatio) : baseSalary;
+
   return {
-    salary: proratedFallback,
-    fullSalary: fallbackSalary,
+    salary: finalSalary,
+    fullSalary: baseSalary,
     isProrated,
     daysWorked,
     totalDaysInMonth,
     month: targetMonthStr,
-    compensationType: "fixed",
-    studentCount: 0,
-    students: [],
+    compensationType: teacher.compensationType || "batch_based",
+    salaryPercentage: percentage,
+    totalMonthlyFee: totalBatchFeePool,
+    totalBatchFeePool,
+    batchCount: teacherBatchNames.length,
+    batches: batchBreakdown,
+    studentCount: students.length,
+    students: studentBreakdown,
+    totalCollectedThisMonth,
+    teacherShareOfCollected: totalCollectedThisMonth * (percentage / 100),
+    fixedSalary: isFixed ? baseSalary : null,
+    projectedBatchSalary: isProrated ? Math.round(totalCalculatedSalaryFromBatches * prorationRatio) : totalCalculatedSalaryFromBatches,
   };
 };
 
@@ -562,11 +595,16 @@ const getSalaryOverview = async (req, res) => {
         oldestUnpaidMonth: accumulatedStats.oldestUnpaidMonth,
         hasOverdue: previousSalary > 0,
         calculationDetails: {
+          compensationType: calcResult.compensationType,
           totalMonthlyFee: calcResult.totalMonthlyFee || 0,
+          totalBatchFeePool: calcResult.totalBatchFeePool || 0,
+          batchCount: calcResult.batchCount || 0,
+          batches: calcResult.batches || [],
           studentCount: calcResult.studentCount || 0,
           students: calcResult.students || [],
           totalCollectedThisMonth: calcResult.totalCollectedThisMonth || 0,
           teacherShareOfCollected: calcResult.teacherShareOfCollected || 0,
+          projectedBatchSalary: calcResult.projectedBatchSalary || 0,
         },
         monthlyLedger,
         payments: allPayments.map((p) => ({
@@ -651,9 +689,11 @@ const getTeacherSalaryPayments = async (req, res) => {
           id: teacher._id,
           name: teacher.name,
           username: teacher.username,
-          compensationType: teacher.compensationType || "fixed",
+          subject: teacher.subject || "",
+          compensationType: teacher.compensationType || "batch_based",
           fixedSalary: teacher.fixedSalary ?? teacher.salaryAmount ?? 0,
           salaryPercentage: teacher.salaryPercentage ?? teacher.studentPercentage ?? 0,
+          studentPercentage: teacher.studentPercentage ?? teacher.salaryPercentage ?? 0,
           assignedBatches: teacher.assignedBatches || [],
           joiningDate: teacher.joiningDate,
         },
@@ -686,11 +726,16 @@ const getTeacherSalaryPayments = async (req, res) => {
           oldestUnpaidMonth: accumulatedStats.oldestUnpaidMonth,
         },
         calculationDetails: {
+          compensationType: calcResult.compensationType,
           totalMonthlyFee: calcResult.totalMonthlyFee || 0,
+          totalBatchFeePool: calcResult.totalBatchFeePool || 0,
+          batchCount: calcResult.batchCount || 0,
+          batches: calcResult.batches || [],
           studentCount: calcResult.studentCount || 0,
           students: calcResult.students || [],
           totalCollectedThisMonth: calcResult.totalCollectedThisMonth || 0,
           teacherShareOfCollected: calcResult.teacherShareOfCollected || 0,
+          projectedBatchSalary: calcResult.projectedBatchSalary || 0,
         },
         monthlyLedger,
         payments: allPayments.map((p) => ({

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import api from '../../lib/api'
 import FeeLedgerModal from './FeeLedgerModal'
 import StudentEditModal from './StudentEditModal'
+import StudentDetailModal from './StudentDetailModal'
 import StudentFilterBar from '../shared/StudentFilterBar'
 
 function FeeStatusBadge({ status }) {
@@ -47,8 +48,8 @@ export default function ActiveStudentsList({ refreshKey = 0 }) {
   const [loading,          setLoading]          = useState(true)
   const [error,            setError]            = useState('')
   const [selectedStudent,  setSelectedStudent]  = useState(null)
+  const [feeStudent,       setFeeStudent]       = useState(null)
   const [editStudent,      setEditStudent]       = useState(null)
-  const [statusLoading,    setStatusLoading]    = useState(null)  // studentId being toggled
 
   const loadStudents = useCallback(async () => {
     setLoading(true)
@@ -81,43 +82,29 @@ export default function ActiveStudentsList({ refreshKey = 0 }) {
   }, [loadStudents, refreshKey])
 
   function handlePaymentCollected(feeStatus) {
-    if (!selectedStudent) return
+    const studentToUpdate = feeStudent || selectedStudent
+    if (!studentToUpdate) return
     setStudents((prev) =>
-      prev.map((s) => s.id === selectedStudent.id ? { ...s, feeStatus } : s)
+      prev.map((s) => s.id === studentToUpdate.id ? { ...s, feeStatus } : s)
     )
+    if (selectedStudent && selectedStudent.id === studentToUpdate.id) {
+      setSelectedStudent((prev) => (prev ? { ...prev, feeStatus } : null))
+    }
   }
 
   function handleStudentUpdated(updatedStudent) {
     setStudents((prev) =>
       prev.map((s) => (s.id === updatedStudent.id ? { ...s, ...updatedStudent } : s))
     )
+    if (selectedStudent && selectedStudent.id === updatedStudent.id) {
+      setSelectedStudent((prev) => (prev ? { ...prev, ...updatedStudent } : null))
+    }
   }
 
-  async function handleStatusChange(student, newStatus) {
-    const confirmed =
-      newStatus === 'removed'
-        ? window.confirm(`Are you sure you want to REMOVE ${student.fullName}? They will be hidden from all dashboards and blocked from login.`)
-        : true
-
-    if (!confirmed) return
-
-    setStatusLoading(student.id)
-    try {
-      const { data } = await api.patch(`/students/${student.id}/status`, { status: newStatus })
-      if (data.success) {
-        if (newStatus === 'removed') {
-          // Remove from the list immediately
-          setStudents((prev) => prev.filter((s) => s.id !== student.id))
-        } else {
-          setStudents((prev) =>
-            prev.map((s) => s.id === student.id ? { ...s, status: newStatus } : s)
-          )
-        }
-      }
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to update student status.')
-    } finally {
-      setStatusLoading(null)
+  function handleStudentRemoved(studentId) {
+    setStudents((prev) => prev.filter((s) => s.id !== studentId))
+    if (selectedStudent && selectedStudent.id === studentId) {
+      setSelectedStudent(null)
     }
   }
 
@@ -184,7 +171,7 @@ export default function ActiveStudentsList({ refreshKey = 0 }) {
                   <th className="px-4 py-2.5 font-semibold text-brand-text">Joined</th>
                   <th className="px-4 py-2.5 font-semibold text-brand-text">Status</th>
                   <th className="px-4 py-2.5 font-semibold text-brand-text">Fee</th>
-                  <th className="px-4 py-2.5 font-semibold text-brand-text w-48">Actions</th>
+                  <th className="px-4 py-2.5 font-semibold text-brand-text w-36">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-brand-border">
@@ -211,49 +198,30 @@ export default function ActiveStudentsList({ refreshKey = 0 }) {
                     <td className="px-4 py-2.5"><AccountStatusBadge status={student.status ?? 'active'} /></td>
                     <td className="px-4 py-2.5"><FeeStatusBadge status={student.feeStatus} /></td>
                     <td className="px-4 py-2.5" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center gap-1 flex-wrap">
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedStudent(student)}
+                          className="rounded-lg border border-brand-border bg-brand-surface px-2 py-1 text-[10px] font-semibold text-brand-text hover:bg-brand-surface-tint transition-colors"
+                          title="View complete student information"
+                        >
+                          View
+                        </button>
                         <button
                           type="button"
                           onClick={() => setEditStudent(student)}
                           className="rounded-lg border border-brand-border bg-brand-surface px-2 py-1 text-[10px] font-semibold text-brand-text hover:bg-brand-surface-tint transition-colors"
+                          title="Edit student profile"
                         >
                           Edit
                         </button>
                         <button
                           type="button"
-                          onClick={() => setSelectedStudent(student)}
-                          className="rounded-lg border border-brand-border bg-brand-surface px-2 py-1 text-[10px] font-semibold text-brand-text hover:bg-brand-surface-tint transition-colors"
+                          onClick={() => setFeeStudent(student)}
+                          className="rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-2 py-1 text-[10px] font-semibold transition-colors"
+                          title="Collect fee or view ledger"
                         >
-                          Ledger
-                        </button>
-                        {/* Pause / Resume toggle */}
-                        {student.status === 'paused' ? (
-                          <button
-                            type="button"
-                            disabled={statusLoading === student.id}
-                            onClick={() => handleStatusChange(student, 'active')}
-                            className="rounded-lg border border-emerald-200 bg-brand-primary/10 px-2 py-1 text-[10px] font-semibold text-brand-primary hover:bg-emerald-100 disabled:opacity-50 transition-colors"
-                          >
-                            {statusLoading === student.id ? '…' : '▶ Resume'}
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            disabled={statusLoading === student.id}
-                            onClick={() => handleStatusChange(student, 'paused')}
-                            className="rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] font-semibold text-amber-700 hover:bg-amber-100 disabled:opacity-50 transition-colors"
-                          >
-                            {statusLoading === student.id ? '…' : '⏸ Pause'}
-                          </button>
-                        )}
-                        {/* Remove */}
-                        <button
-                          type="button"
-                          disabled={statusLoading === student.id}
-                          onClick={() => handleStatusChange(student, 'removed')}
-                          className="rounded-lg border border-rose-200 bg-rose-50 px-2 py-1 text-[10px] font-semibold text-rose-700 hover:bg-rose-100 disabled:opacity-50 transition-colors"
-                        >
-                          {statusLoading === student.id ? '…' : '✕ Remove'}
+                          Fee
                         </button>
                       </div>
                     </td>
@@ -265,19 +233,38 @@ export default function ActiveStudentsList({ refreshKey = 0 }) {
         )}
       </section>
 
+      {/* Complete Student Information Modal */}
       {selectedStudent && (
-        <FeeLedgerModal
+        <StudentDetailModal
           student={selectedStudent}
           onClose={() => setSelectedStudent(null)}
+          onCollectFee={(student) => {
+            setSelectedStudent(null)
+            setFeeStudent(student)
+          }}
+          onEdit={(student) => {
+            setSelectedStudent(null)
+            setEditStudent(student)
+          }}
+        />
+      )}
+
+      {/* Collect Fee / Fee Ledger Modal */}
+      {feeStudent && (
+        <FeeLedgerModal
+          student={feeStudent}
+          onClose={() => setFeeStudent(null)}
           onPaymentCollected={handlePaymentCollected}
         />
       )}
 
+      {/* Student Edit Modal */}
       {editStudent && (
         <StudentEditModal
           student={editStudent}
           onClose={() => setEditStudent(null)}
           onUpdated={handleStudentUpdated}
+          onRemoved={handleStudentRemoved}
         />
       )}
     </>
