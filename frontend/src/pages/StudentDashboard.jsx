@@ -444,15 +444,6 @@ export default function StudentDashboard() {
             </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-3 text-xs font-semibold text-brand-text-muted">
-            {(student?.batches?.length > 0
-              ? student.batches
-              : (student?.batch ? student.batch.split(',').map((b) => b.trim()).filter(Boolean) : [])
-            ).map((b) => (
-              <span key={b} className="hidden sm:inline-flex items-center rounded-full bg-brand-surface-tint px-2.5 py-0.5 text-[10px] font-bold text-brand-text border border-brand-border">
-                {b}
-              </span>
-            ))}
-            
             <button
               type="button"
               onClick={() => setTheme(isDark ? 'light' : 'dark')}
@@ -548,10 +539,7 @@ export default function StudentDashboard() {
                 {materials.length > 0 && (
                   <section className="bg-brand-surface rounded-2xl border border-brand-border shadow-sm p-6 flex flex-col gap-4">
                     <div className="flex items-center justify-between border-b border-brand-border pb-3">
-                      <div>
-                        <h2 className="text-base font-bold text-brand-text">Recent Materials</h2>
-                        <p className="text-xs text-brand-text-muted mt-0.5">Quick access to newly uploaded study materials</p>
-                      </div>
+                      <h2 className="text-base font-bold text-brand-text">Recent Materials</h2>
                       <button
                         type="button"
                         onClick={() => setActiveTab('materials')}
@@ -836,18 +824,13 @@ function MyProgressCard({ exams = [] }) {
     <section className="w-full rounded-2xl border border-brand-border bg-brand-surface p-5 sm:p-6 shadow-sm space-y-5">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-brand-border pb-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-xl bg-brand-primary/10 text-brand-primary font-bold">
-              <Trophy size={18} />
-            </span>
-            <h2 className="text-base font-extrabold text-brand-text tracking-tight">
-              My Progress
-            </h2>
-          </div>
-          <p className="text-xs text-brand-text-muted mt-0.5">
-            Test score comparison and personalized teacher compliment based on your last 2 tests
-          </p>
+        <div className="flex items-center gap-2">
+          <span className="p-1.5 rounded-xl bg-brand-primary/10 text-brand-primary font-bold">
+            <Trophy size={18} />
+          </span>
+          <h2 className="text-base font-extrabold text-brand-text tracking-tight">
+            My Progress
+          </h2>
         </div>
 
         {diff !== null && (
@@ -1030,10 +1013,7 @@ function PracticeTestsPreviewBlock({ tests, onViewAll }) {
           <span className="p-1.5 rounded-xl bg-brand-primary/10 text-brand-primary font-bold">
             <ClipboardList size={18} />
           </span>
-          <div>
-            <h2 className="text-base font-extrabold text-brand-text tracking-tight">Practice Tests</h2>
-            <p className="text-xs text-brand-text-muted mt-0.5">Test papers and assignments uploaded for your batch</p>
-          </div>
+          <h2 className="text-base font-extrabold text-brand-text tracking-tight">Practice Tests</h2>
         </div>
         {tests && tests.length > 0 && (
           <button

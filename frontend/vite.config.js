@@ -7,8 +7,14 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   return {
     plugins: [react(), tailwindcss()],
+    resolve: {
+      alias: {
+        html2canvas: 'html2canvas-pro',
+      },
+    },
     define: {
       'process.env.REACT_APP_API_URL': JSON.stringify(env.REACT_APP_API_URL || env.VITE_API_URL || '')
     }
   }
 })
+

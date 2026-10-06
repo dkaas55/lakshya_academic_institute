@@ -498,11 +498,10 @@ export default function FeeLedgerModal({ student, onClose, onPaymentCollected })
                         setCollectError('')
                         setLastReceipt(null)
                       }}
-                      placeholder="Enter amount (more or less)"
+                      placeholder="Enter amount"
                       className="w-full rounded-lg border border-brand-border px-2.5 py-2 text-xs text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-brand-primary"
                       disabled={collecting}
                     />
-                    <p className="mt-1 text-[10px] text-brand-text-muted">Pay any amount — partial, exact, or advance.</p>
                   </div>
                   <div>
                     <label htmlFor="payment-mode" className="block text-[10px] font-medium text-brand-text mb-1">

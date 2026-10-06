@@ -64,13 +64,13 @@ export default function TeacherSalaryModal({ teacher, onClose, onPaymentRecorded
     setLoading(true)
     setError('')
     try {
-      const targetMonth = monthToLoad || selectedMonth || currentMonthName
+      const targetMonth = monthToLoad || currentMonthName
       const res = await api.get(`/admin/teachers/${teacher.id}/payments`, {
         params: { month: targetMonth },
       })
       if (res.data.success) {
         setData(res.data.data)
-        if (res.data.data.selectedMonth) {
+        if (!monthToLoad && res.data.data.selectedMonth) {
           setSelectedMonth(res.data.data.selectedMonth)
         }
       } else {
@@ -84,11 +84,11 @@ export default function TeacherSalaryModal({ teacher, onClose, onPaymentRecorded
     } finally {
       setLoading(false)
     }
-  }, [teacher?.id, selectedMonth, currentMonthName])
+  }, [teacher?.id, currentMonthName])
 
   useEffect(() => {
     loadSalaryData(selectedMonth)
-  }, [loadSalaryData])
+  }, [loadSalaryData, selectedMonth])
 
   const handleRecordPayment = async (e) => {
     e.preventDefault()

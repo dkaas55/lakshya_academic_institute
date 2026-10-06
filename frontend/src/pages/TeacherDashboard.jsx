@@ -340,33 +340,41 @@ function OverviewTab({ teacher, materials, tests, onNavigateTab }) {
   const [selectedMonth, setSelectedMonth] = useState('')
   const [showBreakdown, setShowBreakdown] = useState(false)
 
-  const fetchSalary = useCallback(async (targetMonth) => {
-    setSalaryLoading(true)
-    setSalaryError('')
-    try {
-      const { data } = await api.get('/teacher/salary-overview', {
-        params: targetMonth ? { month: targetMonth } : {},
-      })
-      if (data.success) {
-        setSalaryData(data.data)
-        if (data.data.selectedMonth) {
-          setSelectedMonth(data.data.selectedMonth)
-        }
-      } else {
-        setSalaryError(data.message || 'Failed to load salary.')
-      }
-    } catch (err) {
-      setSalaryError(
-        err.response?.data?.message || 'Unable to load salary data.'
-      )
-    } finally {
-      setSalaryLoading(false)
-    }
-  }, [])
-
   useEffect(() => {
-    fetchSalary()
-  }, [fetchSalary])
+    let isCancelled = false
+    async function loadSalary() {
+      setSalaryLoading(true)
+      setSalaryError('')
+      try {
+        const { data } = await api.get('/teacher/salary-overview', {
+          params: selectedMonth ? { month: selectedMonth } : {},
+        })
+        if (isCancelled) return
+        if (data.success) {
+          setSalaryData(data.data)
+          if (!selectedMonth && data.data.selectedMonth) {
+            setSelectedMonth(data.data.selectedMonth)
+          }
+        } else {
+          setSalaryError(data.message || 'Failed to load salary.')
+        }
+      } catch (err) {
+        if (isCancelled) return
+        setSalaryError(
+          err.response?.data?.message || 'Unable to load salary data.'
+        )
+      } finally {
+        if (!isCancelled) {
+          setSalaryLoading(false)
+        }
+      }
+    }
+
+    loadSalary()
+    return () => {
+      isCancelled = true
+    }
+  }, [selectedMonth])
 
   if (!teacher) return null
 
@@ -406,11 +414,8 @@ function OverviewTab({ teacher, materials, tests, onNavigateTab }) {
             </div>
             {monthsList.length > 1 && (
               <select
-                value={selectedMonth || salaryData?.selectedMonth}
-                onChange={(e) => {
-                  setSelectedMonth(e.target.value)
-                  fetchSalary(e.target.value)
-                }}
+                value={selectedMonth || salaryData?.selectedMonth || ''}
+                onChange={(e) => setSelectedMonth(e.target.value)}
                 className="rounded-xl border border-brand-border bg-brand-surface-tint px-2.5 py-1 text-[11px] font-bold text-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary cursor-pointer shadow-xs"
               >
                 {monthsList.map((m) => (
@@ -756,31 +761,39 @@ function SalaryTab({ teacher }) {
   const [selectedMonth, setSelectedMonth] = useState('')
   const [showBreakdown, setShowBreakdown] = useState(false)
 
-  const fetchSalary = useCallback(async (targetMonth) => {
-    setSalaryLoading(true)
-    setSalaryError('')
-    try {
-      const { data } = await api.get('/teacher/salary-overview', {
-        params: targetMonth ? { month: targetMonth } : {},
-      })
-      if (data.success) {
-        setSalaryData(data.data)
-        if (data.data.selectedMonth) {
-          setSelectedMonth(data.data.selectedMonth)
-        }
-      } else {
-        setSalaryError(data.message || 'Failed to load salary details.')
-      }
-    } catch (err) {
-      setSalaryError(err.response?.data?.message || 'Unable to load salary data.')
-    } finally {
-      setSalaryLoading(false)
-    }
-  }, [])
-
   useEffect(() => {
-    fetchSalary(selectedMonth)
-  }, [fetchSalary, selectedMonth])
+    let isCancelled = false
+    async function loadSalary() {
+      setSalaryLoading(true)
+      setSalaryError('')
+      try {
+        const { data } = await api.get('/teacher/salary-overview', {
+          params: selectedMonth ? { month: selectedMonth } : {},
+        })
+        if (isCancelled) return
+        if (data.success) {
+          setSalaryData(data.data)
+          if (!selectedMonth && data.data.selectedMonth) {
+            setSelectedMonth(data.data.selectedMonth)
+          }
+        } else {
+          setSalaryError(data.message || 'Failed to load salary details.')
+        }
+      } catch (err) {
+        if (isCancelled) return
+        setSalaryError(err.response?.data?.message || 'Unable to load salary data.')
+      } finally {
+        if (!isCancelled) {
+          setSalaryLoading(false)
+        }
+      }
+    }
+
+    loadSalary()
+    return () => {
+      isCancelled = true
+    }
+  }, [selectedMonth])
 
   if (!teacher) return null
 
@@ -812,11 +825,8 @@ function SalaryTab({ teacher }) {
           <div className="flex items-center gap-2">
             <label className="text-xs font-semibold text-brand-text-muted">Cycle:</label>
             <select
-              value={selectedMonth || salaryData?.selectedMonth}
-              onChange={(e) => {
-                setSelectedMonth(e.target.value)
-                fetchSalary(e.target.value)
-              }}
+              value={selectedMonth || salaryData?.selectedMonth || ''}
+              onChange={(e) => setSelectedMonth(e.target.value)}
               className="rounded-xl border border-brand-border bg-brand-surface px-3 py-1.5 text-xs font-bold text-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary cursor-pointer shadow-xs"
             >
               {monthsList.map((m) => (
@@ -1117,10 +1127,7 @@ function SalaryTab({ teacher }) {
                             <td className="px-4 py-3 text-right whitespace-nowrap">
                               <button
                                 type="button"
-                                onClick={() => {
-                                  setSelectedMonth(row.month)
-                                  fetchSalary(row.month)
-                                }}
+                                onClick={() => setSelectedMonth(row.month)}
                                 className={`text-[10px] font-bold px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
                                   isSelected
                                     ? 'bg-brand-primary text-white'
