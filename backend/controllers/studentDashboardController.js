@@ -3,6 +3,7 @@ const FeeLedger = require("../models/FeeLedger");
 const Content = require("../models/Content");
 const Test = require("../models/Test");
 const ExamResult = require("../models/ExamResult");
+const Batch = require("../models/Batch");
 const { getFeeOverview } = require("../utils/feeStatus");
 
 const getStudentDashboard = async (req, res) => {
@@ -23,6 +24,15 @@ const getStudentDashboard = async (req, res) => {
         success: false,
         message: "Student profile not found. Please contact your administrator.",
       });
+    }
+
+    // Fetch batch timing if batch is assigned
+    let batchTiming = "";
+    if (profile.batch) {
+      const batchDoc = await Batch.findOne({ name: profile.batch }).lean();
+      if (batchDoc && batchDoc.timing) {
+        batchTiming = batchDoc.timing;
+      }
     }
 
     // 2. Fetch the fee ledger for this profile
@@ -118,6 +128,8 @@ const getStudentDashboard = async (req, res) => {
           fullName: req.user.name,
           rollNo: profile.rollNo ?? "",
           batch: profile.batch,
+          batchTiming: batchTiming,
+          subjects: profile.subjects ?? "",
           studentClass: profile.studentClass ?? "",
           admissionDate: profile.admissionDate,
           joiningDate: profile.joiningDate ?? null,

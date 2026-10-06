@@ -18,6 +18,7 @@ import {
   Minus,
   Award,
   Sparkles,
+  Clock,
 } from 'lucide-react'
 
 
@@ -95,6 +96,172 @@ const TABS = [
   { id: 'tests',       label: 'Practice Tests', Icon: ClipboardList },
   { id: 'payments',    label: 'Payments',       Icon: IndianRupee },
 ]
+
+// ─── Remark generator ─────────────────────────────────────────────────────────
+
+function getStudentRemark(student, attnData, exams) {
+  const attendance = attnData?.summary?.attendancePercentage
+  if (attendance !== undefined && attendance >= 90) {
+    return 'Outstanding dedication! Your exceptional attendance reflects true discipline and focus.'
+  }
+  if (attendance !== undefined && attendance >= 75) {
+    return 'Great consistency! Keep up the steady effort and active engagement in your classes.'
+  }
+  if (exams && exams.length > 0) {
+    const validScores = exams.filter((e) => !e.isAbsent && e.totalMarks > 0)
+    if (validScores.length > 0) {
+      const avg = validScores.reduce((sum, e) => sum + (e.marksObtained / e.totalMarks), 0) / validScores.length
+      if (avg >= 0.75) {
+        return 'Commendable test performance! Continue sharpening your concepts and aiming high.'
+      }
+    }
+  }
+  return 'Every effort counts! Stay curious, practice consistently, and strive for excellence every single day.'
+}
+
+function formatSubjects(subjects) {
+  if (!subjects || !subjects.trim()) return 'Not Specified'
+  return subjects
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+    .join(', ')
+}
+
+// ─── Welcome Banner (Black Box) ───────────────────────────────────────────────
+
+function StudentWelcomeBanner({ student, attnData, exams }) {
+  const remark = getStudentRemark(student, attnData, exams)
+
+  return (
+    <div className="md:col-span-2 rounded-2xl bg-[#141824] dark:bg-[#0c1017] border border-slate-800/80 p-6 text-white shadow-sm flex flex-col justify-between relative overflow-hidden group">
+      {/* Subtle background ambient glow */}
+      <div className="absolute top-0 right-0 -mr-16 -mt-16 w-56 h-56 bg-brand-primary/20 rounded-full blur-3xl pointer-events-none" />
+
+      <div>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+            Welcome back
+          </p>
+          {student?.rollNo && (
+            <span className="font-mono text-xs font-bold bg-white/10 text-amber-300 px-2.5 py-0.5 rounded-full border border-amber-300/30">
+              Roll No: {student.rollNo}
+            </span>
+          )}
+        </div>
+        <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white mt-1">
+          {student?.fullName || 'Student'}
+        </h2>
+
+        {/* Student details chips: Subject opted & Batch timing */}
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+          <div className="flex items-center gap-2.5 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5">
+            <BookOpen size={16} className="text-sky-400 shrink-0" />
+            <div className="min-w-0">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block leading-tight">Subject Opted</span>
+              <span className="font-semibold text-slate-100 truncate block">
+                {formatSubjects(student?.subjects)}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5">
+            <Clock size={16} className="text-emerald-400 shrink-0" />
+            <div className="min-w-0">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block leading-tight">Batch Timing</span>
+              <span className="font-semibold text-slate-100 truncate block">
+                {student?.batchTiming
+                  ? `${student.batchTiming} (${student?.batch || 'Batch'})`
+                  : (student?.batch ? `${student.batch} · Regular Hours` : 'Regular Hours')}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Remark Box */}
+      <div className="mt-5 pt-3.5 border-t border-slate-800/90 flex items-start gap-2.5">
+        <Sparkles size={16} className="text-amber-400 shrink-0 mt-0.5 animate-pulse" />
+        <div className="min-w-0 flex-1">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-300 block">
+            Academic Remark
+          </span>
+          <p className="text-xs text-slate-200 mt-0.5 italic leading-relaxed">
+            "{remark}"
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Top Fee & Due Summary Card ───────────────────────────────────────────────
+
+function StudentFeeDueCard({ fee, onViewLedger }) {
+  const currentMonthYear = new Intl.DateTimeFormat('en-IN', {
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date())
+
+  const statusConfig = FEE_STATUS_CONFIG[fee?.feeStatus] || FEE_STATUS_CONFIG.PENDING
+
+  return (
+    <div className="rounded-2xl border border-brand-border bg-brand-surface p-6 shadow-sm flex flex-col justify-between relative overflow-hidden group hover:shadow-md transition-all duration-300">
+      <div className="absolute top-0 right-0 p-3 opacity-15 text-6xl pointer-events-none group-hover:scale-110 transition-transform duration-300">
+        🪙
+      </div>
+
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-brand-accent">
+            Fee &amp; Due
+          </p>
+          <h3 className="text-sm font-semibold text-brand-text">
+            {fee?.feePendingForMonth || currentMonthYear}
+          </h3>
+        </div>
+        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold ring-1 ${statusConfig.pill}`}>
+          {statusConfig.icon}
+          {statusConfig.label}
+        </span>
+      </div>
+
+      <div className="mt-4">
+        <p className="text-2xl sm:text-3xl font-extrabold text-brand-text tracking-tight">
+          {formatCurrency(fee?.amountDue ?? 0)}
+        </p>
+        <p className="text-xs text-brand-text-muted mt-0.5">
+          Calculated Due for {fee?.feePendingForMonth || currentMonthYear}
+        </p>
+      </div>
+
+      <div className="mt-4 pt-3 border-t border-brand-border/60 text-xs space-y-1.5">
+        <div className="flex justify-between items-center text-brand-text-muted">
+          <span>Paid so far:</span>
+          <span className="font-bold text-emerald-600 dark:text-emerald-400">
+            {formatCurrency(fee?.amountPaid ?? 0)}
+          </span>
+        </div>
+        <div className="flex justify-between items-center text-brand-text-muted">
+          <span>Total Course Fee:</span>
+          <span className="font-semibold text-brand-text">
+            {formatCurrency(fee?.totalCourseFee ?? 0)}
+          </span>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={onViewLedger}
+        className="mt-4 w-full rounded-xl border border-brand-border bg-brand-surface-tint hover:bg-brand-surface py-2.5 px-3 text-xs font-bold text-brand-text flex items-center justify-center gap-2 hover:border-brand-primary/40 transition-all cursor-pointer shadow-xs"
+      >
+        <span>👛</span>
+        <span>View Full Fee &amp; Payment Ledger →</span>
+      </button>
+    </div>
+  )
+}
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
@@ -233,22 +400,12 @@ export default function StudentDashboard() {
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h2 className="text-xs sm:text-sm font-semibold text-brand-text truncate">
-                  {student ? `Hello ${student.fullName}` : 'Welcome'}
+                  Student Portal
                 </h2>
-                {student?.rollNo && (
-                  <span className="font-mono text-[10px] font-extrabold text-brand-primary bg-brand-primary/10 px-2 py-0.5 rounded-full border border-brand-primary/20 shrink-0">
-                    Roll No: {student.rollNo}
-                  </span>
-                )}
               </div>
             </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-3 text-xs font-semibold text-brand-text-muted">
-            {student?.rollNo && (
-              <span className="hidden sm:inline-flex items-center rounded-full bg-brand-primary/10 px-2.5 py-0.5 text-[10px] font-mono font-extrabold text-brand-primary border border-brand-primary/20">
-                Roll #{student.rollNo}
-              </span>
-            )}
             {student?.batch && (
               <span className="hidden sm:inline-flex items-center rounded-full bg-brand-surface-tint px-2.5 py-0.5 text-[10px] font-bold text-brand-text border border-brand-border">
                 {student.batch}
@@ -302,23 +459,6 @@ export default function StudentDashboard() {
           </div>
 
           <div className="mx-auto max-w-5xl flex flex-col gap-6">
-            {/* Header Section inside main area for desktop feel */}
-            {!loading && student && (
-              <div className="hidden lg:flex flex-col gap-1 mb-2 animate-fadeIn">
-                <div className="flex items-center gap-2.5">
-                  <h1 className="text-2xl font-bold text-brand-primary tracking-tight">{student.fullName}</h1>
-                  {student.rollNo && (
-                    <span className="font-mono text-xs font-extrabold text-brand-gold bg-brand-gold/15 px-2.5 py-0.5 rounded-full border border-brand-gold/30">
-                      Roll No: {student.rollNo}
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-brand-text-muted">
-                  Welcome back, {student.fullName}! Here is an overview of your academic progress, learning materials, and fee status.
-                </p>
-              </div>
-            )}
-
         {/* ── Global loading skeleton ──────────────────────────────────────── */}
         {loading && (
           <div className="space-y-4 animate-pulse">
@@ -350,6 +490,19 @@ export default function StudentDashboard() {
             {/* ── OVERVIEW TAB ───────────────────────────────────────────── */}
             {activeTab === 'overview' && (
               <div className="flex flex-col gap-6">
+                {/* ── Top Hero: Black Box Welcome Banner & Fee Due Card ── */}
+                <div className="grid gap-6 md:grid-cols-3">
+                  <StudentWelcomeBanner
+                    student={student}
+                    attnData={attnData}
+                    exams={dashData?.instituteExams || []}
+                  />
+                  <StudentFeeDueCard
+                    fee={fee}
+                    onViewLedger={() => setActiveTab('payments')}
+                  />
+                </div>
+
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* Attendance Card */}
@@ -370,20 +523,18 @@ export default function StudentDashboard() {
                     </div>
                   </div>
 
-                  {/* Pending Fees Card */}
+                  {/* Study Materials Vault Card */}
                   <div className="bg-brand-surface rounded-2xl border border-brand-border shadow-sm p-5 flex flex-col justify-between">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-brand-text-muted/80">Pending Fees</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-brand-text-muted/80">Study Vault</span>
                       <div className="rounded-lg bg-brand-primary/10 p-2 rounded-xl">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4.5 w-4.5 text-brand-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 8h6m-5 0a3 3 0 110 6H9l3 3m-3-6h6m6 1a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+                        <BookOpen size={18} className="text-brand-primary" />
                       </div>
                     </div>
                     <div className="mt-3">
-                      <p className="text-2xl font-bold text-brand-text">{formatCurrency(fee?.amountDue ?? 0)}</p>
-                      <p className="text-xs text-brand-text-muted mt-1">
-                        {fee ? `Monthly: ${formatCurrency(fee.monthlyFeeAmount ?? fee.totalCourseFee ?? 0)} · ${fee.feePendingForMonth || 'All clear'}` : 'No fee info'}
+                      <p className="text-2xl font-bold text-brand-text">{materials.length} Resources</p>
+                      <p className="text-xs text-brand-text-muted mt-1 truncate">
+                        {materials[0] ? `Latest: ${materials[0].title}` : 'No materials yet'}
                       </p>
                     </div>
                   </div>
