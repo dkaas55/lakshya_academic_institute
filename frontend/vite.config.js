@@ -8,9 +8,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 function dynamicManifestPlugin(env) {
   const getManifest = () => {
-    const name = env.VITE_APP_NAME || 'Happy English School'
-    const shortName = env.VITE_APP_SHORT_NAME || 'Happy English'
-    const logo = env.VITE_APP_LOGO_URL || '/hes_images.png'
+    const name = env.VITE_APP_NAME || 'Lakshya Academic Institute'
+    const shortName = env.VITE_APP_SHORT_NAME || 'Lakshya Academy'
+    const logo = env.VITE_APP_LOGO_URL || '/logo.png'
 
     return JSON.stringify(
       {

@@ -16,10 +16,10 @@ const mode = (import.meta.env.VITE_APP_MODE || 'institute').toLowerCase().trim()
 const isSchool = mode === 'school';
 
 export const BRANDING = {
-  name: import.meta.env.VITE_APP_NAME || 'Happy English School',
-  shortName: import.meta.env.VITE_APP_SHORT_NAME || 'Happy English',
+  name: import.meta.env.VITE_APP_NAME || 'Lakshya Academic Institute',
+  shortName: import.meta.env.VITE_APP_SHORT_NAME || 'Lakshya Academy',
   tagline: import.meta.env.VITE_APP_TAGLINE || 'Excellence in Education',
-  logoUrl: import.meta.env.VITE_APP_LOGO_URL || '/hes_images.png',
+  logoUrl: import.meta.env.VITE_APP_LOGO_URL || '/logo.png',
   mode,
   isSchool,
 

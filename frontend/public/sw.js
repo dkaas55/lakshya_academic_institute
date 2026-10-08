@@ -1,9 +1,9 @@
 /**
  * Service Worker (sw.js)
- * Provides offline shell caching and enables PWA Installability
+ * Network-first strategy for live updates with offline fallback
  */
 
-const CACHE_NAME = 'school-app-v4';
+const CACHE_NAME = 'app-cache-v5';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
@@ -23,7 +23,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Activate: clean up old caches
+// Activate: clean up all old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -35,7 +35,7 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch: Network-first for API and HTML navigation, cache fallback for static assets
+// Fetch: Network-First for ALL requests (always get fresh data when online, cache when offline)
 self.addEventListener('fetch', (event) => {
   const { request } = event;
 
@@ -49,26 +49,24 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // For HTML navigation requests: Network first, fall back to cached index.html
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request).catch(() => caches.match('/index.html'))
-    );
-    return;
-  }
-
-  // For static assets: Stale-while-revalidate
   event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      const fetchPromise = fetch(request).then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200) {
+    fetch(request)
+      .then((networkResponse) => {
+        // Cache successful GET responses
+        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(request, responseToCache));
         }
         return networkResponse;
-      }).catch(() => null);
-
-      return cachedResponse || fetchPromise;
-    })
+      })
+      .catch(() => {
+        // Offline fallback: try cache, or index.html for navigation
+        return caches.match(request).then((cachedResponse) => {
+          if (cachedResponse) return cachedResponse;
+          if (request.mode === 'navigate') return caches.match('/index.html');
+          return null;
+        });
+      })
   );
 });
+
