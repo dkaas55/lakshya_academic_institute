@@ -16,9 +16,9 @@
       "purpose": "any maskable"
     },
     {
-      "src": "/hes_images.png",
+      "src": "/logo.png",
       "type": "image/png",
-      "sizes": "375x533",
+      "sizes": "500x500",
       "purpose": "any"
     }
   ],

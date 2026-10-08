@@ -3,7 +3,7 @@
  * Provides offline shell caching and enables PWA Installability
  */
 
-const CACHE_NAME = 'school-app-v3';
+const CACHE_NAME = 'school-app-v4';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
