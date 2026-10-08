@@ -4,6 +4,7 @@ import FeeLedgerModal from './FeeLedgerModal'
 import StudentEditModal from './StudentEditModal'
 import StudentDetailModal from './StudentDetailModal'
 import StudentFilterBar from '../shared/StudentFilterBar'
+import { BRANDING } from '../../config/branding'
 
 function FeeStatusBadge({ status }) {
   const styles = {
@@ -165,7 +166,7 @@ export default function ActiveStudentsList({ refreshKey = 0 }) {
                 <tr className="border-b border-brand-border bg-brand-surface-tint/80">
                   <th className="px-3 sm:px-4 py-2.5 font-semibold text-brand-text">Roll No</th>
                   <th className="px-3 sm:px-4 py-2.5 font-semibold text-brand-text">Name</th>
-                  <th className="hidden md:table-cell px-4 py-2.5 font-semibold text-brand-text">Batch</th>
+                  <th className="hidden md:table-cell px-4 py-2.5 font-semibold text-brand-text">{BRANDING.batchSectionLabel}</th>
                   <th className="hidden md:table-cell px-4 py-2.5 font-semibold text-brand-text">Joined</th>
                   <th className="hidden md:table-cell px-4 py-2.5 font-semibold text-brand-text">Status</th>
                   <th className="hidden md:table-cell px-4 py-2.5 font-semibold text-brand-text">Fee</th>

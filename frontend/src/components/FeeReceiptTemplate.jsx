@@ -1,4 +1,5 @@
 import React from 'react'
+import { BRANDING } from '../config/branding'
 
 function formatCurrency(value) {
   return new Intl.NumberFormat('en-IN', {
@@ -95,11 +96,11 @@ export default function FeeReceiptTemplate({ receiptInfo, student }) {
         <div className="flex items-start justify-between pb-3.5 border-b-2 border-indigo-600">
           <div>
             <h1 className="text-xl font-extrabold text-indigo-600 tracking-tight flex items-center gap-2">
-              <img src="/logo.png" alt="Lakshya Academic Institute" className="h-7 object-contain" />
-              Lakshya Academic Institute
+              <img src={BRANDING.logoUrl} alt={BRANDING.name} className="h-7 object-contain" />
+              {BRANDING.name}
             </h1>
             <p className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold mt-0.5">
-              Excellence in Education
+              {BRANDING.tagline || 'Excellence in Education'}
             </p>
           </div>
           <div className="text-right">
@@ -262,7 +263,7 @@ export default function FeeReceiptTemplate({ receiptInfo, student }) {
           <p className="text-[11px] text-slate-600 leading-relaxed">
             Thank you for your payment of <strong className="text-indigo-600 font-semibold">{formatCurrency(amount)}</strong> towards{' '}
             <strong className="text-slate-800 font-semibold">{student.fullName}</strong>'s course fee. We appreciate your partnership with{' '}
-            <strong className="text-indigo-600 font-semibold">Lakshya Academic Institute</strong>.
+            <strong className="text-indigo-600 font-semibold">{BRANDING.name}</strong>.
             {amountDue > 0 ? (
               <span>
                 {' '}A balance of <strong className="text-amber-700 font-semibold">{formatCurrency(amountDue)}</strong> remains. Please make timely payments to avoid interruption.

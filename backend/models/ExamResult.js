@@ -56,4 +56,6 @@ const examResultSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+examResultSchema.index({ batch: 1, examDate: -1 });
+
 module.exports = mongoose.model("ExamResult", examResultSchema);

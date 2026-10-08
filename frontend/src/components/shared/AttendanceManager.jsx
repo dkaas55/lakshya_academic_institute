@@ -3,6 +3,7 @@ import api from '../../lib/api'
 import StudentFilterBar from './StudentFilterBar'
 import StudentAttendanceDetailModal from './StudentAttendanceDetailModal'
 import useBatches from '../../hooks/useBatches'
+import { BRANDING } from '../../config/branding'
 
 
 // ── Small helpers ─────────────────────────────────────────────────────────────
@@ -198,7 +199,7 @@ function AttendanceHistoryView({ allowedBatches }) {
 
           {/* Batch Filter */}
           <div>
-            <label className="block text-xs font-semibold text-brand-text mb-1.5">Batch</label>
+            <label className="block text-xs font-semibold text-brand-text mb-1.5">{BRANDING.batchSectionLabel}</label>
             <select
               value={filterBatch}
               onChange={(e) => {
@@ -207,7 +208,7 @@ function AttendanceHistoryView({ allowedBatches }) {
               }}
               className="w-full rounded-xl border border-brand-border bg-brand-surface px-3 py-2.5 text-xs text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all"
             >
-              <option value="all">All Batches</option>
+              <option value="all">{BRANDING.allBatchesLabel}</option>
               {uniqueBatches.map((b) => (
                 <option key={b} value={b}>{b}</option>
               ))}

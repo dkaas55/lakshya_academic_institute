@@ -13,6 +13,8 @@ import { useEffect } from 'react'
 import { clearToken, clearRole } from '../lib/auth'
 import SettingsModal from '../components/shared/SettingsModal'
 import { useTheme } from '../context/ThemeContext'
+import { BRANDING } from '../config/branding'
+import InstallAppButton from '../components/shared/InstallAppButton'
 import {
   LayoutDashboard,
   UserPlus,
@@ -33,7 +35,7 @@ const NAV_ITEMS = [
   { id: 'overview',    label: 'Overview',              Icon: LayoutDashboard },
   { id: 'register',   label: 'Student Registration',   Icon: UserPlus },
   { id: 'students',   label: 'Students',               Icon: Users,          disabled: false },
-  { id: 'batches',    label: 'Batches',                Icon: Layers,         disabled: false },
+  { id: 'batches',    label: BRANDING.batchesNavLabel, Icon: Layers,         disabled: false },
   { id: 'teachers',   label: 'Teachers',               Icon: GraduationCap,  disabled: false },
   { id: 'attendance', label: 'Attendance',             Icon: CalendarCheck,  disabled: false },
   { id: 'fees',       label: 'Fee Ledger',             Icon: IndianRupee,    disabled: false },
@@ -81,11 +83,11 @@ export default function AdminDashboard() {
         <div className="px-5 py-5 border-b border-brand-border/20 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3 min-w-0">
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white overflow-hidden shrink-0 shadow-sm">
-              <img src="/logo.png" alt="Logo" className="h-full w-full object-contain p-1" />
+              <img src={BRANDING.logoUrl} alt={`${BRANDING.shortName} Logo`} className="h-full w-full object-contain p-1" />
             </div>
             <div className="min-w-0">
               <p className="text-[10px] font-bold uppercase tracking-widest text-brand-gold truncate">
-                Lakshya Academy
+                {BRANDING.shortName}
               </p>
               <h1 className="text-xs font-semibold text-brand-surface/90 mt-0.5 truncate">Admin Workspace</h1>
             </div>
@@ -185,6 +187,8 @@ export default function AdminDashboard() {
               <span>{new Date().toLocaleDateString('en-IN', { dateStyle: 'medium' })}</span>
             </div>
             
+            <InstallAppButton />
+
             <button
               type="button"
               onClick={() => setTheme(isDark ? 'light' : 'dark')}
@@ -204,17 +208,17 @@ export default function AdminDashboard() {
               <LogOut size={16} strokeWidth={2} />
             </button>
 
-            <img src="/logo.png" alt="Logo" className="lg:hidden h-8 w-8 object-contain shrink-0" />
+            <img src={BRANDING.logoUrl} alt={`${BRANDING.shortName} Logo`} className="lg:hidden h-8 w-8 object-contain shrink-0" />
           </div>
         </header>
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8 lg:overflow-y-auto">
           {/* Top-Left Logo Card in Dashboard body canvas */}
           <div className="bg-brand-surface border border-brand-border rounded-2xl p-3 sm:p-4 flex items-center gap-3 sm:gap-4 mb-5 sm:mb-8 shadow-sm max-w-sm transition-all duration-300 hover:scale-[1.01]">
-            <img src="/logo.png" alt="Lakshya Logo" className="h-9 sm:h-10 w-auto object-contain shrink-0" />
+            <img src={BRANDING.logoUrl} alt={`${BRANDING.name} Logo`} className="h-9 sm:h-10 w-auto object-contain shrink-0" />
             <div>
               <h1 className="text-sm sm:text-base font-extrabold text-brand-primary leading-tight">
-                Lakshya Academic Institute
+                {BRANDING.name}
               </h1>
               <p className="text-[9px] text-brand-text-muted uppercase tracking-widest font-bold mt-0.5">
                 Admin Workspace

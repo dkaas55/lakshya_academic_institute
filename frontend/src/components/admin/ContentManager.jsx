@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import api from '../../lib/api'
 import useBatches from '../../hooks/useBatches'
+import { BRANDING } from '../../config/branding'
 
 const MATERIAL_TYPES = ['Notes', 'Assignment', 'Lecture Link']
 
@@ -274,7 +275,7 @@ export default function ContentManager() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h2 className="text-base font-semibold text-brand-text">Content Manager</h2>
-          <p className="text-xs text-brand-text-muted mt-0.5">Upload and manage study materials and practice tests across batches.</p>
+          <p className="text-xs text-brand-text-muted mt-0.5">Upload and manage study materials and practice tests across {BRANDING.batchesLabel.toLowerCase()}.</p>
         </div>
         {/* Tab pills */}
         <div className="flex gap-1 p-1 bg-brand-surface-tint rounded-xl">

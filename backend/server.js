@@ -27,6 +27,23 @@ app.get("/", (req, res) => {
   res.json({ message: "Institute Management System API is running" });
 });
 
+// Health check endpoints (used by monitoring tools like UptimeRobot, Render, and Cron-job.org)
+const handleHealthCheck = (req, res) => {
+  const isDbConnected = mongoose.connection.readyState === 1;
+  const status = isDbConnected ? "ok" : "degraded";
+  const statusCode = isDbConnected ? 200 : 503;
+
+  res.status(statusCode).json({
+    status,
+    database: isDbConnected ? "connected" : "disconnected",
+    uptime: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString(),
+  });
+};
+
+app.get("/health", handleHealthCheck);
+app.get("/api/health", handleHealthCheck);
+
 app.get("/api/test", (req, res) => {
   res.json({ success: true, message: "Test route is working" });
 });
@@ -72,7 +89,10 @@ const connectDatabase = async () => {
   });
 
   await mongoose.connect(uri, {
-    serverSelectionTimeoutMS: 5000,
+    maxPoolSize: 10, // Limit open connections per instance to avoid exhausting MongoDB Atlas 500 limit
+    minPoolSize: 1, // Keep at least 1 warm connection ready for instantaneous response
+    serverSelectionTimeoutMS: 5000, // Fail fast (5s) instead of hanging indefinitely if Atlas is unreachable
+    socketTimeoutMS: 45000, // Close inactive sockets after 45s
   });
 
   console.log("MongoDB connected successfully");
@@ -140,9 +160,33 @@ const startServer = async () => {
     // Schedule it to run every 24 hours
     setInterval(processMonthlyFees, 24 * 60 * 60 * 1000);
 
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`);
     });
+
+    const gracefulShutdown = async (signal) => {
+      console.log(`\nReceived ${signal}. Shutting down gracefully...`);
+      server.close(async () => {
+        console.log("HTTP server closed.");
+        try {
+          await mongoose.connection.close(false);
+          console.log("MongoDB connection closed cleanly.");
+          process.exit(0);
+        } catch (err) {
+          console.error("Error closing MongoDB connection:", err.message);
+          process.exit(1);
+        }
+      });
+
+      // Force exit after 10s if graceful shutdown hangs
+      setTimeout(() => {
+        console.error("Could not close connections in time, forcefully shutting down");
+        process.exit(1);
+      }, 10000);
+    };
+
+    process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+    process.on("SIGINT", () => gracefulShutdown("SIGINT"));
   } catch (error) {
     console.error("Failed to start server:", error.message);
     process.exit(1);

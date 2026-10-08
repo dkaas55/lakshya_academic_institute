@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import api from '../../lib/api'
 import useBatches from '../../hooks/useBatches'
+import { BRANDING } from '../../config/branding'
 
 
 const CLASS_OPTIONS = [
@@ -272,7 +273,7 @@ export default function StudentEditModal({ student, onClose, onUpdated, onRemove
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="block text-xs font-semibold text-brand-text">
-                  Enrolled Batches <span className="text-red-500">*</span>
+                  Enrolled {BRANDING.batchesLabel} <span className="text-red-500">*</span>
                 </label>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] text-brand-text-muted">

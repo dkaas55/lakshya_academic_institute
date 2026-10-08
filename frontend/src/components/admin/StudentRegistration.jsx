@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import ActiveStudentsList from './ActiveStudentsList'
 import api from '../../lib/api'
 import useBatches from '../../hooks/useBatches'
+import { BRANDING } from '../../config/branding'
 import {
   buildWhatsAppInvite,
   generateUsername,
@@ -205,7 +206,7 @@ export default function StudentRegistration() {
             {success.student?.fullName} registered successfully.
           </p>
           <p className="mt-1 text-brand-primary">
-            Login username: {success.student?.username} · Batch{success.student?.batches?.length > 1 ? 'es' : ''}: {success.student?.batches?.join(', ') || success.student?.batch}
+            Login username: {success.student?.username} · {BRANDING.batchLabel}{success.student?.batches?.length > 1 ? 'es' : ''}: {success.student?.batches?.join(', ') || success.student?.batch}
           </p>
         </div>
       )}
@@ -243,7 +244,7 @@ export default function StudentRegistration() {
             <div className="sm:col-span-2 space-y-2">
               <div className="flex items-center justify-between">
                 <label className="block text-xs font-semibold text-brand-text">
-                  Enrolled Batches <span className="text-red-500">*</span>
+                  Enrolled {BRANDING.batchesLabel} <span className="text-red-500">*</span>
                 </label>
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] font-medium text-brand-text-muted">
@@ -268,7 +269,7 @@ export default function StudentRegistration() {
               </div>
 
               {BATCH_OPTIONS.length === 0 ? (
-                <p className="text-xs text-brand-text-muted">No active batches available. Please create a batch first.</p>
+                <p className="text-xs text-brand-text-muted">No active {BRANDING.batchesLabel.toLowerCase()} available. Please create a {BRANDING.batchLabel.toLowerCase()} first.</p>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-2.5 rounded-xl border border-brand-border bg-brand-surface-tint/40 max-h-48 overflow-y-auto">
                   {BATCH_OPTIONS.map((option) => {

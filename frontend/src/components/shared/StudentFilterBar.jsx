@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { BRANDING } from '../../config/branding'
 
 /**
  * StudentFilterBar
@@ -102,7 +103,7 @@ export default function StudentFilterBar({
             onChange={(e) => setBatch(e.target.value)}
             className={selectBase}
           >
-            <option value="all">All Batches</option>
+            <option value="all">{BRANDING.allBatchesLabel}</option>
             {batches.map((b) => (
               <option key={b} value={b}>{b}</option>
             ))}

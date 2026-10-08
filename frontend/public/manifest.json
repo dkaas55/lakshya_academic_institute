@@ -1,0 +1,32 @@
+{
+  "short_name": "Happy English",
+  "name": "Happy English School",
+  "description": "Student, Teacher and Administrative Portal",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/hes_images.png",
+      "type": "image/png",
+      "sizes": "375x533",
+      "purpose": "any"
+    }
+  ],
+  "start_url": "/",
+  "id": "/",
+  "background_color": "#ffffff",
+  "theme_color": "#1e3a8a",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "scope": "/"
+}

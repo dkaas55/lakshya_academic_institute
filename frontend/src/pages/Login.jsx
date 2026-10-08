@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { setToken, setRole as setAuthRole } from '../lib/auth'
+import { BRANDING } from '../config/branding'
+import InstallAppButton from '../components/shared/InstallAppButton'
 
 const LOGIN_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/login`
 
@@ -56,17 +58,20 @@ export default function Login() {
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center p-3 bg-brand-surface border border-brand-border rounded-3xl shadow-sm mb-5 transition-colors duration-300">
             <img 
-              src="/logo.png" 
-              alt="Lakshya Academic Institute Logo" 
+              src={BRANDING.logoUrl} 
+              alt={`${BRANDING.name} Logo`} 
               className="h-16 w-auto object-contain" 
             />
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight text-brand-primary">
-            Lakshya Academic Institute
+            {BRANDING.name}
           </h1>
           <p className="mt-2 text-sm text-brand-text-muted">
-            Sign in to your learning portal
+            {BRANDING.tagline || 'Sign in to your learning portal'}
           </p>
+          <div className="mt-3 flex justify-center">
+            <InstallAppButton />
+          </div>
         </div>
 
         <div className="bg-brand-surface rounded-3xl border border-brand-border p-8 shadow-sm transition-colors duration-300">

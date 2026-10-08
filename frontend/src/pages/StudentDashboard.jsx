@@ -4,6 +4,8 @@ import api from '../lib/api'
 import { clearToken, clearRole } from '../lib/auth'
 import SettingsModal from '../components/shared/SettingsModal'
 import { useTheme } from '../context/ThemeContext'
+import { BRANDING } from '../config/branding'
+import InstallAppButton from '../components/shared/InstallAppButton'
 import {
   LayoutDashboard,
   CalendarCheck,
@@ -375,11 +377,11 @@ export default function StudentDashboard() {
       <aside className="hidden lg:flex sticky top-0 inset-y-0 left-0 z-30 w-60 h-screen flex-col shrink-0 border-r border-brand-border bg-brand-primary text-brand-surface transition-transform duration-300">
         <div className="px-6 py-6 border-b border-brand-border/20 flex items-center gap-3 shrink-0">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white shadow-sm overflow-hidden shrink-0">
-            <img src="/logo.png" alt="Logo" className="h-full w-full object-contain p-1" />
+            <img src={BRANDING.logoUrl} alt={`${BRANDING.shortName} Logo`} className="h-full w-full object-contain p-1" />
           </div>
           <div>
             <p className="text-[10px] font-bold uppercase tracking-widest text-brand-gold leading-tight">
-              Lakshya Academy
+              {BRANDING.shortName}
             </p>
             <h1 className="text-xs font-semibold text-brand-surface/90 mt-0.5">Student Portal</h1>
           </div>
@@ -456,6 +458,8 @@ export default function StudentDashboard() {
             <span className="hidden sm:inline-flex rounded-full bg-brand-primary/10 text-brand-primary border border-brand-primary/20 px-2.5 py-1 text-[10px] uppercase font-bold tracking-wide">
               Live
             </span>
+            <InstallAppButton />
+
             <button
               type="button"
               onClick={() => setShowSettings(true)}
@@ -479,10 +483,10 @@ export default function StudentDashboard() {
         <main className="flex-1 p-4 sm:p-6 lg:p-8 pb-32 lg:pb-8 lg:overflow-y-auto">
           {/* Top-Left Logo Card in Dashboard body canvas */}
           <div className="bg-brand-surface border border-brand-border rounded-2xl p-3 sm:p-4 flex items-center gap-3 sm:gap-4 mb-5 sm:mb-6 shadow-sm max-w-sm transition-all duration-300 hover:scale-[1.01]">
-            <img src="/logo.png" alt="Lakshya Logo" className="h-9 sm:h-10 w-auto object-contain shrink-0" />
+            <img src={BRANDING.logoUrl} alt={`${BRANDING.name} Logo`} className="h-9 sm:h-10 w-auto object-contain shrink-0" />
             <div>
               <h1 className="text-sm sm:text-base font-extrabold text-brand-primary leading-tight">
-                Lakshya Academic Institute
+                {BRANDING.name}
               </h1>
               <p className="text-[9px] text-brand-text-muted uppercase tracking-widest font-bold mt-0.5">
                 Student Portal

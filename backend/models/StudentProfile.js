@@ -60,6 +60,8 @@ const studentProfileSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+studentProfileSchema.index({ batches: 1, status: 1 });
+
 studentProfileSchema.pre("save", function () {
   if (Array.isArray(this.batches) && this.batches.length > 0) {
     this.batches = [...new Set(this.batches.map((b) => String(b).trim()).filter(Boolean))];

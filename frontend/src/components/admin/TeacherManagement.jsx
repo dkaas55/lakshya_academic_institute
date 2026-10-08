@@ -3,6 +3,7 @@ import api from '../../lib/api'
 import useBatches from '../../hooks/useBatches'
 import TeacherSalaryModal from './TeacherSalaryModal'
 import { IndianRupee } from 'lucide-react'
+import { BRANDING } from '../../config/branding'
 
 const generateSecurePassword = () => {
   const lowercase = 'abcdefghijklmnopqrstuvwxyz'
@@ -242,7 +243,7 @@ export default function TeacherManagement() {
                 <tr className="border-b border-brand-border bg-brand-surface-tint">
                   <th className="px-4 py-3 font-semibold text-brand-text">Name & Email</th>
                   <th className="px-4 py-3 font-semibold text-brand-text">Payroll</th>
-                  <th className="px-4 py-3 font-semibold text-brand-text">Batches</th>
+                  <th className="px-4 py-3 font-semibold text-brand-text">{BRANDING.batchesLabel}</th>
                   <th className="px-4 py-3 font-semibold text-brand-text text-right">Actions</th>
                 </tr>
               </thead>
@@ -310,7 +311,7 @@ export default function TeacherManagement() {
                           <span key={b} className="rounded-full bg-brand-surface-tint px-2 py-0.5 text-[10px] text-brand-text border border-brand-border">
                             {b}
                           </span>
-                        )) : <span className="text-brand-text-muted/75 italic text-[10px]">No batches</span>}
+                        )) : <span className="text-brand-text-muted/75 italic text-[10px]">No {BRANDING.batchesLabel.toLowerCase()}</span>}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-right whitespace-nowrap">
@@ -461,7 +462,7 @@ export default function TeacherManagement() {
                       onChange={(e) => setForm({ ...form, compensationType: e.target.value })}
                       className="w-full rounded-lg border border-brand-border px-3 py-2 text-sm focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
                     >
-                      <option value="batch_based">Batch Fee Calculation (From Batches Taught)</option>
+                      <option value="batch_based">{BRANDING.batchLabel} Fee Calculation (From {BRANDING.batchesLabel} Taught)</option>
                       <option value="fixed">Fixed Monthly Salary</option>
                       <option value="percentage">Student Fee Percentage Split</option>
                     </select>

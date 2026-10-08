@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import api from '../../lib/api'
+import { BRANDING } from '../../config/branding'
 import {
   Clock,
   IndianRupee,
@@ -301,22 +302,22 @@ export default function BatchManagement() {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-base font-semibold text-brand-text">Batch Management</h2>
+          <h2 className="text-base font-semibold text-brand-text">{BRANDING.batchManagementLabel}</h2>
           <p className="text-xs text-brand-text-muted mt-0.5">
-            Create, edit and manage batches, subjects, per-student fees, and teacher assignments.
+            Create, edit and manage {BRANDING.batchesLabel.toLowerCase()}, subjects, per-student fees, and teacher assignments.
           </p>
         </div>
         <button
           onClick={openAddModal}
           className="rounded-lg bg-brand-primary px-4 py-2 text-xs font-semibold text-brand-surface hover:bg-brand-primary/100 transition-colors cursor-pointer"
         >
-          + Create Batch
+          + {BRANDING.createBatchLabel}
         </button>
       </div>
 
       {/* Content */}
       {loading ? (
-        <div className="py-12 text-center text-sm text-brand-text-muted">Loading batches...</div>
+        <div className="py-12 text-center text-sm text-brand-text-muted">Loading {BRANDING.batchesLabel.toLowerCase()}...</div>
       ) : error ? (
         <div className="rounded-xl border border-red-100 bg-red-50 p-6 text-center text-sm text-red-700">
           {error}
@@ -324,7 +325,7 @@ export default function BatchManagement() {
       ) : batches.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-brand-border bg-brand-surface p-12 text-center">
           <p className="text-sm text-brand-text-muted">
-            No batches created yet. Click &quot;+ Create Batch&quot; to get started.
+            No {BRANDING.batchesLabel.toLowerCase()} created yet. Click &quot;+ {BRANDING.createBatchLabel}&quot; to get started.
           </p>
         </div>
       ) : (
@@ -333,10 +334,10 @@ export default function BatchManagement() {
             <table className="min-w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-brand-border bg-brand-surface-tint">
-                  <th className="px-4 py-3 font-semibold text-brand-text">Batch Name</th>
+                  <th className="px-4 py-3 font-semibold text-brand-text">{BRANDING.batchNameLabel}</th>
                   <th className="px-4 py-3 font-semibold text-brand-text">Timing</th>
                   <th className="px-4 py-3 font-semibold text-brand-text">Assigned Teachers</th>
-                  <th className="px-4 py-3 font-semibold text-brand-text text-right">Actions</th>
+                  <th className="hidden md:table-cell px-4 py-3 font-semibold text-brand-text text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-brand-border">
@@ -348,7 +349,7 @@ export default function BatchManagement() {
                       setDetailSearch('')
                     }}
                     className="hover:bg-brand-surface-tint/60 transition-colors cursor-pointer group"
-                    title="Click to view full batch details"
+                    title={`Click to view full ${BRANDING.batchLabel.toLowerCase()} details`}
                   >
                     <td className="px-4 py-3">
                       <p className="font-semibold text-brand-text group-hover:text-brand-primary transition-colors">
@@ -364,26 +365,25 @@ export default function BatchManagement() {
                     </td>
                     <td className="px-4 py-3">
                       {b.timing ? (
-                        <div className="flex items-center gap-1.5 text-brand-text">
-                          <Clock size={13} className="text-brand-text-muted shrink-0" />
-                          <span>{b.timing}</span>
-                        </div>
+                        <span className="text-brand-text">{b.timing}</span>
                       ) : (
                         <span className="text-brand-text-muted/75 italic text-[10px]">—</span>
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex flex-wrap gap-1">
+                      <div className="flex flex-wrap gap-1.5">
                         {b.assignedTeachers?.length > 0 ? (
                           b.assignedTeachers.map((t) => (
                             <span
                               key={t.id || t._id || t}
-                              className="inline-flex items-center gap-1 rounded-md bg-brand-surface-tint px-2 py-0.5 text-[10px] text-brand-text border border-brand-border"
+                              className="inline-flex flex-col items-start rounded-md bg-brand-surface-tint px-2 py-1 text-brand-text border border-brand-border"
                             >
-                              <span className="font-medium">{t.name || t.username || t}</span>
+                              <span className="font-medium text-[11px] leading-tight">
+                                {t.name || t.username || t}
+                              </span>
                               {t.subject && (
-                                <span className="text-brand-primary font-semibold">
-                                  ({t.subject})
+                                <span className="text-brand-primary font-semibold text-[10px] leading-tight mt-0.5">
+                                  {t.subject}
                                 </span>
                               )}
                             </span>
@@ -395,7 +395,7 @@ export default function BatchManagement() {
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                    <td className="hidden md:table-cell px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => openEnrollModal(b)}
                         className="inline-flex items-center gap-1 rounded-lg bg-brand-primary/10 hover:bg-brand-primary/20 text-brand-primary px-2.5 py-1 text-xs font-semibold mr-3 transition-colors cursor-pointer"
@@ -700,7 +700,7 @@ export default function BatchManagement() {
           >
             <div className="flex items-center justify-between px-5 py-4 border-b border-brand-border bg-brand-surface-tint/50">
               <h3 className="font-semibold text-brand-text">
-                {editingBatch ? 'Edit Batch' : 'Create New Batch'}
+                {editingBatch ? BRANDING.editBatchLabel : BRANDING.createBatchLabel}
               </h3>
               <button
                 onClick={() => setShowModal(false)}
@@ -720,19 +720,19 @@ export default function BatchManagement() {
               {/* Batch Details */}
               <div>
                 <h4 className="text-[10px] font-bold uppercase tracking-wider text-brand-text-muted/75 mb-3 border-b pb-1">
-                  Batch Details
+                  {BRANDING.batchDetailsLabel}
                 </h4>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label className="block text-xs font-medium text-brand-text mb-1">
-                      Batch Name <span className="text-red-500">*</span>
+                      {BRANDING.batchNameLabel} <span className="text-red-500">*</span>
                     </label>
                     <input
                       required
                       type="text"
                       value={form.name}
                       onChange={(e) => setForm({ ...form, name: e.target.value })}
-                      placeholder="e.g. Morning Batch A"
+                      placeholder={BRANDING.isSchool ? "e.g. Class 10-A" : "e.g. Morning Batch A"}
                       className="w-full rounded-lg border border-brand-border px-3 py-2 text-sm focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
                     />
                   </div>
@@ -880,7 +880,7 @@ export default function BatchManagement() {
                   Enroll Students — {enrollModalBatch.name}
                 </h3>
                 <p className="text-xs text-brand-text-muted mt-0.5">
-                  Select students to enroll in this batch. Students can be enrolled in multiple batches simultaneously.
+                  Select students to enroll in this {BRANDING.batchLabel.toLowerCase()}. Students can be enrolled in multiple {BRANDING.batchesLabel.toLowerCase()} simultaneously.
                 </p>
               </div>
               <button
@@ -1071,7 +1071,7 @@ export default function BatchManagement() {
                             ✓ Enrolled
                           </span>
                         ) : (
-                          <span className="text-[10px] text-brand-text-muted">Not in batch</span>
+                          <span className="text-[10px] text-brand-text-muted">Not in {BRANDING.batchLabel.toLowerCase()}</span>
                         )}
                       </div>
                     </div>
