@@ -435,7 +435,7 @@ export default function StudentDashboard() {
         <header className="sticky top-0 z-20 bg-brand-surface border-b border-brand-border px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3 sm:gap-4 shrink-0 transition-colors duration-300">
           <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
             <div className="lg:hidden flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow-sm overflow-hidden shrink-0">
-              <img src="/logo.png" alt="Logo" className="h-full w-full object-contain p-0.5" />
+              <img src={BRANDING.logoUrl} alt={`${BRANDING.shortName} Logo`} className="h-full w-full object-contain p-0.5" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
