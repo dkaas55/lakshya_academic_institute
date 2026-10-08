@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
-import { setToken, setRole as setAuthRole } from '../lib/auth'
+import { setToken, setRole as setAuthRole, isAuthenticated, getRole } from '../lib/auth'
 import { BRANDING } from '../config/branding'
 import InstallAppButton from '../components/shared/InstallAppButton'
 
@@ -22,6 +22,15 @@ export default function Login() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  // Automatically redirect if already logged in (persistent student session in localStorage)
+  useEffect(() => {
+    if (isAuthenticated()) {
+      const storedRole = getRole()
+      const dest = storedRole === 'student' ? '/student' : storedRole === 'teacher' ? '/teacher' : '/admin'
+      navigate(dest, { replace: true })
+    }
+  }, [navigate])
+
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
@@ -35,8 +44,8 @@ export default function Login() {
         return
       }
 
-      setToken(data.data.token)
       const userRole = data.data.user?.role ?? role
+      setToken(data.data.token, userRole)
       setAuthRole(userRole)
       const dest = userRole === 'student' ? '/student' : userRole === 'teacher' ? '/teacher' : '/admin'
       navigate(dest, { replace: true })

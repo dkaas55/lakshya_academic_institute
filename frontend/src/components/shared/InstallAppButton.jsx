@@ -23,10 +23,18 @@ export default function InstallAppButton({ className = '' }) {
       setDeferredPrompt(e)
     }
 
+    const handleAppInstalled = () => {
+      setIsStandalone(true)
+      setDeferredPrompt(null)
+      setShowHelpModal(false)
+    }
+
     window.addEventListener('beforeinstallprompt', handleBeforeInstall)
+    window.addEventListener('appinstalled', handleAppInstalled)
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstall)
+      window.removeEventListener('appinstalled', handleAppInstalled)
     }
   }, [])
 
@@ -35,11 +43,20 @@ export default function InstallAppButton({ className = '' }) {
     return null
   }
 
-  const handleInstallClick = async () => {
+  const handleInstallClick = async (e) => {
+    e?.preventDefault?.()
+    e?.stopPropagation?.()
+
     if (deferredPrompt) {
-      deferredPrompt.prompt()
-      const { outcome } = await deferredPrompt.userChoice
-      if (outcome === 'accepted') {
+      try {
+        await deferredPrompt.prompt()
+        const choice = await deferredPrompt.userChoice
+        console.log('Install prompt result:', choice?.outcome)
+      } catch (err) {
+        console.warn('Install prompt failed or unavailable:', err)
+        setShowHelpModal(true)
+      } finally {
+        // Chromium only allows prompt() to be invoked once per event
         setDeferredPrompt(null)
       }
     } else {
@@ -54,17 +71,17 @@ export default function InstallAppButton({ className = '' }) {
         type="button"
         onClick={handleInstallClick}
         title={`Install ${BRANDING.shortName} App on your phone/desktop`}
-        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-brand-primary text-white shadow-sm hover:bg-brand-primary/90 transition-all cursor-pointer ${className}`}
+        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-brand-primary text-brand-surface border border-transparent dark:border-brand-border/60 shadow-sm hover:opacity-90 active:scale-95 transition-all cursor-pointer select-none ${className}`}
       >
-        <Smartphone size={14} className="shrink-0" />
+        <Smartphone size={14} className="shrink-0 text-current" />
         <span>Install App</span>
-        <Download size={13} className="shrink-0 opacity-80" />
+        <Download size={13} className="shrink-0 opacity-80 text-current" />
       </button>
 
       {/* Fallback Install Help Modal */}
       {showHelpModal && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
           onClick={() => setShowHelpModal(false)}
         >
           <div 
@@ -79,7 +96,8 @@ export default function InstallAppButton({ className = '' }) {
               <button 
                 type="button" 
                 onClick={() => setShowHelpModal(false)}
-                className="text-brand-text-muted hover:text-brand-text p-1 cursor-pointer"
+                className="text-brand-text-muted hover:text-brand-text p-1 rounded-lg hover:bg-brand-surface-tint cursor-pointer transition-colors"
+                aria-label="Close"
               >
                 <X size={16} />
               </button>
@@ -87,9 +105,9 @@ export default function InstallAppButton({ className = '' }) {
 
             <div className="space-y-3 text-xs text-brand-text">
               <div className="p-3 rounded-xl bg-brand-surface-tint border border-brand-border/60 flex items-start gap-2.5">
-                <Monitor size={18} className="text-brand-primary shrink-0 mt-0.5" />
+                <Monitor size={18} className="text-brand-accent shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-bold text-brand-primary">On Desktop (Chrome / Edge):</p>
+                  <p className="font-bold text-brand-text">On Desktop (Chrome / Edge):</p>
                   <p className="text-brand-text-muted mt-0.5">
                     Look for the <strong>Install App icon (🖥️ / 📥)</strong> in your browser's address bar (top right), or click <strong>⋮ (Menu) → &quot;Install {BRANDING.shortName}&quot;</strong>.
                   </p>
@@ -97,9 +115,9 @@ export default function InstallAppButton({ className = '' }) {
               </div>
 
               <div className="p-3 rounded-xl bg-brand-surface-tint border border-brand-border/60 flex items-start gap-2.5">
-                <Share size={18} className="text-brand-primary shrink-0 mt-0.5" />
+                <Share size={18} className="text-brand-accent shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-bold text-brand-primary">On iPhone / iPad (Safari):</p>
+                  <p className="font-bold text-brand-text">On iPhone / iPad (Safari):</p>
                   <p className="text-brand-text-muted mt-0.5">
                     Tap the <strong>Share button</strong> at the bottom of Safari, scroll down and select <strong>&quot;Add to Home Screen&quot;</strong>.
                   </p>
@@ -107,9 +125,9 @@ export default function InstallAppButton({ className = '' }) {
               </div>
 
               <div className="p-3 rounded-xl bg-brand-surface-tint border border-brand-border/60 flex items-start gap-2.5">
-                <Smartphone size={18} className="text-brand-primary shrink-0 mt-0.5" />
+                <Smartphone size={18} className="text-brand-accent shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-bold text-brand-primary">On Android (Chrome):</p>
+                  <p className="font-bold text-brand-text">On Android (Chrome):</p>
                   <p className="text-brand-text-muted mt-0.5">
                     Tap <strong>⋮ (Menu) → &quot;Install App&quot;</strong> or <strong>&quot;Add to Home screen&quot;</strong>.
                   </p>
@@ -120,7 +138,7 @@ export default function InstallAppButton({ className = '' }) {
             <button
               type="button"
               onClick={() => setShowHelpModal(false)}
-              className="w-full py-2.5 rounded-xl bg-brand-primary text-white font-bold text-xs hover:bg-brand-primary/90 transition-all cursor-pointer text-center"
+              className="w-full py-2.5 rounded-xl bg-brand-primary text-brand-surface font-bold text-xs hover:opacity-90 active:scale-[0.99] transition-all cursor-pointer text-center shadow-sm"
             >
               Got it!
             </button>
@@ -130,3 +148,4 @@ export default function InstallAppButton({ className = '' }) {
     </>
   )
 }
+

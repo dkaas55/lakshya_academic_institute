@@ -23,7 +23,7 @@
     }
   ],
   "start_url": "/",
-  "id": "/",
+  "id": "/pwa-happyenglishschool",
   "background_color": "#ffffff",
   "theme_color": "#1e3a8a",
   "display": "standalone",

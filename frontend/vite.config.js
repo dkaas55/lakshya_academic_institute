@@ -34,7 +34,7 @@ function dynamicManifestPlugin(env) {
           }
         ],
         start_url: '/',
-        id: '/',
+        id: `/pwa-${encodeURIComponent(shortName.toLowerCase().replace(/[^a-z0-9]/g, ''))}`,
         background_color: '#ffffff',
         theme_color: '#1e3a8a',
         display: 'standalone',
