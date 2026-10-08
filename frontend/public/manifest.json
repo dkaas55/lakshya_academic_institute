@@ -1,6 +1,6 @@
 {
-  "short_name": "Happy English",
-  "name": "Happy English School",
+  "short_name": "Lakshya Academy",
+  "name": "Lakshya academic institute",
   "description": "Student, Teacher and Administrative Portal",
   "icons": [
     {
@@ -23,7 +23,7 @@
     }
   ],
   "start_url": "/",
-  "id": "/pwa-happyenglishschool",
+  "id": "/pwa-lakshya",
   "background_color": "#ffffff",
   "theme_color": "#1e3a8a",
   "display": "standalone",
