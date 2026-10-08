@@ -317,7 +317,7 @@ export default function ExamMarks({ allowedBatches = [], isAdmin = false }) {
     }))
   }
 
-  const recentTests = exams.slice(0, 4)
+  const recentTests = exams.slice(0, 3)
 
   return (
     <div className="space-y-6">
@@ -354,7 +354,7 @@ export default function ExamMarks({ allowedBatches = [], isAdmin = false }) {
 
       {/* ── Add Test & Enter Marks Form ───────────────────────────────── */}
       {showForm && (
-        <div className="rounded-2xl border-2 border-brand-primary/30 bg-brand-surface p-5 sm:p-6 shadow-md animate-fadeIn space-y-6">
+        <div className="rounded-2xl border-2 border-brand-primary/30 bg-brand-surface p-4 sm:p-6 shadow-md animate-fadeIn space-y-5 sm:space-y-6">
           <div className="flex items-center justify-between border-b border-brand-border pb-3">
             <div>
               <h3 className="text-sm font-extrabold text-brand-text flex items-center gap-2">
@@ -487,19 +487,21 @@ export default function ExamMarks({ allowedBatches = [], isAdmin = false }) {
             </div>
 
             {/* Step 2: Student Marks Entry Table */}
-            <div className="rounded-2xl border border-brand-border bg-brand-surface-tint/40 p-4 space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-brand-border/60 pb-2">
-                <div className="flex items-center gap-2">
-                  <Users size={16} className="text-brand-primary" />
-                  <span className="text-xs font-extrabold text-brand-text">
-                    Enter Marks for Students ({form.batch || 'Select a batch'})
-                  </span>
-                  <span className="rounded-full bg-brand-primary/10 text-brand-primary px-2 py-0.5 text-[10px] font-bold">
+            <div className="rounded-2xl border border-brand-border bg-brand-surface-tint/40 p-3 sm:p-4 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-brand-border/60 pb-2.5">
+                <div className="flex items-center justify-between sm:justify-start gap-2.5 min-w-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Users size={16} className="text-brand-primary shrink-0" />
+                    <span className="text-xs font-extrabold text-brand-text truncate">
+                      Enter Marks for Students {form.batch ? `(${form.batch})` : ''}
+                    </span>
+                  </div>
+                  <span className="inline-flex items-center justify-center shrink-0 whitespace-nowrap rounded-full bg-brand-primary/10 text-brand-primary px-2.5 py-0.5 text-[10px] font-bold leading-normal">
                     {formStudents.length} student{formStudents.length !== 1 ? 's' : ''}
                   </span>
                 </div>
                 <span className="text-[10px] text-brand-text-muted font-medium">
-                  Type marks before / beside student name or click square to mark Absent
+                  Type marks or check Absent for each student
                 </span>
               </div>
 
@@ -514,9 +516,9 @@ export default function ExamMarks({ allowedBatches = [], isAdmin = false }) {
                   {form.studentClass ? ` (${form.studentClass})` : ''}.
                 </div>
               ) : (
-                <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
-                  {/* Table headers */}
-                  <div className="grid grid-cols-[130px_1fr_auto_70px] gap-3 items-center px-2 text-[10px] font-bold uppercase tracking-wider text-brand-text-muted">
+                <div className="space-y-2.5 max-h-[400px] overflow-y-auto pr-1">
+                  {/* Desktop Table Headers */}
+                  <div className="hidden sm:grid sm:grid-cols-[120px_1fr_auto_65px] gap-3 items-center px-3 text-[10px] font-bold uppercase tracking-wider text-brand-text-muted">
                     <span>Marks (/{form.totalMarks || 100})</span>
                     <span>Student Name</span>
                     <span className="text-center">Absent</span>
@@ -540,67 +542,147 @@ export default function ExamMarks({ allowedBatches = [], isAdmin = false }) {
                         : 'text-red-500 font-bold'
 
                     return (
-                      <div
-                        key={s.id}
-                        className={`grid grid-cols-[130px_1fr_auto_70px] gap-3 items-center rounded-xl px-3 py-2 transition-all ${
-                          m.isAbsent
-                            ? 'bg-red-50/70 border border-red-200'
-                            : 'bg-brand-surface border border-brand-border/70 hover:border-brand-primary/40'
-                        }`}
-                      >
-                        {/* Marks Input (Placed before student name) */}
-                        <div className="relative">
-                          <input
-                            type="number"
-                            min="0"
-                            max={form.totalMarks || 100}
-                            disabled={m.isAbsent}
-                            placeholder={m.isAbsent ? 'Absent' : `0–${form.totalMarks || 100}`}
-                            value={m.isAbsent ? '' : m.marksObtained}
-                            onChange={(e) => handleFormMarkChange(s.id, 'marksObtained', e.target.value)}
-                            className="w-full rounded-lg border border-brand-border bg-brand-surface-tint px-2.5 py-1.5 text-xs font-bold text-center text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-primary disabled:opacity-40 disabled:bg-gray-100"
-                          />
+                      <div key={s.id}>
+                        {/* Desktop View (sm and up) */}
+                        <div
+                          className={`hidden sm:grid sm:grid-cols-[120px_1fr_auto_65px] gap-3 items-center rounded-xl px-3 py-2 transition-all ${
+                            m.isAbsent
+                              ? 'bg-red-50/70 border border-red-200'
+                              : 'bg-brand-surface border border-brand-border/70 hover:border-brand-primary/40'
+                          }`}
+                        >
+                          {/* Marks Input */}
+                          <div className="relative">
+                            <input
+                              type="number"
+                              min="0"
+                              max={form.totalMarks || 100}
+                              disabled={m.isAbsent}
+                              placeholder={m.isAbsent ? 'Absent' : `0–${form.totalMarks || 100}`}
+                              value={m.isAbsent ? '' : m.marksObtained}
+                              onChange={(e) => handleFormMarkChange(s.id, 'marksObtained', e.target.value)}
+                              className="w-full rounded-lg border border-brand-border bg-brand-surface-tint px-2.5 py-1.5 text-xs font-bold text-center text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-primary disabled:opacity-40 disabled:bg-gray-100"
+                            />
+                          </div>
+
+                          {/* Student Name & Class */}
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              {s.rollNo && (
+                                <span className="font-mono text-[10px] font-extrabold text-brand-primary bg-brand-primary/10 px-1.5 py-0.5 rounded ring-1 ring-brand-primary/20 shrink-0">
+                                  {s.rollNo}
+                                </span>
+                              )}
+                              <p
+                                className={`text-xs font-bold truncate ${
+                                  m.isAbsent ? 'text-red-500 line-through' : 'text-brand-text'
+                                }`}
+                              >
+                                {s.name}
+                              </p>
+                            </div>
+                            {s.studentClass && (
+                              <p className="text-[10px] text-brand-text-muted truncate">{s.studentClass}</p>
+                            )}
+                          </div>
+
+                          {/* Absent Toggle */}
+                          <button
+                            type="button"
+                            onClick={() => handleFormMarkChange(s.id, 'isAbsent', !m.isAbsent)}
+                            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                              m.isAbsent
+                                ? 'text-red-500 hover:text-red-700 bg-red-100/60'
+                                : 'text-brand-text-muted/40 hover:text-red-400 hover:bg-brand-surface-tint'
+                            }`}
+                            title={m.isAbsent ? 'Mark Present' : 'Mark Absent'}
+                          >
+                            {m.isAbsent ? <CheckSquare size={16} /> : <Square size={16} />}
+                          </button>
+
+                          {/* Calculated % */}
+                          <span className={`text-xs text-right font-bold ${pctColor || 'text-brand-text-muted/40'}`}>
+                            {pct !== null ? `${pct}%` : '—'}
+                          </span>
                         </div>
 
-                        {/* Student Name & Class */}
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            {s.rollNo && (
-                              <span className="font-mono text-[10px] font-extrabold text-brand-primary bg-brand-primary/10 px-1.5 py-0.5 rounded ring-1 ring-brand-primary/20 shrink-0">
-                                {s.rollNo}
+                        {/* Mobile View (< sm) */}
+                        <div
+                          className={`sm:hidden rounded-xl p-3 space-y-2.5 transition-all ${
+                            m.isAbsent
+                              ? 'bg-red-50/80 border border-red-200'
+                              : 'bg-brand-surface border border-brand-border/80 shadow-2xs'
+                          }`}
+                        >
+                          {/* Student Info Top Row */}
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                              {s.rollNo && (
+                                <span className="font-mono text-[10px] font-extrabold text-brand-primary bg-brand-primary/10 px-1.5 py-0.5 rounded ring-1 ring-brand-primary/20 shrink-0">
+                                  {s.rollNo}
+                                </span>
+                              )}
+                              <div className="min-w-0">
+                                <p
+                                  className={`text-xs font-bold truncate ${
+                                    m.isAbsent ? 'text-red-500 line-through' : 'text-brand-text'
+                                  }`}
+                                >
+                                  {s.name}
+                                </p>
+                                {s.studentClass && (
+                                  <p className="text-[10px] text-brand-text-muted truncate">{s.studentClass}</p>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Percentage or Absent Pill */}
+                            {m.isAbsent ? (
+                              <span className="text-[10px] font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded-md shrink-0">
+                                Absent
                               </span>
-                            )}
-                            <p
-                              className={`text-xs font-bold truncate ${
-                                m.isAbsent ? 'text-red-500 line-through' : 'text-brand-text'
+                            ) : pct !== null ? (
+                              <span
+                                className={`text-xs font-bold px-2 py-0.5 rounded-md bg-brand-surface-tint border border-brand-border/60 shrink-0 ${pctColor}`}
+                              >
+                                {pct}%
+                              </span>
+                            ) : null}
+                          </div>
+
+                          {/* Marks Input & Absent Toggle Bottom Row */}
+                          <div className="flex items-center gap-2 pt-1.5 border-t border-brand-border/40">
+                            <div className="flex-1 flex items-center gap-1.5 min-w-0">
+                              <span className="text-[10px] font-bold text-brand-text-muted uppercase shrink-0">Marks:</span>
+                              <input
+                                type="number"
+                                min="0"
+                                max={form.totalMarks || 100}
+                                disabled={m.isAbsent}
+                                placeholder={m.isAbsent ? 'Absent' : `0–${form.totalMarks || 100}`}
+                                value={m.isAbsent ? '' : m.marksObtained}
+                                onChange={(e) => handleFormMarkChange(s.id, 'marksObtained', e.target.value)}
+                                className="w-full rounded-lg border border-brand-border bg-brand-surface-tint px-2.5 py-1.5 text-xs font-bold text-center text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-primary disabled:opacity-40 disabled:bg-gray-100"
+                              />
+                              <span className="text-[10px] font-bold text-brand-text-muted shrink-0">
+                                /{form.totalMarks || 100}
+                              </span>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => handleFormMarkChange(s.id, 'isAbsent', !m.isAbsent)}
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                                m.isAbsent
+                                  ? 'bg-red-100 text-red-600 border border-red-200'
+                                  : 'bg-brand-surface-tint text-brand-text-muted hover:text-brand-text border border-brand-border'
                               }`}
                             >
-                              {s.name}
-                            </p>
+                              {m.isAbsent ? <CheckSquare size={14} /> : <Square size={14} />}
+                              <span>Absent</span>
+                            </button>
                           </div>
-                          {s.studentClass && (
-                            <p className="text-[10px] text-brand-text-muted truncate">{s.studentClass}</p>
-                          )}
                         </div>
-
-                        {/* Absent Toggle */}
-                        <button
-                          type="button"
-                          onClick={() => handleFormMarkChange(s.id, 'isAbsent', !m.isAbsent)}
-                          className={`p-1 rounded-lg transition-colors cursor-pointer ${
-                            m.isAbsent
-                              ? 'text-red-500 hover:text-red-700'
-                              : 'text-brand-text-muted/40 hover:text-red-400'
-                          }`}
-                          title={m.isAbsent ? 'Mark Present' : 'Mark Absent'}
-                        >
-                          {m.isAbsent ? <CheckSquare size={16} /> : <Square size={16} />}
-                        </button>
-
-                        {/* Calculated % */}
-                        <span className={`text-xs text-right ${pctColor || 'text-brand-text-muted/40'}`}>
-                          {pct !== null ? `${pct}%` : '—'}
-                        </span>
                       </div>
                     )
                   })}
@@ -614,11 +696,11 @@ export default function ExamMarks({ allowedBatches = [], isAdmin = false }) {
               </div>
             )}
 
-            <div className="flex items-center gap-3 pt-2">
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 sm:gap-3 pt-2">
               <button
                 type="submit"
                 disabled={creating}
-                className="rounded-xl bg-brand-primary text-brand-surface px-6 py-2.5 text-xs font-bold hover:bg-brand-primary/90 disabled:opacity-60 transition-all shadow-sm cursor-pointer flex items-center gap-2"
+                className="w-full sm:w-auto rounded-xl bg-brand-primary text-brand-surface px-6 py-2.5 text-xs font-bold hover:bg-brand-primary/90 disabled:opacity-60 transition-all shadow-sm cursor-pointer flex items-center justify-center gap-2"
               >
                 <Save size={14} />
                 <span>{creating ? 'Saving Test & Marks…' : 'Save Test & Marks'}</span>
@@ -629,7 +711,7 @@ export default function ExamMarks({ allowedBatches = [], isAdmin = false }) {
                   setShowForm(false)
                   setFormErr('')
                 }}
-                className="rounded-xl border border-brand-border bg-brand-surface text-brand-text-muted px-4 py-2.5 text-xs font-semibold hover:bg-brand-surface-tint transition-colors cursor-pointer"
+                className="w-full sm:w-auto rounded-xl border border-brand-border bg-brand-surface text-brand-text-muted px-4 py-2.5 text-xs font-semibold hover:bg-brand-surface-tint transition-colors cursor-pointer text-center"
               >
                 Cancel
               </button>
@@ -638,8 +720,8 @@ export default function ExamMarks({ allowedBatches = [], isAdmin = false }) {
         </div>
       )}
 
-      {/* ── Recent 3-4 Tests Section ──────────────────────────────────── */}
-      <div>
+      {/* ── Recent 3 Tests Section (Hidden on Mobile) ──────────────────── */}
+      <div className="hidden sm:block">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <h3 className="text-sm font-extrabold text-brand-text">Recent Tests of Classes</h3>
@@ -647,7 +729,7 @@ export default function ExamMarks({ allowedBatches = [], isAdmin = false }) {
               Recent {recentTests.length}
             </span>
           </div>
-          {exams.length > 4 && (
+          {exams.length > 3 && (
             <span className="text-[11px] text-brand-text-muted">Total {exams.length} tests recorded</span>
           )}
         </div>
@@ -667,7 +749,7 @@ export default function ExamMarks({ allowedBatches = [], isAdmin = false }) {
             </p>
           </div>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-3">
             {recentTests.map((t) => {
               const stats = calcStats(t)
               const markedCount = t.studentMarks.filter(
@@ -841,14 +923,14 @@ export default function ExamMarks({ allowedBatches = [], isAdmin = false }) {
                     </p>
                   ) : (
                     <>
-                      <div className="grid grid-cols-[130px_1fr_auto_70px] gap-3 items-center px-2 text-[10px] font-bold uppercase tracking-wider text-brand-text-muted">
+                      <div className="hidden sm:grid sm:grid-cols-[120px_1fr_auto_65px] gap-3 items-center px-3 text-[10px] font-bold uppercase tracking-wider text-brand-text-muted">
                         <span>Marks (/{exam.totalMarks})</span>
                         <span>Student Name</span>
                         <span className="text-center">Absent</span>
                         <span className="text-right">Score %</span>
                       </div>
 
-                      <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
+                      <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
                         {exam.studentMarks.map((sm) => {
                           const sid = String(sm.student)
                           const local = localMarks[exam._id]?.[sid] ?? { marksObtained: '', isAbsent: false }
@@ -866,60 +948,132 @@ export default function ExamMarks({ allowedBatches = [], isAdmin = false }) {
                               : 'text-red-500 font-bold'
 
                           return (
-                            <div
-                              key={sid}
-                              className={`grid grid-cols-[130px_1fr_auto_70px] gap-3 items-center rounded-xl px-3 py-2 transition-all ${
-                                local.isAbsent
-                                  ? 'bg-red-50/60 border border-red-200'
-                                  : 'bg-brand-surface-tint border border-brand-border/60 hover:bg-brand-surface'
-                              }`}
-                            >
-                              {/* Input before name */}
-                              <input
-                                type="number"
-                                min="0"
-                                max={exam.totalMarks}
-                                disabled={local.isAbsent}
-                                value={local.isAbsent ? '' : (local.marksObtained ?? '')}
-                                onChange={(e) => handleMarkChange(exam._id, sid, 'marksObtained', e.target.value)}
-                                placeholder={local.isAbsent ? 'Absent' : `0–${exam.totalMarks}`}
-                                className="w-full rounded-lg border border-brand-border bg-brand-surface px-2.5 py-1.5 text-xs text-center text-brand-text font-bold focus:outline-none focus:ring-2 focus:ring-brand-primary disabled:opacity-40"
-                              />
+                            <div key={sid}>
+                              {/* Desktop View (sm and up) */}
+                              <div
+                                className={`hidden sm:grid sm:grid-cols-[120px_1fr_auto_65px] gap-3 items-center rounded-xl px-3 py-2 transition-all ${
+                                  local.isAbsent
+                                    ? 'bg-red-50/60 border border-red-200'
+                                    : 'bg-brand-surface-tint border border-brand-border/60 hover:bg-brand-surface'
+                                }`}
+                              >
+                                {/* Input before name */}
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max={exam.totalMarks}
+                                  disabled={local.isAbsent}
+                                  value={local.isAbsent ? '' : (local.marksObtained ?? '')}
+                                  onChange={(e) => handleMarkChange(exam._id, sid, 'marksObtained', e.target.value)}
+                                  placeholder={local.isAbsent ? 'Absent' : `0–${exam.totalMarks}`}
+                                  className="w-full rounded-lg border border-brand-border bg-brand-surface px-2.5 py-1.5 text-xs text-center text-brand-text font-bold focus:outline-none focus:ring-2 focus:ring-brand-primary disabled:opacity-40"
+                                />
 
-                              {/* Student Name */}
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                {sm.studentRollNo && (
-                                  <span className="font-mono text-[10px] font-extrabold text-brand-primary bg-brand-primary/10 px-1.5 py-0.5 rounded ring-1 ring-brand-primary/20 shrink-0">
-                                    {sm.studentRollNo}
+                                {/* Student Name */}
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  {sm.studentRollNo && (
+                                    <span className="font-mono text-[10px] font-extrabold text-brand-primary bg-brand-primary/10 px-1.5 py-0.5 rounded ring-1 ring-brand-primary/20 shrink-0">
+                                      {sm.studentRollNo}
+                                    </span>
+                                  )}
+                                  <span
+                                    className={`text-xs font-bold truncate ${
+                                      local.isAbsent ? 'text-red-400 line-through' : 'text-brand-text'
+                                    }`}
+                                  >
+                                    {sm.studentName || 'Student'}
                                   </span>
-                                )}
-                                <span
-                                  className={`text-xs font-bold truncate ${
-                                    local.isAbsent ? 'text-red-400 line-through' : 'text-brand-text'
+                                </div>
+
+                                {/* Absent toggle */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleMarkChange(exam._id, sid, 'isAbsent', !local.isAbsent)}
+                                  className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                                    local.isAbsent
+                                      ? 'text-red-500 hover:text-red-700 bg-red-100/60'
+                                      : 'text-brand-text-muted/40 hover:text-red-400 hover:bg-brand-surface'
                                   }`}
+                                  title={local.isAbsent ? 'Mark present' : 'Mark absent'}
                                 >
-                                  {sm.studentName || 'Student'}
+                                  {local.isAbsent ? <CheckSquare size={16} /> : <Square size={16} />}
+                                </button>
+
+                                {/* Percentage */}
+                                <span className={`text-xs text-right font-bold ${pctColor || 'text-brand-text-muted/40'}`}>
+                                  {pct !== null ? `${pct}%` : '—'}
                                 </span>
                               </div>
 
-                              {/* Absent toggle */}
-                              <button
-                                type="button"
-                                onClick={() => handleMarkChange(exam._id, sid, 'isAbsent', !local.isAbsent)}
-                                className={`p-1 rounded-lg transition-colors cursor-pointer ${
+                              {/* Mobile View (< sm) */}
+                              <div
+                                className={`sm:hidden rounded-xl p-3 space-y-2.5 transition-all ${
                                   local.isAbsent
-                                    ? 'text-red-500 hover:text-red-700'
-                                    : 'text-brand-text-muted/40 hover:text-red-400'
+                                    ? 'bg-red-50/80 border border-red-200'
+                                    : 'bg-brand-surface-tint border border-brand-border/80 shadow-2xs'
                                 }`}
-                                title={local.isAbsent ? 'Mark present' : 'Mark absent'}
                               >
-                                {local.isAbsent ? <CheckSquare size={16} /> : <Square size={16} />}
-                              </button>
+                                {/* Student Info Top Row */}
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                    {sm.studentRollNo && (
+                                      <span className="font-mono text-[10px] font-extrabold text-brand-primary bg-brand-primary/10 px-1.5 py-0.5 rounded ring-1 ring-brand-primary/20 shrink-0">
+                                        {sm.studentRollNo}
+                                      </span>
+                                    )}
+                                    <span
+                                      className={`text-xs font-bold truncate ${
+                                        local.isAbsent ? 'text-red-400 line-through' : 'text-brand-text'
+                                      }`}
+                                    >
+                                      {sm.studentName || 'Student'}
+                                    </span>
+                                  </div>
 
-                              {/* Percentage */}
-                              <span className={`text-xs text-right ${pctColor || 'text-brand-text-muted/40'}`}>
-                                {pct !== null ? `${pct}%` : '—'}
-                              </span>
+                                  {local.isAbsent ? (
+                                    <span className="text-[10px] font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded-md shrink-0">
+                                      Absent
+                                    </span>
+                                  ) : pct !== null ? (
+                                    <span
+                                      className={`text-xs font-bold px-2 py-0.5 rounded-md bg-brand-surface border border-brand-border/60 shrink-0 ${pctColor}`}
+                                    >
+                                      {pct}%
+                                    </span>
+                                  ) : null}
+                                </div>
+
+                                {/* Marks Input & Absent Toggle Bottom Row */}
+                                <div className="flex items-center gap-2 pt-1.5 border-t border-brand-border/40">
+                                  <div className="flex-1 flex items-center gap-1.5 min-w-0">
+                                    <span className="text-[10px] font-bold text-brand-text-muted uppercase shrink-0">Marks:</span>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      max={exam.totalMarks}
+                                      disabled={local.isAbsent}
+                                      value={local.isAbsent ? '' : (local.marksObtained ?? '')}
+                                      onChange={(e) => handleMarkChange(exam._id, sid, 'marksObtained', e.target.value)}
+                                      placeholder={local.isAbsent ? 'Absent' : `0–${exam.totalMarks}`}
+                                      className="w-full rounded-lg border border-brand-border bg-brand-surface px-2.5 py-1.5 text-xs text-center text-brand-text font-bold focus:outline-none focus:ring-2 focus:ring-brand-primary disabled:opacity-40"
+                                    />
+                                    <span className="text-[10px] font-bold text-brand-text-muted shrink-0">/{exam.totalMarks}</span>
+                                  </div>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleMarkChange(exam._id, sid, 'isAbsent', !local.isAbsent)}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                                      local.isAbsent
+                                        ? 'bg-red-100 text-red-600 border border-red-200'
+                                        : 'bg-brand-surface text-brand-text-muted hover:text-brand-text border border-brand-border'
+                                    }`}
+                                  >
+                                    {local.isAbsent ? <CheckSquare size={14} /> : <Square size={14} />}
+                                    <span>Absent</span>
+                                  </button>
+                                </div>
+                              </div>
                             </div>
                           )
                         })}

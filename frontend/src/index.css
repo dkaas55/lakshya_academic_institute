@@ -25,6 +25,7 @@
 }
 
 :root {
+  font-size: 16px;
   --color-primary: #090d16;
   --color-background: #ffffff;
   --color-surface: #ffffff;
@@ -35,6 +36,13 @@
   --color-accent-hover: #1e40af;
   --color-gold: #b45309;
   --color-border: #cbd5e1;
+}
+
+@media (max-width: 768px) {
+  :root,
+  html {
+    font-size: 18px;
+  }
 }
 
 .dark {

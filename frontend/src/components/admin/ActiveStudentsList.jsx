@@ -163,15 +163,13 @@ export default function ActiveStudentsList({ refreshKey = 0 }) {
             <table className="min-w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-brand-border bg-brand-surface-tint/80">
-                  <th className="px-4 py-2.5 font-semibold text-brand-text">Roll No</th>
-                  <th className="px-4 py-2.5 font-semibold text-brand-text">Name</th>
-                  <th className="px-4 py-2.5 font-semibold text-brand-text">Phone</th>
-                  <th className="px-4 py-2.5 font-semibold text-brand-text">Batch</th>
-                  <th className="px-4 py-2.5 font-semibold text-brand-text">Class</th>
-                  <th className="px-4 py-2.5 font-semibold text-brand-text">Joined</th>
-                  <th className="px-4 py-2.5 font-semibold text-brand-text">Status</th>
-                  <th className="px-4 py-2.5 font-semibold text-brand-text">Fee</th>
-                  <th className="px-4 py-2.5 font-semibold text-brand-text w-36">Actions</th>
+                  <th className="px-3 sm:px-4 py-2.5 font-semibold text-brand-text">Roll No</th>
+                  <th className="px-3 sm:px-4 py-2.5 font-semibold text-brand-text">Name</th>
+                  <th className="hidden md:table-cell px-4 py-2.5 font-semibold text-brand-text">Batch</th>
+                  <th className="hidden md:table-cell px-4 py-2.5 font-semibold text-brand-text">Joined</th>
+                  <th className="hidden md:table-cell px-4 py-2.5 font-semibold text-brand-text">Status</th>
+                  <th className="hidden md:table-cell px-4 py-2.5 font-semibold text-brand-text">Fee</th>
+                  <th className="px-3 sm:px-4 py-2.5 font-semibold text-brand-text text-right sm:text-left w-36">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-brand-border">
@@ -181,7 +179,7 @@ export default function ActiveStudentsList({ refreshKey = 0 }) {
                     className={`hover:bg-brand-surface-tint/80 transition-colors cursor-pointer ${student.status === 'paused' ? 'opacity-70' : ''}`}
                     onClick={() => setSelectedStudent(student)}
                   >
-                    <td className="px-4 py-2.5 font-mono text-[11px]">
+                    <td className="px-3 sm:px-4 py-2.5 font-mono text-[11px] whitespace-nowrap">
                       {student.rollNo ? (
                         <span className="inline-block rounded-md bg-brand-primary/10 text-brand-primary px-2 py-0.5 font-extrabold ring-1 ring-brand-primary/20">
                           {student.rollNo}
@@ -190,8 +188,10 @@ export default function ActiveStudentsList({ refreshKey = 0 }) {
                         <span className="text-brand-text-muted">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-2.5 font-medium text-brand-text">{student.fullName}</td>
-                    <td className="px-4 py-2.5 text-brand-text">
+                    <td className="px-3 sm:px-4 py-2.5 font-medium text-brand-text">
+                      <span className="block truncate max-w-[130px] sm:max-w-none">{student.fullName}</span>
+                    </td>
+                    <td className="hidden md:table-cell px-4 py-2.5 text-brand-text">
                       <div className="flex flex-wrap gap-1 max-w-[220px]">
                         {(student.batches && student.batches.length > 0
                           ? student.batches
@@ -206,11 +206,11 @@ export default function ActiveStudentsList({ refreshKey = 0 }) {
                         ))}
                       </div>
                     </td>
-                    <td className="px-4 py-2.5 text-brand-text-muted whitespace-nowrap">{student.joiningDate ? new Date(student.joiningDate).toLocaleDateString('en-GB') : '—'}</td>
-                    <td className="px-4 py-2.5"><AccountStatusBadge status={student.status ?? 'active'} /></td>
-                    <td className="px-4 py-2.5"><FeeStatusBadge status={student.feeStatus} /></td>
-                    <td className="px-4 py-2.5" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center gap-1.5">
+                    <td className="hidden md:table-cell px-4 py-2.5 text-brand-text-muted whitespace-nowrap">{student.joiningDate ? new Date(student.joiningDate).toLocaleDateString('en-GB') : '—'}</td>
+                    <td className="hidden md:table-cell px-4 py-2.5"><AccountStatusBadge status={student.status ?? 'active'} /></td>
+                    <td className="hidden md:table-cell px-4 py-2.5"><FeeStatusBadge status={student.feeStatus} /></td>
+                    <td className="px-3 sm:px-4 py-2.5" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-end sm:justify-start gap-1 sm:gap-1.5">
                         <button
                           type="button"
                           onClick={() => setSelectedStudent(student)}

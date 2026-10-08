@@ -1,5 +1,15 @@
 import { useEffect, useState } from 'react'
 import api from '../../lib/api'
+import {
+  Clock,
+  IndianRupee,
+  Users,
+  Sparkles,
+  GraduationCap,
+  UserCheck,
+  Search,
+  X,
+} from 'lucide-react'
 
 const SUBJECT_OPTIONS = [
   'Mathematics',
@@ -36,6 +46,10 @@ export default function BatchManagement() {
   const [error, setError] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [editingBatch, setEditingBatch] = useState(null)
+
+  // Batch detail modal state
+  const [selectedBatch, setSelectedBatch] = useState(null)
+  const [detailSearch, setDetailSearch] = useState('')
 
   // Enrollment modal state
   const [enrollModalBatch, setEnrollModalBatch] = useState(null)
@@ -107,6 +121,18 @@ export default function BatchManagement() {
     loadTeachers()
     loadStudentCounts()
   }, [])
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setSelectedBatch(null)
+      }
+    }
+    if (selectedBatch) {
+      window.addEventListener('keydown', handleKeyDown)
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [selectedBatch])
 
   /* ---- Modal helpers ---- */
 
@@ -181,6 +207,9 @@ export default function BatchManagement() {
       const { data } = await api.delete(`/admin/batches/${id}`)
       if (data.success) {
         setBatches(batches.filter((b) => b.id !== id))
+        if (selectedBatch?.id === id) {
+          setSelectedBatch(null)
+        }
       }
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to delete batch.')
@@ -243,6 +272,30 @@ export default function BatchManagement() {
 
   /* ---- Render ---- */
 
+  const activeSelectedBatch = selectedBatch
+    ? batches.find((b) => b.id === selectedBatch.id) || selectedBatch
+    : null
+
+  const currentEnrolledStudents = activeSelectedBatch
+    ? allStudents.filter((s) => {
+        const sBatches = Array.isArray(s.batches) && s.batches.length > 0
+          ? s.batches
+          : (s.batch || '').split(',').map((b) => b.trim()).filter(Boolean)
+        return sBatches.includes(activeSelectedBatch.name)
+      })
+    : []
+
+  const displayedRoster = currentEnrolledStudents.filter((s) => {
+    if (!detailSearch.trim()) return true
+    const q = detailSearch.toLowerCase().trim()
+    return (
+      (s.fullName || '').toLowerCase().includes(q) ||
+      (s.rollNo || '').toLowerCase().includes(q) ||
+      (s.phoneNumber || '').includes(q) ||
+      (s.studentClass || '').toLowerCase().includes(q)
+    )
+  })
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -280,106 +333,360 @@ export default function BatchManagement() {
             <table className="min-w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-brand-border bg-brand-surface-tint">
-                  <th className="px-4 py-3 font-semibold text-brand-text">Batch &amp; Subject</th>
-                  <th className="px-4 py-3 font-semibold text-brand-text">Fee / Student</th>
+                  <th className="px-4 py-3 font-semibold text-brand-text">Batch Name</th>
                   <th className="px-4 py-3 font-semibold text-brand-text">Timing</th>
                   <th className="px-4 py-3 font-semibold text-brand-text">Assigned Teachers</th>
-                  <th className="px-4 py-3 font-semibold text-brand-text">Students &amp; Pool</th>
                   <th className="px-4 py-3 font-semibold text-brand-text text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-brand-border">
-                {batches.map((b) => {
-                  const studentCount = studentCounts[b.name] ?? 0
-                  const pool = studentCount * (b.feePerStudent || 0)
-                  return (
-                    <tr key={b.id} className="hover:bg-brand-surface-tint/50 transition-colors">
-                      <td className="px-4 py-3">
-                        <p className="font-semibold text-brand-text">{b.name}</p>
-                        {b.subject ? (
-                          <span className="inline-block mt-0.5 rounded-md bg-brand-primary/10 text-brand-primary px-2 py-0.5 text-[10px] font-semibold border border-brand-primary/20">
-                            {b.subject}
-                          </span>
-                        ) : (
-                          <span className="text-brand-text-muted/75 italic text-[10px]">No subject</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        {b.feePerStudent > 0 ? (
-                          <p className="font-semibold text-brand-text">
-                            ₹{b.feePerStudent.toLocaleString('en-IN')}{' '}
-                            <span className="text-[10px] text-brand-text-muted/75 font-normal">/ mo</span>
-                          </p>
-                        ) : (
-                          <span className="text-brand-text-muted/75 italic text-[10px]">₹0 (not set)</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        {b.timing ? (
-                          <p className="text-brand-text">{b.timing}</p>
-                        ) : (
-                          <span className="text-brand-text-muted/75 italic text-[10px]">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-wrap gap-1">
-                          {b.assignedTeachers?.length > 0 ? (
-                            b.assignedTeachers.map((t) => (
-                              <span
-                                key={t.id || t}
-                                className="inline-flex items-center gap-1 rounded-md bg-brand-surface-tint px-2 py-0.5 text-[10px] text-brand-text border border-brand-border"
-                              >
-                                <span className="font-medium">{t.name || t.username || t}</span>
-                                {t.subject && (
-                                  <span className="text-brand-primary font-semibold">
-                                    ({t.subject})
-                                  </span>
-                                )}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="text-brand-text-muted/75 italic text-[10px]">
-                              No teachers
-                            </span>
-                          )}
+                {batches.map((b) => (
+                  <tr
+                    key={b.id}
+                    onClick={() => {
+                      setSelectedBatch(b)
+                      setDetailSearch('')
+                    }}
+                    className="hover:bg-brand-surface-tint/60 transition-colors cursor-pointer group"
+                    title="Click to view full batch details"
+                  >
+                    <td className="px-4 py-3">
+                      <p className="font-semibold text-brand-text group-hover:text-brand-primary transition-colors">
+                        {b.name}
+                      </p>
+                      {b.subject ? (
+                        <span className="inline-block mt-0.5 rounded-md bg-brand-primary/10 text-brand-primary px-2 py-0.5 text-[10px] font-semibold border border-brand-primary/20">
+                          {b.subject}
+                        </span>
+                      ) : (
+                        <span className="text-brand-text-muted/75 italic text-[10px]">No subject</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {b.timing ? (
+                        <div className="flex items-center gap-1.5 text-brand-text">
+                          <Clock size={13} className="text-brand-text-muted shrink-0" />
+                          <span>{b.timing}</span>
                         </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <p className="font-medium text-brand-text">
-                          {studentCount} student{studentCount !== 1 ? 's' : ''}
-                        </p>
-                        {b.feePerStudent > 0 && (
-                          <p className="text-[10px] text-brand-primary font-medium mt-0.5">
-                            Pool: ₹{pool.toLocaleString('en-IN')} / mo
-                          </p>
+                      ) : (
+                        <span className="text-brand-text-muted/75 italic text-[10px]">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-1">
+                        {b.assignedTeachers?.length > 0 ? (
+                          b.assignedTeachers.map((t) => (
+                            <span
+                              key={t.id || t._id || t}
+                              className="inline-flex items-center gap-1 rounded-md bg-brand-surface-tint px-2 py-0.5 text-[10px] text-brand-text border border-brand-border"
+                            >
+                              <span className="font-medium">{t.name || t.username || t}</span>
+                              {t.subject && (
+                                <span className="text-brand-primary font-semibold">
+                                  ({t.subject})
+                                </span>
+                              )}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-brand-text-muted/75 italic text-[10px]">
+                            No teachers
+                          </span>
                         )}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <button
-                          onClick={() => openEnrollModal(b)}
-                          className="inline-flex items-center gap-1 rounded-lg bg-brand-primary/10 hover:bg-brand-primary/20 text-brand-primary px-2.5 py-1 text-xs font-semibold mr-3 transition-colors cursor-pointer"
-                          title="Enroll or remove students in this batch"
-                        >
-                          <span>👥 Enroll Students</span>
-                        </button>
-                        <button
-                          onClick={() => openEditModal(b)}
-                          className="text-brand-primary hover:text-indigo-800 font-medium mr-3 cursor-pointer"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(b.id, b.name)}
-                          className="text-red-600 hover:text-red-800 font-medium cursor-pointer"
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  )
-                })}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => openEnrollModal(b)}
+                        className="inline-flex items-center gap-1 rounded-lg bg-brand-primary/10 hover:bg-brand-primary/20 text-brand-primary px-2.5 py-1 text-xs font-semibold mr-3 transition-colors cursor-pointer"
+                        title="Enroll or remove students in this batch"
+                      >
+                        <span>👥 Enroll Students</span>
+                      </button>
+                      <button
+                        onClick={() => openEditModal(b)}
+                        className="text-brand-primary hover:text-indigo-800 font-medium mr-3 cursor-pointer"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(b.id, b.name)}
+                        className="text-red-600 hover:text-red-800 font-medium cursor-pointer"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Batch Detail Modal (opened on clicking batch row) */}
+      {activeSelectedBatch && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-brand-text/40 backdrop-blur-sm"
+          onClick={() => setSelectedBatch(null)}
+        >
+          <div
+            className="bg-brand-surface rounded-2xl border border-brand-border shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between px-6 py-5 border-b border-brand-border bg-brand-surface-tint/60 shrink-0">
+              <div>
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <h3 className="text-lg font-bold text-brand-text tracking-tight">
+                    {activeSelectedBatch.name}
+                  </h3>
+                  {activeSelectedBatch.subject && (
+                    <span className="rounded-full bg-brand-primary/10 text-brand-primary px-3 py-0.5 text-xs font-bold border border-brand-primary/20">
+                      {activeSelectedBatch.subject}
+                    </span>
+                  )}
+                </div>
+                {activeSelectedBatch.timing && (
+                  <p className="flex items-center gap-1.5 text-xs text-brand-text-muted mt-1 font-medium">
+                    <Clock size={13} className="text-brand-text-muted shrink-0" />
+                    <span>Timing: {activeSelectedBatch.timing}</span>
+                  </p>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedBatch(null)}
+                className="p-1.5 rounded-xl text-brand-text-muted hover:text-brand-text hover:bg-brand-surface border border-transparent hover:border-brand-border transition-colors cursor-pointer"
+                title="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {/* Stat Cards Overview: Fee, Enrolled Students, Fee Pool, Assigned Teachers */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {/* Fee / Student */}
+                <div className="rounded-xl border border-brand-border bg-brand-surface-tint/40 p-3.5 space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-brand-text-muted flex items-center gap-1">
+                    <IndianRupee size={12} /> Fee / Student
+                  </span>
+                  <p className="text-base sm:text-lg font-black text-brand-text">
+                    {activeSelectedBatch.feePerStudent > 0
+                      ? `₹${activeSelectedBatch.feePerStudent.toLocaleString('en-IN')}`
+                      : '₹0'}
+                    <span className="text-xs font-normal text-brand-text-muted"> / mo</span>
+                  </p>
+                </div>
+
+                {/* Students Enrolled */}
+                <div className="rounded-xl border border-brand-border bg-brand-surface-tint/40 p-3.5 space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-brand-text-muted flex items-center gap-1">
+                    <Users size={12} /> Students
+                  </span>
+                  <p className="text-base sm:text-lg font-black text-brand-primary">
+                    {currentEnrolledStudents.length}
+                    <span className="text-xs font-semibold text-brand-text-muted"> enrolled</span>
+                  </p>
+                </div>
+
+                {/* Monthly Fee Pool */}
+                <div className="rounded-xl border border-brand-border bg-brand-surface-tint/40 p-3.5 space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-brand-text-muted flex items-center gap-1">
+                    <Sparkles size={12} /> Fee Pool
+                  </span>
+                  <p className="text-base sm:text-lg font-black text-emerald-600 dark:text-emerald-400">
+                    ₹{(currentEnrolledStudents.length * (activeSelectedBatch.feePerStudent || 0)).toLocaleString('en-IN')}
+                    <span className="text-xs font-normal text-brand-text-muted"> / mo</span>
+                  </p>
+                </div>
+
+                {/* Assigned Teachers */}
+                <div className="rounded-xl border border-brand-border bg-brand-surface-tint/40 p-3.5 space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-brand-text-muted flex items-center gap-1">
+                    <GraduationCap size={12} /> Teachers
+                  </span>
+                  <p className="text-base sm:text-lg font-black text-brand-text">
+                    {activeSelectedBatch.assignedTeachers?.length || 0}
+                    <span className="text-xs font-normal text-brand-text-muted"> assigned</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Assigned Teachers Section */}
+              <div className="space-y-2.5">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-brand-text-muted flex items-center gap-1.5">
+                  <UserCheck size={14} className="text-brand-primary" />
+                  Assigned Teachers
+                </h4>
+                {activeSelectedBatch.assignedTeachers?.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {activeSelectedBatch.assignedTeachers.map((t) => (
+                      <div
+                        key={t.id || t._id || t}
+                        className="rounded-xl border border-brand-border bg-brand-surface p-3 flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-8 h-8 rounded-full bg-brand-primary/10 text-brand-primary flex items-center justify-center font-bold text-xs shrink-0">
+                            {(t.name || t.username || 'T')[0].toUpperCase()}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-brand-text truncate">
+                              {t.name || t.username}
+                            </p>
+                            {t.subject && (
+                              <p className="text-[10px] text-brand-text-muted truncate">
+                                Subject: {t.subject}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        {t.phone && (
+                          <span className="text-[10px] font-medium text-brand-text-muted">
+                            {t.phone}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-dashed border-brand-border p-4 text-center text-xs text-brand-text-muted italic bg-brand-surface-tint/30">
+                    No teachers assigned to this batch yet.
+                  </div>
+                )}
+              </div>
+
+              {/* Enrolled Students Roster */}
+              <div className="space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-brand-text-muted flex items-center gap-1.5">
+                    <Users size={14} className="text-brand-primary" />
+                    Enrolled Students ({currentEnrolledStudents.length})
+                  </h4>
+                  {currentEnrolledStudents.length > 0 && (
+                    <div className="relative">
+                      <Search size={13} className="absolute left-2.5 top-2.5 text-brand-text-muted" />
+                      <input
+                        type="text"
+                        placeholder="Filter roster..."
+                        value={detailSearch}
+                        onChange={(e) => setDetailSearch(e.target.value)}
+                        className="rounded-lg border border-brand-border bg-brand-surface pl-8 pr-3 py-1 text-xs focus:ring-2 focus:ring-brand-primary outline-none"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {currentEnrolledStudents.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-brand-border p-6 text-center space-y-2 bg-brand-surface-tint/30">
+                    <p className="text-xs text-brand-text-muted">
+                      No students are currently enrolled in this batch.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const b = activeSelectedBatch
+                        setSelectedBatch(null)
+                        openEnrollModal(b)
+                      }}
+                      className="inline-flex items-center gap-1 rounded-lg bg-brand-primary px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-brand-primary/90 cursor-pointer"
+                    >
+                      <span>👥 Enroll Students Now</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-brand-border overflow-hidden">
+                    <div className="max-h-56 overflow-y-auto divide-y divide-brand-border">
+                      {displayedRoster.length === 0 ? (
+                        <p className="p-4 text-center text-xs text-brand-text-muted">
+                          No enrolled students match &quot;{detailSearch}&quot;.
+                        </p>
+                      ) : (
+                        displayedRoster.map((s) => (
+                          <div
+                            key={s.id}
+                            className="px-3.5 py-2.5 flex items-center justify-between bg-brand-surface hover:bg-brand-surface-tint/40 transition-colors"
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              {s.rollNo ? (
+                                <span className="font-mono text-[10px] font-extrabold bg-brand-primary/10 text-brand-primary px-1.5 py-0.5 rounded ring-1 ring-brand-primary/20 shrink-0">
+                                  {s.rollNo}
+                                </span>
+                              ) : (
+                                <span className="text-[10px] text-brand-text-muted/60">—</span>
+                              )}
+                              <div className="min-w-0">
+                                <p className="text-xs font-bold text-brand-text truncate">
+                                  {s.fullName}
+                                </p>
+                                <p className="text-[10px] text-brand-text-muted truncate">
+                                  {s.studentClass || 'No class'} {s.phoneNumber ? `· ${s.phoneNumber}` : ''}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              {s.feeStatus && (
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                                  s.feeStatus === 'PAID'
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                    : s.feeStatus === 'PARTIAL'
+                                    ? 'bg-sky-50 text-sky-700 border-sky-200'
+                                    : 'bg-amber-50 text-amber-700 border-amber-200'
+                                }`}>
+                                  {s.feeStatus}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="px-6 py-4 border-t border-brand-border bg-brand-surface-tint/60 flex items-center justify-between gap-3 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  const batchToDelete = activeSelectedBatch
+                  setSelectedBatch(null)
+                  handleDelete(batchToDelete.id, batchToDelete.name)
+                }}
+                className="text-xs font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900/50 transition-colors cursor-pointer"
+              >
+                Delete Batch
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const b = activeSelectedBatch
+                    setSelectedBatch(null)
+                    openEditModal(b)
+                  }}
+                  className="rounded-lg border border-brand-border bg-brand-surface px-4 py-2 text-xs font-semibold text-brand-text hover:bg-brand-surface-tint transition-colors cursor-pointer shadow-2xs"
+                >
+                  Edit Batch
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const b = activeSelectedBatch
+                    setSelectedBatch(null)
+                    openEnrollModal(b)
+                  }}
+                  className="rounded-lg bg-brand-primary px-4 py-2 text-xs font-semibold text-white hover:bg-brand-primary/90 transition-colors cursor-pointer shadow-xs"
+                >
+                  👥 Enroll Students
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
