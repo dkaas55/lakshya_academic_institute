@@ -270,10 +270,12 @@ const getAllTransactions = async (req, res) => {
       for (const payment of ledger.paymentHistory || []) {
         transactions.push({
           id: payment._id,
+          studentId: ledger.student._id,
           studentName: ledger.student.user?.name || "Unknown",
           rollNo: ledger.student.rollNo || "",
           batch: ledger.student.batch || sBatches.join(", "),
           batches: sBatches,
+          studentClass: ledger.student.studentClass,
           amount: payment.amount,
           method: payment.method,
           paidAt: payment.paidAt,

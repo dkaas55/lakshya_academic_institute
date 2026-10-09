@@ -11,6 +11,14 @@ function formatCurrency(value) {
   }).format(value ?? 0)
 }
 
+function formatPendingMonth(val) {
+  if (!val) return '1 Month'
+  return val
+    .replace(/,\s*₹[\d,.]+\s*pending/gi, '')
+    .replace(/\s*\([^)]*₹[\d,.]+\s*pending\)/gi, '')
+    .trim()
+}
+
 export default function MasterFeeLedger() {
   const [activeTab, setActiveTab] = useState('pending') // 'pending' | 'history'
   
@@ -80,7 +88,7 @@ export default function MasterFeeLedger() {
         <div>
           <h2 className="text-base font-semibold text-brand-text">Master Fee Ledger</h2>
           <p className="text-xs text-brand-text-muted mt-0.5">
-            System-wide view of all fee installments and dues.
+            System-wide view of all fee installments and dues. Click any row to view full transaction history.
           </p>
         </div>
         <button
@@ -168,7 +176,19 @@ export default function MasterFeeLedger() {
                 </thead>
                 <tbody className="divide-y divide-brand-border">
                   {filteredPending.map((due) => (
-                    <tr key={due.id} className="hover:bg-brand-surface-tint/60 transition-colors">
+                    <tr
+                      key={due.id}
+                      onClick={() => setSelectedStudent({
+                        id: due.id,
+                        fullName: due.studentName,
+                        rollNo: due.rollNo,
+                        batch: due.batch,
+                        batches: due.batches,
+                        studentClass: due.studentClass
+                      })}
+                      className="hover:bg-brand-surface-tint/80 transition-colors cursor-pointer group"
+                      title="Click row to view full student fee ledger & transaction history"
+                    >
                       <td className="px-4 py-3 font-medium text-brand-text">
                         <div className="flex items-center gap-1.5">
                           {due.rollNo && (
@@ -176,7 +196,9 @@ export default function MasterFeeLedger() {
                               {due.rollNo}
                             </span>
                           )}
-                          <span>{due.studentName}</span>
+                          <span className="group-hover:text-brand-accent transition-colors underline-offset-2 group-hover:underline">
+                            {due.studentName}
+                          </span>
                         </div>
                       </td>
                       <td className="px-4 py-3 text-brand-text">{due.batch}</td>
@@ -185,14 +207,14 @@ export default function MasterFeeLedger() {
                         {formatCurrency(due.monthlyFeeAmount || due.totalCourseFee)}
                       </td>
                       <td className="px-4 py-3 text-brand-text">
-                        <span className="inline-block max-w-[200px] truncate" title={due.feePendingForMonth || '1 Month'}>
-                          {due.feePendingForMonth || '1 Month'}
+                        <span className="inline-block max-w-[200px] truncate font-medium text-amber-700 dark:text-amber-400" title={formatPendingMonth(due.feePendingForMonth)}>
+                          {formatPendingMonth(due.feePendingForMonth)}
                         </span>
                       </td>
                       <td className="px-4 py-3 font-bold text-amber-600 text-right">
                         {formatCurrency(due.amountDue)}
                       </td>
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                         <button
                           type="button"
                           onClick={() => setSelectedStudent({
@@ -200,9 +222,11 @@ export default function MasterFeeLedger() {
                             fullName: due.studentName,
                             rollNo: due.rollNo,
                             batch: due.batch,
+                            batches: due.batches,
                             studentClass: due.studentClass
                           })}
-                          className="inline-flex items-center gap-1.5 rounded-lg bg-brand-primary/10 px-3 py-1.5 text-xs font-semibold text-brand-primary hover:bg-indigo-100 transition-colors"
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-brand-primary/10 px-3 py-1.5 text-xs font-semibold text-brand-primary hover:bg-brand-primary/20 transition-colors"
+                          title="Collect fee"
                         >
                           Collect Fee
                         </button>
@@ -233,7 +257,22 @@ export default function MasterFeeLedger() {
                 </thead>
                 <tbody className="divide-y divide-brand-border">
                   {filteredHistory.map((tx) => (
-                    <tr key={tx.id} className="hover:bg-brand-surface-tint/60 transition-colors">
+                    <tr
+                      key={tx.id}
+                      onClick={() => {
+                        const targetId = tx.studentId || tx.id
+                        setSelectedStudent({
+                          id: targetId,
+                          fullName: tx.studentName,
+                          rollNo: tx.rollNo,
+                          batch: tx.batch,
+                          batches: tx.batches,
+                          studentClass: tx.studentClass
+                        })
+                      }}
+                      className="hover:bg-brand-surface-tint/80 transition-colors cursor-pointer group"
+                      title="Click row to view full student fee ledger & transaction history"
+                    >
                       <td className="px-4 py-3 text-brand-text whitespace-nowrap">
                         {new Intl.DateTimeFormat('en-IN', {
                           day: 'numeric',
@@ -250,16 +289,14 @@ export default function MasterFeeLedger() {
                               {tx.rollNo}
                             </span>
                           )}
-                          <span>{tx.studentName}</span>
+                          <span className="group-hover:text-brand-accent transition-colors underline-offset-2 group-hover:underline">
+                            {tx.studentName}
+                          </span>
                         </div>
                       </td>
                       <td className="px-4 py-3 text-brand-text">{tx.batch}</td>
                       <td className="px-4 py-3 font-semibold text-brand-primary text-right">
-                        {new Intl.NumberFormat('en-IN', {
-                          style: 'currency',
-                          currency: 'INR',
-                          maximumFractionDigits: 0,
-                        }).format(tx.amount)}
+                        {formatCurrency(tx.amount)}
                       </td>
                       <td className="px-4 py-3 text-brand-text">{tx.method || '—'}</td>
                     </tr>

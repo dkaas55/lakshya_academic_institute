@@ -78,8 +78,8 @@ export default function FeeReceiptTemplate({ receiptInfo, student }) {
 
   return (
     <div
-      className="w-[700px] h-[980px] max-h-[980px] bg-white text-slate-800 px-10 py-7 flex flex-col justify-between relative border border-slate-100 font-sans box-border overflow-hidden"
-      style={{ ...tailwindHexColors, fontFamily: '"Source Sans 3", sans-serif' }}
+      className="w-[794px] min-w-[794px] h-[1123px] max-h-[1123px] bg-white text-slate-800 px-12 py-10 flex flex-col justify-between relative border border-slate-100 font-sans box-border overflow-hidden"
+      style={{ ...tailwindHexColors, fontFamily: '"Source Sans 3", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}
     >
       <style dangerouslySetInnerHTML={{ __html: `@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,200..900;1,200..900&display=swap');` }} />
       {/* Watermark for fully paid */}

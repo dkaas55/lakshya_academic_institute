@@ -56,17 +56,25 @@ export function initBranding() {
   }
 
   // Register Service Worker for PWA installability and offline support
+  // Note: We bypass in-app webviews (WhatsApp, Instagram, etc.) because their restricted sandbox often fails SW registration or caches stale broken DOM states
   if (typeof window !== 'undefined' && 'serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
-    const registerSW = () => {
-      navigator.serviceWorker.register('/sw.js')
-        .then((reg) => console.log('PWA Service Worker registered:', reg.scope))
-        .catch((err) => console.warn('PWA Service Worker registration failed:', err));
-    };
+    const ua = navigator.userAgent || navigator.vendor || window.opera || '';
+    const isInApp = /FBAN|FBAV|Instagram|WhatsApp|Line|Snapchat/i.test(ua);
 
-    if (document.readyState === 'complete' || document.readyState === 'interactive') {
-      registerSW();
+    if (!isInApp) {
+      const registerSW = () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then((reg) => console.log('PWA Service Worker registered:', reg.scope))
+          .catch((err) => console.warn('PWA Service Worker registration failed:', err));
+      };
+
+      if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        registerSW();
+      } else {
+        window.addEventListener('load', registerSW);
+      }
     } else {
-      window.addEventListener('load', registerSW);
+      console.log('In-app browser detected: Service Worker registration bypassed for stability.');
     }
   }
 }

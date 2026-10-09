@@ -118,22 +118,15 @@ const calculateFeePendingForMonth = (ledger, student, overrideNow) => {
     return "None";
   }
 
-  const isPartial = amountPaid % monthlyFeeAmount > 0;
   const firstPendingMonth = getBillingCycleMonth(joiningDate, fullyPaidCycles);
 
   if (pendingCount === 1) {
-    if (isPartial) {
-      return `${firstPendingMonth} (₹${dynamicAmountDue} pending)`;
-    }
     return firstPendingMonth;
   }
 
   const firstShort = getBillingCycleMonth(joiningDate, fullyPaidCycles, true);
   const lastShort = getBillingCycleMonth(joiningDate, billedCycles - 1, true);
 
-  if (isPartial) {
-    return `${pendingCount} Months (${firstShort} - ${lastShort}, ₹${dynamicAmountDue} pending)`;
-  }
   return `${pendingCount} Months (${firstShort} - ${lastShort})`;
 };
 

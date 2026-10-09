@@ -3,7 +3,7 @@
  * Network-first strategy for live updates with offline fallback
  */
 
-const CACHE_NAME = 'app-cache-v5';
+const CACHE_NAME = 'app-cache-v6';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
@@ -52,19 +52,28 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(request)
       .then((networkResponse) => {
-        // Cache successful GET responses
-        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+        // Cache successful responses
+        if (networkResponse && networkResponse.status === 200 && (networkResponse.type === 'basic' || networkResponse.type === 'cors')) {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(request, responseToCache));
         }
         return networkResponse;
       })
-      .catch(() => {
-        // Offline fallback: try cache, or index.html for navigation
-        return caches.match(request).then((cachedResponse) => {
-          if (cachedResponse) return cachedResponse;
-          if (request.mode === 'navigate') return caches.match('/index.html');
-          return null;
+      .catch(async () => {
+        // Offline fallback: try cache, or fallback to index.html for navigation
+        const cachedResponse = await caches.match(request);
+        if (cachedResponse) return cachedResponse;
+
+        if (request.mode === 'navigate') {
+          const indexFallback = await caches.match('/index.html');
+          if (indexFallback) return indexFallback;
+          const rootFallback = await caches.match('/');
+          if (rootFallback) return rootFallback;
+        }
+        return new Response('Network error occurred. Please reconnect to the internet.', {
+          status: 503,
+          statusText: 'Service Unavailable',
+          headers: new Headers({ 'Content-Type': 'text/plain' })
         });
       })
   );

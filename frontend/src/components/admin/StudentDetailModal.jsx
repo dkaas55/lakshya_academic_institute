@@ -106,9 +106,20 @@ export default function StudentDetailModal({
     ? student.batches
     : (student.batch || '').split(',').map((b) => b.trim()).filter(Boolean)
 
-  const totalFee = overview?.totalCourseFee ?? ledger?.totalCourseFee ?? 0
-  const amountPaid = overview?.amountPaid ?? ledger?.amountPaid ?? 0
+  const monthlyFee = ledger?.monthlyFeeAmount || overview?.monthlyFeeAmount || ledger?.totalCourseFee || overview?.totalCourseFee || 0
   const amountDue = overview?.amountDue ?? ledger?.amountDue ?? 0
+  const feePendingForMonth = ledger?.feePendingForMonth || overview?.feePendingForMonth || ''
+
+  // Determine months pending display
+  let monthsPendingDisplay = 'Paid'
+  if (amountDue > 0) {
+    if (monthlyFee > 0) {
+      const calculatedMonths = Math.ceil(amountDue / monthlyFee)
+      monthsPendingDisplay = `${calculatedMonths} Month${calculatedMonths === 1 ? '' : 's'}`
+    } else {
+      monthsPendingDisplay = '1 Month'
+    }
+  }
 
   return (
     <div
@@ -330,19 +341,27 @@ export default function StudentDetailModal({
             <div className="grid grid-cols-3 gap-2 pt-1">
               <div className="rounded-xl border border-brand-border bg-brand-surface-tint/40 p-2.5 text-center">
                 <p className="text-[10px] font-medium text-brand-text-muted">
-                  Total Fee
+                  Monthly Fee
                 </p>
                 <p className="text-xs font-bold text-brand-text mt-0.5">
-                  {loadingLedger ? '…' : formatCurrency(totalFee)}
+                  {loadingLedger ? '…' : formatCurrency(monthlyFee)}
                 </p>
               </div>
 
-              <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 p-2.5 text-center">
-                <p className="text-[10px] font-medium text-emerald-800">
-                  Paid
+              <div className={`rounded-xl border p-2.5 text-center ${
+                amountDue > 0
+                  ? 'border-amber-200 bg-amber-50/60 dark:border-amber-800/40 dark:bg-amber-950/20'
+                  : 'border-emerald-200 bg-emerald-50/60 dark:border-emerald-800/40 dark:bg-emerald-950/20'
+              }`}>
+                <p className={`text-[10px] font-medium ${
+                  amountDue > 0 ? 'text-amber-800 dark:text-amber-400' : 'text-emerald-800 dark:text-emerald-400'
+                }`}>
+                  {amountDue > 0 ? 'Months Pending' : 'Payment Status'}
                 </p>
-                <p className="text-xs font-bold text-emerald-700 mt-0.5">
-                  {loadingLedger ? '…' : formatCurrency(amountPaid)}
+                <p className={`text-xs font-bold mt-0.5 ${
+                  amountDue > 0 ? 'text-amber-700 dark:text-amber-300' : 'text-emerald-700 dark:text-emerald-300'
+                }`}>
+                  {loadingLedger ? '…' : monthsPendingDisplay}
                 </p>
               </div>
 

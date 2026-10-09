@@ -152,6 +152,52 @@ function ReceiptSuccessBanner({ receiptInfo, student, onDismiss }) {
   )
 }
 
+function HistoryReceiptButton({ entry, student, ledgerData }) {
+  const { generatePdf, generating } = usePdfGenerator()
+  const [downloaded, setDownloaded] = useState(false)
+
+  const handleDownload = async (e) => {
+    e.stopPropagation()
+    try {
+      const safeStudentName = (student.fullName || 'Student').replace(/[^a-zA-Z0-9]/g, '_')
+      const safeDate = new Date(entry.paidAt).toISOString().split('T')[0]
+      const rNum = `RCP-${String(entry._id).slice(-8).toUpperCase()}`
+      const fileName = `Receipt_${safeStudentName}_${safeDate}.pdf`
+
+      await generatePdf({
+        amount: entry.amount,
+        amountDue: entry.amountDue ?? ledgerData?.amountDue ?? 0,
+        totalCourseFee: ledgerData?.totalCourseFee ?? 0,
+        monthlyFeeAmount: ledgerData?.monthlyFeeAmount ?? 0,
+        paymentTiming: ledgerData?.paymentTiming,
+        paymentMode: entry.method || 'Cash',
+        paidAt: entry.paidAt,
+        receiptNumber: rNum,
+      }, student, fileName)
+      setDownloaded(true)
+      setTimeout(() => setDownloaded(false), 3000)
+    } catch (err) {
+      console.error('Failed to download receipt for entry:', err)
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleDownload}
+      disabled={generating}
+      className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-semibold transition-colors ${
+        downloaded
+          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+          : 'border border-brand-border bg-brand-surface text-brand-text hover:bg-brand-surface-tint'
+      } disabled:opacity-50 cursor-pointer`}
+      title="Download PDF Receipt for this transaction"
+    >
+      {generating ? 'PDF…' : downloaded ? 'Downloaded ✓' : 'Receipt (PDF)'}
+    </button>
+  )
+}
+
 // ─── Main Modal ───────────────────────────────────────────────────────────────
 
 export default function FeeLedgerModal({ student, onClose, onPaymentCollected }) {
@@ -376,7 +422,11 @@ export default function FeeLedgerModal({ student, onClose, onPaymentCollected })
                 <div className="rounded-xl border border-brand-border bg-brand-surface-tint/80 px-3 py-2.5 flex flex-col justify-between min-h-[80px]">
                   <p className="text-[10px] font-medium text-brand-text-muted uppercase tracking-wide">Fee Pending for Month</p>
                   {(() => {
-                    const text = ledgerData.feePendingForMonth || 'None'
+                    const rawText = ledgerData.feePendingForMonth || 'None'
+                    const text = rawText
+                      .replace(/,\s*₹[\d,.]+\s*pending/gi, '')
+                      .replace(/\s*\([^)]*₹[\d,.]+\s*pending\)/gi, '')
+                      .trim()
                     const match = text.match(/^(.*?)\s*\((.*?)\)$/)
                     if (match) {
                       return (
@@ -565,6 +615,7 @@ export default function FeeLedgerModal({ student, onClose, onPaymentCollected })
                           <th className="px-3 py-2 font-semibold text-brand-text">Date</th>
                           <th className="px-3 py-2 font-semibold text-brand-text">Amount</th>
                           <th className="px-3 py-2 font-semibold text-brand-text">Mode</th>
+                          <th className="px-3 py-2 font-semibold text-brand-text text-right">Receipt</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-brand-border">
@@ -573,6 +624,9 @@ export default function FeeLedgerModal({ student, onClose, onPaymentCollected })
                             <td className="px-3 py-2 text-brand-text whitespace-nowrap">{formatDate(entry.paidAt)}</td>
                             <td className="px-3 py-2 font-semibold text-brand-primary">{formatCurrency(entry.amount)}</td>
                             <td className="px-3 py-2 text-brand-text">{entry.method || '—'}</td>
+                            <td className="px-3 py-2 text-right">
+                              <HistoryReceiptButton entry={entry} student={student} ledgerData={ledgerData} />
+                            </td>
                           </tr>
                         ))}
                       </tbody>
