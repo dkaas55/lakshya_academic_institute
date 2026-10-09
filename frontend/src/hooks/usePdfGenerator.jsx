@@ -28,6 +28,8 @@ function formatDate(iso) {
   }
 }
 
+// We attach inline styles to all critical layout elements so styles are 100% resilient
+// across mobile browsers, html2pdf clones, and print modes.
 export function buildReceiptHtml(receiptInfo, student) {
   const {
     amount = 0,
@@ -61,393 +63,101 @@ export function buildReceiptHtml(receiptInfo, student) {
     ? `${origin}${BRANDING.logoUrl}`
     : (BRANDING.logoUrl || '')
 
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background: #ffffff;
-      color: #0f172a;
-      font-size: 11px;
-      line-height: 1.45;
-      padding: 0;
-    }
-    .receipt-page {
-      width: 100%;
-      background: #ffffff;
-      position: relative;
-      box-sizing: border-box;
-      padding: 6px;
-    }
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      padding-bottom: 14px;
-      border-bottom: 2.5px solid #4f46e5;
-      margin-bottom: 16px;
-    }
-    .brand-section {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .institute-logo {
-      height: 36px;
-      max-width: 120px;
-      object-fit: contain;
-    }
-    .institute-name {
-      font-size: 19px;
-      font-weight: 800;
-      color: #4f46e5;
-      letter-spacing: -0.4px;
-      line-height: 1.2;
-    }
-    .institute-tagline {
-      font-size: 9px;
-      font-weight: 600;
-      color: #64748b;
-      text-transform: uppercase;
-      letter-spacing: 1.2px;
-      margin-top: 2px;
-    }
-    .receipt-badge {
-      text-align: right;
-    }
-    .receipt-title {
-      font-size: 15px;
-      font-weight: 800;
-      color: #0f172a;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-    .receipt-number {
-      font-size: 11px;
-      font-weight: 700;
-      color: #4f46e5;
-      margin-top: 2px;
-      font-family: monospace;
-      letter-spacing: 0.5px;
-    }
-    .receipt-date {
-      font-size: 9px;
-      color: #64748b;
-      margin-top: 2px;
-    }
-    .status-banner {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 12px;
-      border-radius: 9999px;
-      font-size: 9px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      margin-bottom: 14px;
-    }
-    .status-paid {
-      background: #f0fdf4;
-      color: #15803d;
-      border: 1px solid #bbf7d0;
-    }
-    .status-partial {
-      background: #eff6ff;
-      color: #1d4ed8;
-      border: 1px solid #bfdbfe;
-    }
-    .status-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-    }
-    .dot-paid { background: #16a34a; }
-    .dot-partial { background: #2563eb; }
-    .section-title {
-      font-size: 9px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1.2px;
-      color: #94a3b8;
-      margin-bottom: 6px;
-    }
-    .info-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-    .info-cell {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 8px 12px;
-    }
-    .info-cell-label {
-      font-size: 8px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      color: #64748b;
-      margin-bottom: 2px;
-    }
-    .info-cell-value {
-      font-size: 11px;
-      font-weight: 600;
-      color: #0f172a;
-    }
-    .info-cell-roll {
-      color: #4338ca;
-      font-family: monospace;
-      font-weight: 700;
-    }
-    .amount-highlight {
-      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-      border-radius: 10px;
-      padding: 14px 18px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      color: #ffffff;
-      margin-bottom: 16px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    }
-    .amount-highlight-label {
-      color: #e0e7ff;
-      font-size: 9px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-    .amount-highlight-value {
-      color: #ffffff;
-      font-size: 22px;
-      font-weight: 900;
-      letter-spacing: -0.5px;
-      margin-top: 2px;
-    }
-    .amount-mode-badge {
-      background: rgba(255, 255, 255, 0.2);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      border-radius: 9999px;
-      padding: 5px 12px;
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-    }
-    .breakdown-table {
-      width: 100%;
-      border-collapse: collapse;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      overflow: hidden;
-      margin-bottom: 16px;
-      font-size: 11px;
-    }
-    .breakdown-table thead tr {
-      background: #f8fafc;
-    }
-    .breakdown-table th {
-      padding: 8px 12px;
-      text-align: left;
-      font-size: 8px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: #64748b;
-      border-bottom: 1px solid #e2e8f0;
-    }
-    .breakdown-table td {
-      padding: 9px 12px;
-      border-bottom: 1px solid #f1f5f9;
-      color: #334155;
-    }
-    .breakdown-table tr.total-row {
-      background: #f8fafc;
-    }
-    .breakdown-table .amount-col {
-      font-weight: 700;
-      color: #16a34a;
-      text-align: right;
-    }
-    .breakdown-table .due-col {
-      font-weight: 700;
-      text-align: right;
-    }
-    .breakdown-table .num-col {
-      text-align: right;
-      font-weight: 600;
-      color: #0f172a;
-    }
-    .thankyou {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 12px 14px;
-      margin-bottom: 18px;
-    }
-    .thankyou-heading {
-      font-size: 11px;
-      font-weight: 700;
-      color: #0f172a;
-      margin-bottom: 4px;
-    }
-    .thankyou-body {
-      font-size: 10px;
-      color: #475569;
-      line-height: 1.55;
-    }
-    .thankyou-body strong {
-      color: #4f46e5;
-    }
-    .footer {
-      border-top: 1px solid #e2e8f0;
-      padding-top: 12px;
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-    }
-    .footer-note {
-      font-size: 8px;
-      font-weight: 700;
-      color: #94a3b8;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-    }
-    .footer-meta {
-      font-size: 8px;
-      color: #64748b;
-      margin-top: 2px;
-    }
-    .footer-auth {
-      text-align: right;
-    }
-    .footer-auth-line {
-      width: 90px;
-      border-top: 1px solid #cbd5e1;
-      margin-bottom: 4px;
-      margin-left: auto;
-    }
-    .footer-auth-label {
-      font-size: 8px;
-      font-weight: 700;
-      color: #94a3b8;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-    }
-    .watermark {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%) rotate(-30deg);
-      font-size: 68px;
-      font-weight: 900;
-      color: rgba(16, 185, 129, 0.05);
-      text-transform: uppercase;
-      letter-spacing: 8px;
-      pointer-events: none;
-      white-space: nowrap;
-      z-index: 0;
-    }
-  </style>
-</head>
-<body>
-  <div class="receipt-page">
-    ${isPaid ? '<div class="watermark">Paid in Full</div>' : ''}
+  return `
+  <div class="receipt-page" style="width: 794px; min-width: 794px; background: #ffffff; color: #0f172a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; line-height: 1.5; padding: 32px 36px; box-sizing: border-box; position: relative; margin: 0 auto;">
+    ${isPaid ? `
+      <div style="position: absolute; top: 48%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg); font-size: 72px; font-weight: 900; color: rgba(16, 185, 129, 0.06); text-transform: uppercase; letter-spacing: 10px; pointer-events: none; white-space: nowrap; z-index: 0;">
+        PAID IN FULL
+      </div>` : ''}
 
     <!-- ── Header ─────────────────────────────────────────────── -->
-    <div class="header">
-      <div class="brand-section">
-        ${fullLogoUrl ? `<img src="${fullLogoUrl}" alt="${BRANDING.name}" class="institute-logo" onerror="this.style.display='none'" />` : ''}
+    <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 16px; border-bottom: 3px solid #4f46e5; margin-bottom: 20px; position: relative; z-index: 1;">
+      <div style="display: flex; align-items: center; gap: 14px;">
+        ${fullLogoUrl ? `<img src="${fullLogoUrl}" alt="${BRANDING.name}" style="height: 48px; max-height: 48px; width: auto; max-width: 140px; object-fit: contain; display: block;" onerror="this.style.display='none'" />` : ''}
         <div>
-          <div class="institute-name">${BRANDING.name}</div>
-          <div class="institute-tagline">${BRANDING.tagline || 'Excellence in Education'}</div>
+          <div style="font-size: 22px; font-weight: 800; color: #4f46e5; letter-spacing: -0.5px; line-height: 1.2;">${BRANDING.name}</div>
+          <div style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1.5px; margin-top: 3px;">${BRANDING.tagline || 'Excellence in Education'}</div>
         </div>
       </div>
-      <div class="receipt-badge">
-        <div class="receipt-title">Fee Receipt</div>
-        <div class="receipt-number">${receiptNumber}</div>
-        <div class="receipt-date">${formatDate(paidAt)}</div>
+      <div style="text-align: right;">
+        <div style="font-size: 16px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 1px;">Fee Receipt</div>
+        <div style="font-size: 13px; font-weight: 700; color: #4f46e5; font-family: monospace; margin-top: 3px; letter-spacing: 0.5px;">${receiptNumber}</div>
+        <div style="font-size: 10px; color: #64748b; margin-top: 3px;">${formatDate(paidAt)}</div>
       </div>
     </div>
 
     <!-- ── Status Badge ───────────────────────────────────────── -->
-    <div class="status-banner ${isPaid ? 'status-paid' : 'status-partial'}">
-      <span class="status-dot ${isPaid ? 'dot-paid' : 'dot-partial'}"></span>
+    <div style="display: inline-flex; align-items: center; gap: 8px; padding: 5px 14px; border-radius: 9999px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 18px; position: relative; z-index: 1; ${
+      isPaid
+        ? 'background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0;'
+        : 'background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;'
+    }">
+      <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: ${isPaid ? '#16a34a' : '#2563eb'};"></span>
       ${isPaid ? 'Fully Paid' : 'Partial Payment'}
     </div>
 
-    <!-- ── Student Info ───────────────────────────────────────── -->
-    <div class="section-title">Student Information</div>
-    <div class="info-grid">
-      <div class="info-cell">
-        <div class="info-cell-label">Student Name</div>
-        <div class="info-cell-value">${studentName}</div>
+    <!-- ── Student Info Grid ──────────────────────────────────── -->
+    <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.2px; color: #64748b; margin-bottom: 8px; position: relative; z-index: 1;">Student Information</div>
+    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; position: relative; z-index: 1;">
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px;">
+        <div style="font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #64748b; margin-bottom: 3px;">Student Name</div>
+        <div style="font-size: 13px; font-weight: 700; color: #0f172a;">${studentName}</div>
       </div>
-      <div class="info-cell">
-        <div class="info-cell-label">Roll Number</div>
-        <div class="info-cell-value info-cell-roll">${rollNo}</div>
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px;">
+        <div style="font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #64748b; margin-bottom: 3px;">Roll Number</div>
+        <div style="font-size: 13px; font-weight: 700; color: #4338ca; font-family: monospace;">${rollNo}</div>
       </div>
-      <div class="info-cell">
-        <div class="info-cell-label">${BRANDING.isSchool ? 'Class & Section' : 'Batch'}</div>
-        <div class="info-cell-value">${batchDisplay}</div>
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px;">
+        <div style="font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #64748b; margin-bottom: 3px;">${BRANDING.isSchool ? 'Class & Section' : 'Batch'}</div>
+        <div style="font-size: 13px; font-weight: 600; color: #0f172a;">${batchDisplay}</div>
       </div>
-      <div class="info-cell">
-        <div class="info-cell-label">Class</div>
-        <div class="info-cell-value">${studentClass}</div>
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px;">
+        <div style="font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #64748b; margin-bottom: 3px;">Class</div>
+        <div style="font-size: 13px; font-weight: 600; color: #0f172a;">${studentClass}</div>
       </div>
     </div>
 
-    <!-- ── Amount Highlight ───────────────────────────────────── -->
-    <div class="amount-highlight">
+    <!-- ── Amount Highlight Card ──────────────────────────────── -->
+    <div style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border-radius: 10px; padding: 16px 22px; display: flex; align-items: center; justify-content: space-between; color: #ffffff; margin-bottom: 20px; position: relative; z-index: 1;">
       <div>
-        <div class="amount-highlight-label">Amount Paid This Transaction</div>
-        <div class="amount-highlight-value">${formatCurrency(amount)}</div>
+        <div style="color: #e0e7ff; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Amount Paid This Transaction</div>
+        <div style="color: #ffffff; font-size: 26px; font-weight: 900; letter-spacing: -0.5px; margin-top: 4px;">${formatCurrency(amount)}</div>
       </div>
-      <div class="amount-mode-badge">${paymentMode}</div>
+      <div style="background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.35); border-radius: 9999px; padding: 6px 14px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #ffffff;">
+        ${paymentMode}
+      </div>
     </div>
 
     <!-- ── Payment Breakdown Table ────────────────────────────── -->
-    <div class="section-title">Payment Breakdown</div>
-    <table class="breakdown-table">
+    <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.2px; color: #64748b; margin-bottom: 8px; position: relative; z-index: 1;">Payment Breakdown</div>
+    <table style="width: 100%; border-collapse: collapse; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-bottom: 20px; font-size: 12px; position: relative; z-index: 1;">
       <thead>
-        <tr>
-          <th>Description</th>
-          <th style="text-align: right;">Amount</th>
+        <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+          <th style="padding: 10px 14px; text-align: left; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #64748b;">Description</th>
+          <th style="padding: 10px 14px; text-align: right; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #64748b;">Amount</th>
         </tr>
       </thead>
       <tbody>
-        <tr>
-          <td>${BRANDING.isSchool ? 'School / Course Fee' : 'Monthly Fee'}</td>
-          <td class="num-col">${formatCurrency(monthlyFeeAmount || totalCourseFee)}</td>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 10px 14px; color: #334155;">${BRANDING.isSchool ? 'School / Course Fee' : 'Monthly Fee'}</td>
+          <td style="padding: 10px 14px; text-align: right; font-weight: 600; color: #0f172a;">${formatCurrency(monthlyFeeAmount || totalCourseFee)}</td>
         </tr>
         ${timingDisplay ? `
-        <tr>
-          <td>Payment Schedule</td>
-          <td class="num-col" style="color: #64748b; font-weight: normal;">${timingDisplay}</td>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 10px 14px; color: #334155;">Payment Schedule</td>
+          <td style="padding: 10px 14px; text-align: right; color: #64748b;">${timingDisplay}</td>
         </tr>` : ''}
-        <tr class="total-row">
-          <td><strong>Total Amount to be Paid</strong></td>
-          <td class="num-col"><strong>${formatCurrency(totalAmountToPay)}</strong></td>
+        <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+          <td style="padding: 10px 14px; font-weight: 700; color: #0f172a;">Total Amount to be Paid</td>
+          <td style="padding: 10px 14px; text-align: right; font-weight: 800; color: #0f172a;">${formatCurrency(totalAmountToPay)}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 10px 14px; font-weight: 700; color: #15803d;">Amount Paid</td>
+          <td style="padding: 10px 14px; text-align: right; font-weight: 800; color: #16a34a;">${formatCurrency(amount)}</td>
         </tr>
         <tr>
-          <td style="font-weight: 600; color: #15803d;">Amount Paid</td>
-          <td class="amount-col">${formatCurrency(amount)}</td>
-        </tr>
-        <tr>
-          <td>Pending Amount (Due Balance)</td>
-          <td class="due-col" style="color: ${amountDue > 0 ? '#b45309' : '#15803d'};">
+          <td style="padding: 10px 14px; color: #334155;">Pending Amount (Due Balance)</td>
+          <td style="padding: 10px 14px; text-align: right; font-weight: 700; color: ${amountDue > 0 ? '#b45309' : '#15803d'};">
             ${formatCurrency(amountDue)}
           </td>
         </tr>
@@ -455,14 +165,14 @@ export function buildReceiptHtml(receiptInfo, student) {
     </table>
 
     <!-- ── Thank-you Section ──────────────────────────────────── -->
-    <div class="thankyou">
-      <div class="thankyou-heading">Dear Parent / Guardian,</div>
-      <div class="thankyou-body">
-        Thank you for your payment of <strong>${formatCurrency(amount)}</strong> towards
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 18px; margin-bottom: 24px; position: relative; z-index: 1;">
+      <div style="font-size: 12px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">Dear Parent / Guardian,</div>
+      <div style="font-size: 11px; color: #475569; line-height: 1.6;">
+        Thank you for your payment of <strong style="color: #4f46e5;">${formatCurrency(amount)}</strong> towards
         <strong>${studentName}</strong>'s course fee. We truly appreciate your trust in
         <strong>${BRANDING.name}</strong>.
         ${amountDue > 0
-          ? `<br/><br/>A balance of <strong style="color: #b45309;">${formatCurrency(amountDue)}</strong> remains. Please ensure it is cleared before the due date to avoid any interruption in services.`
+          ? `<br/><br/>A balance of <strong style="color: #b45309;">${formatCurrency(amountDue)}</strong> remains. Please ensure it is cleared before the due date.`
           : '<br/><br/>We are pleased to inform you that the course fee has been <strong style="color: #15803d;">paid in full</strong>. No further payments are required for this billing cycle.'
         }
         <br/><br/>
@@ -471,20 +181,18 @@ export function buildReceiptHtml(receiptInfo, student) {
     </div>
 
     <!-- ── Footer ─────────────────────────────────────────────── -->
-    <div class="footer">
+    <div style="border-top: 1px solid #e2e8f0; padding-top: 14px; display: flex; align-items: flex-end; justify-content: space-between; position: relative; z-index: 1;">
       <div>
-        <div class="footer-note">Computer Generated Receipt · No Signature Required</div>
-        <div class="footer-meta">${receiptNumber} · Issued on ${formatDate(paidAt)}</div>
+        <div style="font-size: 9px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px;">Computer Generated Receipt · No Signature Required</div>
+        <div style="font-size: 9px; color: #64748b; margin-top: 3px;">${receiptNumber} · Issued on ${formatDate(paidAt)}</div>
       </div>
-      <div class="footer-auth">
-        <div class="footer-auth-line"></div>
-        <div class="footer-auth-label">Authorised Signatory</div>
+      <div style="text-align: right;">
+        <div style="width: 100px; border-top: 1px solid #cbd5e1; margin-bottom: 5px; margin-left: auto;"></div>
+        <div style="font-size: 9px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px;">Authorised Signatory</div>
       </div>
     </div>
 
-  </div>
-</body>
-</html>`
+  </div>`
 }
 
 export function usePdfGenerator() {
@@ -495,15 +203,39 @@ export function usePdfGenerator() {
     setGenerating(true)
     setError(null)
 
+    // Mount an offscreen container to document.body so html2pdf can render real DOM with full styling
+    const container = document.createElement('div')
+    container.style.position = 'fixed'
+    container.style.left = '-9999px'
+    container.style.top = '0'
+    container.style.width = '794px'
+    container.style.minWidth = '794px'
+    container.style.background = '#ffffff'
+    container.style.zIndex = '-9999'
+    container.innerHTML = buildReceiptHtml(receiptInfo, student)
+    document.body.appendChild(container)
+
     try {
-      const html = buildReceiptHtml(receiptInfo, student)
+      // Ensure images inside container are loaded before generating PDF
+      const images = Array.from(container.querySelectorAll('img'))
+      await Promise.all(
+        images.map(img => {
+          if (img.complete) return Promise.resolve()
+          return new Promise(resolve => {
+            img.onload = resolve
+            img.onerror = resolve
+            setTimeout(resolve, 800)
+          })
+        })
+      )
+
       const module = await import('html2pdf.js')
       const html2pdf = module.default || module
 
       const safeFileName = fileName || `Receipt_${Date.now()}.pdf`
 
       const options = {
-        margin: [10, 10, 10, 10], // standard 10mm margins
+        margin: [8, 8, 8, 8],
         filename: safeFileName,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: {
@@ -511,11 +243,14 @@ export function usePdfGenerator() {
           useCORS: true,
           logging: false,
           letterRendering: true,
+          width: 794,
+          windowWidth: 794,
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
       }
 
-      const worker = html2pdf().set(options).from(html)
+      const receiptElement = container.firstElementChild || container
+      const worker = html2pdf().set(options).from(receiptElement)
 
       try {
         const pdfBlob = await worker.output('blob')
@@ -536,7 +271,7 @@ export function usePdfGenerator() {
           await worker.save()
         }
       } catch (blobErr) {
-        console.warn('Blob generation/download fallback to worker.save():', blobErr)
+        console.warn('Blob generation fallback to worker.save():', blobErr)
         await worker.save()
       }
     } catch (err) {
@@ -544,6 +279,9 @@ export function usePdfGenerator() {
       setError(err)
       throw err
     } finally {
+      if (document.body.contains(container)) {
+        document.body.removeChild(container)
+      }
       setGenerating(false)
     }
   }, [])
