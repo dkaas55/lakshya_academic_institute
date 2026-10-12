@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { ExternalLink, Smartphone, X, Monitor, Share, Download } from 'lucide-react'
 import { BRANDING } from '../../config/branding'
 
@@ -117,30 +118,25 @@ export default function InstallAppButton({ className = '' }) {
   }
 
   // Main action handler for "Open in App" button
-  const handleOpenInAppClick = async (e) => {
-    e?.preventDefault?.()
-    e?.stopPropagation?.()
-
-    // Background service worker update check (non-blocking)
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then((regs) => {
-        regs.forEach((reg) => reg.update().catch(() => {}))
-      }).catch(() => {})
+  const handleOpenInAppClick = (e) => {
+    if (e) {
+      e.preventDefault()
+      e.stopPropagation()
     }
 
-    // 1. If native install prompt is ready, trigger it immediately
+    // 1. If native install prompt is ready (Android Chrome), fire it
     if (deferredPrompt) {
-      const installed = await handleNativeInstall()
-      if (installed) return
+      handleNativeInstall()
+      return
     }
 
-    // 2. On Desktop: If already installed, launch the standalone PWA window
+    // 2. On Desktop: If already installed, launch standalone window
     if (isDesktop) {
       launchDesktopApp()
       return
     }
 
-    // 3. On Mobile (Android / iOS): Show the tailored action sheet modal with step-by-step guidance
+    // 3. On Mobile (Android / iOS): Open action sheet modal
     setShowHelpModal(true)
   }
 
@@ -157,8 +153,8 @@ export default function InstallAppButton({ className = '' }) {
         <ExternalLink size={12} className="shrink-0 opacity-80 text-current" />
       </button>
 
-      {/* Actionable Open / Install App Modal */}
-      {showHelpModal && (
+      {/* Actionable Open / Install App Modal mounted to document.body */}
+      {showHelpModal && typeof document !== 'undefined' && createPortal(
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn"
           onClick={() => setShowHelpModal(false)}
@@ -260,7 +256,8 @@ export default function InstallAppButton({ className = '' }) {
               Close
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   )
