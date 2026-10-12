@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import api from '../lib/api'
 import { clearToken, clearRole } from '../lib/auth'
 import SettingsModal from '../components/shared/SettingsModal'
-import { useTheme } from '../context/ThemeContext'
 import { BRANDING } from '../config/branding'
 import InstallAppButton from '../components/shared/InstallAppButton'
 import {
@@ -313,7 +312,6 @@ export default function StudentDashboard() {
   const [loading, setLoading]       = useState(true)
   const [error, setError]           = useState('')
   const [showSettings, setShowSettings] = useState(false)
-  const { theme, setTheme, isDark } = useTheme()
 
   useEffect(() => {
     let cancelled = false
@@ -446,15 +444,6 @@ export default function StudentDashboard() {
             </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-3 text-xs font-semibold text-brand-text-muted">
-            <button
-              type="button"
-              onClick={() => setTheme(isDark ? 'light' : 'dark')}
-              className="p-2 rounded-xl bg-brand-surface-tint hover:bg-brand-surface border border-brand-border text-brand-text-muted hover:text-brand-text transition-colors cursor-pointer text-xs font-semibold"
-              title="Toggle Theme"
-            >
-              {isDark ? '☀️ Light' : '🌙 Dark'}
-            </button>
-
             <span className="hidden sm:inline-flex rounded-full bg-brand-primary/10 text-brand-primary border border-brand-primary/20 px-2.5 py-1 text-[10px] uppercase font-bold tracking-wide">
               Live
             </span>
@@ -1172,6 +1161,7 @@ function AttendanceSummaryCard({ attnData, onViewAll }) {
 
 function AttendanceHistoryPage({ attnData }) {
   const [filter, setFilter] = useState('all')   // 'all' | 'Present' | 'Late' | 'Absent'
+  const [selectedBatch, setSelectedBatch] = useState('all') // 'all' | batchName
 
   // ── Date and Month lookup state ────────────────────────────────────────────
   const [lookupDate, setLookupDate]       = useState('')
@@ -1190,8 +1180,35 @@ function AttendanceHistoryPage({ attnData }) {
     )
   }
 
-  const { attendancePercentage, present, late, absent, totalClasses } = attnData.summary
-  const history = attnData.history ?? []
+  const rawHistory = attnData.history ?? []
+  
+  // Extract distinct batches available in history and batchBreakdown
+  const availableBatches = Array.from(
+    new Set([
+      ...(attnData.batches || []),
+      ...Object.keys(attnData.batchBreakdown || {}),
+      ...rawHistory.map((h) => h.batch).filter(Boolean),
+    ])
+  )
+
+  // Filter history based on selected batch
+  const batchFilteredHistory = selectedBatch === 'all'
+    ? rawHistory
+    : rawHistory.filter((h) => h.batch === selectedBatch)
+
+  // Calculate current view's summary stats
+  const totalClasses = batchFilteredHistory.length
+  let present = 0
+  let late = 0
+  let absent = 0
+  batchFilteredHistory.forEach((h) => {
+    if (h.status === 'Present') present++
+    else if (h.status === 'Late') late++
+    else if (h.status === 'Absent') absent++
+  })
+
+  const attendancePercentage =
+    totalClasses > 0 ? Math.round(((present + late) / totalClasses) * 100) : 100
 
   const pctColor       = attendancePercentage >= 85 ? '#10b981' : attendancePercentage >= 75 ? '#f59e0b' : '#f43f5e'
   const pctLabelColor  = attendancePercentage >= 85 ? 'text-emerald-600' : attendancePercentage >= 75 ? 'text-amber-600' : 'text-rose-600'
@@ -1207,23 +1224,25 @@ function AttendanceHistoryPage({ attnData }) {
   }
 
   // filter for the log
-  const filtered = filter === 'all' ? history : history.filter((h) => h.status === filter)
+  const filtered = filter === 'all'
+    ? batchFilteredHistory
+    : batchFilteredHistory.filter((h) => h.status === filter)
 
   // ── Streak calculation ────────────────────────────────────────────────────
   let streak = 0
-  for (const h of [...history]) {
+  for (const h of [...batchFilteredHistory]) {
     if (h.status === 'Present' || h.status === 'Late') streak++
     else break
   }
 
-  // ── Month options from history ──────────────────────────────────────────────
+  // ── Month options from batch-filtered history ─────────────────────────────
   const MONTH_NAMES = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December',
   ]
   const monthOptions = []
   const seenMonths = new Set()
-  for (const h of history) {
+  for (const h of batchFilteredHistory) {
     const d = new Date(h.date)
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
     if (!seenMonths.has(key)) {
@@ -1238,12 +1257,12 @@ function AttendanceHistoryPage({ attnData }) {
     setMonthResult(null)
     const target = new Date(lookupDate)
     target.setUTCHours(0, 0, 0, 0)
-    const match = history.find((h) => {
+    const match = batchFilteredHistory.find((h) => {
       const hd = new Date(h.date)
       hd.setUTCHours(0, 0, 0, 0)
       return hd.getTime() === target.getTime()
     })
-    setDateResult({ date: lookupDate, status: match?.status || null })
+    setDateResult({ date: lookupDate, status: match?.status || null, batch: match?.batch || null })
   }
 
   // ── Month filter handler ────────────────────────────────────────────────────
@@ -1252,7 +1271,7 @@ function AttendanceHistoryPage({ attnData }) {
     setDateResult(null)
     if (!monthVal) { setMonthResult(null); return }
     const [year, mon] = monthVal.split('-').map(Number)
-    const monthHistory = history.filter((h) => {
+    const monthHistory = batchFilteredHistory.filter((h) => {
       const d = new Date(h.date)
       return d.getFullYear() === year && d.getMonth() + 1 === mon
     })
@@ -1277,6 +1296,110 @@ function AttendanceHistoryPage({ attnData }) {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* ── Batch Switcher Bar (when multiple batches exist) ──────────────── */}
+      {availableBatches.length > 1 && (
+        <div className="flex items-center justify-between gap-3 flex-wrap rounded-2xl border border-brand-border bg-brand-surface p-4 shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-brand-text-muted">
+              Select Batch:
+            </span>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => { setSelectedBatch('all'); setDateResult(null); setMonthResult(null); }}
+              className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer ${
+                selectedBatch === 'all'
+                  ? 'bg-brand-primary text-white shadow-xs'
+                  : 'bg-brand-surface-tint border border-brand-border text-brand-text hover:bg-brand-surface'
+              }`}
+            >
+              All Batches ({rawHistory.length})
+            </button>
+            {availableBatches.map((b) => {
+              const bCount = rawHistory.filter((h) => h.batch === b).length
+              return (
+                <button
+                  key={b}
+                  type="button"
+                  onClick={() => { setSelectedBatch(b); setDateResult(null); setMonthResult(null); }}
+                  className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer ${
+                    selectedBatch === b
+                      ? 'bg-brand-primary text-white shadow-xs'
+                      : 'bg-brand-surface-tint border border-brand-border text-brand-text hover:bg-brand-surface'
+                  }`}
+                >
+                  {b} ({bCount})
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── Per-Batch Breakdown Cards (Shown in 'All Batches' view) ────────── */}
+      {selectedBatch === 'all' && availableBatches.length > 1 && attnData.batchBreakdown && (
+        <section className="space-y-3">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-brand-text-muted/80">
+            Batch-wise Comparison
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {availableBatches.map((b) => {
+              const bData = attnData.batchBreakdown[b] || {
+                totalClasses: 0,
+                present: 0,
+                late: 0,
+                absent: 0,
+                attendancePercentage: 100,
+              }
+              const bPct = bData.attendancePercentage
+              const badgeCls =
+                bPct >= 85 ? 'text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800' :
+                bPct >= 75 ? 'text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800' :
+                'text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800'
+
+              return (
+                <div
+                  key={b}
+                  onClick={() => setSelectedBatch(b)}
+                  className="rounded-2xl border border-brand-border bg-brand-surface p-4 shadow-sm hover:border-brand-primary/40 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between gap-3 group"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <span className="text-[9px] uppercase font-bold text-brand-text-muted block">Batch</span>
+                      <h4 className="text-sm font-bold text-brand-text group-hover:text-brand-primary transition-colors">
+                        {b}
+                      </h4>
+                    </div>
+                    <span className={`rounded-full border px-2.5 py-0.5 text-xs font-bold ${badgeCls}`}>
+                      {bData.totalClasses > 0 ? `${bPct}%` : 'No Classes'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-1.5 text-center text-[10px] pt-2 border-t border-brand-border/60">
+                    <div className="bg-brand-surface-tint rounded-lg py-1 px-1">
+                      <span className="text-brand-text-muted block text-[8px] uppercase">Total</span>
+                      <span className="font-bold text-brand-text">{bData.totalClasses}</span>
+                    </div>
+                    <div className="bg-emerald-50/50 dark:bg-emerald-950/20 rounded-lg py-1 px-1">
+                      <span className="text-emerald-600 dark:text-emerald-400 block text-[8px] uppercase">Pres</span>
+                      <span className="font-bold text-emerald-700 dark:text-emerald-300">{bData.present}</span>
+                    </div>
+                    <div className="bg-amber-50/50 dark:bg-amber-950/20 rounded-lg py-1 px-1">
+                      <span className="text-amber-600 dark:text-amber-400 block text-[8px] uppercase">Late</span>
+                      <span className="font-bold text-amber-700 dark:text-amber-300">{bData.late}</span>
+                    </div>
+                    <div className="bg-rose-50/50 dark:bg-rose-950/20 rounded-lg py-1 px-1">
+                      <span className="text-rose-600 dark:text-rose-400 block text-[8px] uppercase">Abs</span>
+                      <span className="font-bold text-rose-700 dark:text-rose-300">{bData.absent}</span>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      )}
+
       {/* ── Header metric card ────────────────────────────────────────────── */}
       <div className="w-full rounded-2xl border border-brand-border bg-brand-surface p-6 shadow-sm">
         <div className="flex flex-col sm:flex-row items-center gap-6">
@@ -1298,7 +1421,7 @@ function AttendanceHistoryPage({ attnData }) {
                 {attendancePercentage}%
               </text>
               <text x="60" y="72" textAnchor="middle" fontSize="9" fill="#9ca3af">
-                Attendance
+                {selectedBatch === 'all' ? 'All Batches' : selectedBatch}
               </text>
             </svg>
             {/* Status label */}
@@ -1309,7 +1432,20 @@ function AttendanceHistoryPage({ attnData }) {
 
           {/* Stats grid */}
           <div className="flex-1 w-full">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-brand-text-muted/80 mb-3">Breakdown</p>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-brand-text-muted/80">
+                {selectedBatch === 'all' ? 'Overall Breakdown' : `Breakdown for ${selectedBatch}`}
+              </p>
+              {selectedBatch !== 'all' && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedBatch('all')}
+                  className="text-xs text-brand-primary hover:underline font-semibold"
+                >
+                  View All Batches →
+                </button>
+              )}
+            </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
                 { label: 'Total Classes', value: totalClasses, accent: 'text-brand-text',   labelColor: 'text-brand-text-muted', bg: 'bg-brand-surface-tint border-brand-border' },
@@ -1338,14 +1474,16 @@ function AttendanceHistoryPage({ attnData }) {
       </div>
 
       {/* ── Calendar dot heatmap ──────────────────────────────────────────── */}
-      {history.length > 0 && (
+      {batchFilteredHistory.length > 0 && (
         <section className="w-full rounded-2xl border border-brand-border bg-brand-surface p-6 shadow-sm">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-brand-text-muted/80 mb-4">Session Heatmap</p>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-brand-text-muted/80 mb-4">
+            Session Heatmap {selectedBatch !== 'all' && `(${selectedBatch})`}
+          </p>
           <div className="flex flex-wrap gap-1.5">
-            {[...history].reverse().slice(0, 60).map((h, i) => (
+            {[...batchFilteredHistory].reverse().slice(0, 60).map((h, i) => (
               <div
                 key={i}
-                title={`${formatDate(h.date)} — ${h.status}`}
+                title={`${formatDate(h.date)}${h.batch ? ` [${h.batch}]` : ''} — ${h.status}`}
                 className={`h-5 w-5 rounded-sm ${STATUS_DOT[h.status] ?? 'bg-gray-200'} opacity-90 hover:opacity-100 hover:scale-110 transition-transform cursor-default`}
               />
             ))}
@@ -1363,7 +1501,9 @@ function AttendanceHistoryPage({ attnData }) {
 
       {/* ── Date / Month Lookup Controls ────────────────────────────────────── */}
       <section className="w-full rounded-2xl border border-brand-border bg-brand-surface p-6 shadow-sm">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-brand-text-muted/80 mb-4">Lookup Attendance</p>
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-brand-text-muted/80 mb-4">
+          Lookup Attendance {selectedBatch !== 'all' && `in ${selectedBatch}`}
+        </p>
         <div className="grid gap-4 sm:grid-cols-2">
           {/* Date lookup */}
           <div>
@@ -1411,7 +1551,7 @@ function AttendanceHistoryPage({ attnData }) {
             Status on {new Intl.DateTimeFormat('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(dateResult.date))}
           </p>
           {dateResult.status ? (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               {(() => {
                 const dotCfg = { Present: 'bg-emerald-500', Late: 'bg-amber-400', Absent: 'bg-rose-500' }[dateResult.status] ?? 'bg-gray-400'
                 const badgeCfg = {
@@ -1426,6 +1566,11 @@ function AttendanceHistoryPage({ attnData }) {
                   </span>
                 )
               })()}
+              {dateResult.batch && (
+                <span className="rounded-full bg-brand-surface-tint border border-brand-border px-2.5 py-0.5 text-[10px] font-bold text-brand-text">
+                  Batch: {dateResult.batch}
+                </span>
+              )}
               <span className="text-xs text-brand-text font-semibold">
                 You were marked <strong>{dateResult.status}</strong> on this date.
               </span>
@@ -1481,9 +1626,16 @@ function AttendanceHistoryPage({ attnData }) {
                 }[h.status] ?? 'bg-brand-surface-tint text-brand-text-muted ring-brand-border'
                 return (
                   <div key={idx} className="flex items-center justify-between py-2.5 hover:bg-brand-surface-tint/60 transition-colors">
-                    <span className="text-xs font-semibold text-brand-text">
-                      {new Intl.DateTimeFormat('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(h.date))}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-brand-text">
+                        {new Intl.DateTimeFormat('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(h.date))}
+                      </span>
+                      {h.batch && (
+                        <span className="text-[10px] font-semibold text-brand-text-muted bg-brand-surface-tint border border-brand-border px-2 py-0.5 rounded-full">
+                          {h.batch}
+                        </span>
+                      )}
+                    </div>
                     <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-semibold ring-1 ${badgeCfg}`}>
                       <span className={`h-1.5 w-1.5 rounded-full ${dotCfg}`} />
                       {h.status}
@@ -1503,6 +1655,7 @@ function AttendanceHistoryPage({ attnData }) {
             <h2 className="text-base font-bold text-brand-text">Attendance Log</h2>
             <p className="text-xs text-brand-text-muted mt-0.5">
               {filtered.length} record{filtered.length !== 1 ? 's' : ''}
+              {selectedBatch !== 'all' && ` · batch: ${selectedBatch}`}
               {filter !== 'all' && ` · filtered by ${filter}`}
             </p>
           </div>
@@ -1561,6 +1714,11 @@ function AttendanceHistoryPage({ attnData }) {
                         weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
                       }).format(new Date(log.date))}
                     </span>
+                    {log.batch && (
+                      <span className="rounded-full bg-brand-surface-tint border border-brand-border px-2.5 py-0.5 text-[10px] font-semibold text-brand-text-muted">
+                        {log.batch}
+                      </span>
+                    )}
                   </div>
                   <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold ring-1 ${badgeCfg}`}>
                     {log.status}

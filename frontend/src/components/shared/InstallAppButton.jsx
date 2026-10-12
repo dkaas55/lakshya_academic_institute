@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Download, Smartphone, X, Monitor, Share } from 'lucide-react'
+import { ExternalLink, Smartphone, X, Monitor, Share } from 'lucide-react'
 import { BRANDING } from '../../config/branding'
 
 export default function InstallAppButton({ className = '' }) {
@@ -38,25 +38,45 @@ export default function InstallAppButton({ className = '' }) {
     }
   }, [])
 
-  // Do not show button if already installed and running as standalone app
+  // Do not show button if already running inside the installed standalone app
   if (isStandalone) {
     return null
   }
 
-  const handleInstallClick = async (e) => {
+  const handleOpenInAppClick = async (e) => {
     e?.preventDefault?.()
     e?.stopPropagation?.()
 
+    // 1. Purge old caches in background so stale assets/manifests are removed
+    try {
+      if ('caches' in window) {
+        const cacheKeys = await caches.keys()
+        await Promise.all(
+          cacheKeys
+            .filter((key) => key !== 'app-cache-v7')
+            .map((key) => caches.delete(key))
+        )
+      }
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations()
+        for (const reg of regs) {
+          await reg.update().catch(() => {})
+        }
+      }
+    } catch (err) {
+      console.warn('Cache purge notice:', err)
+    }
+
+    // 2. Trigger native install/open prompt if available
     if (deferredPrompt) {
       try {
         await deferredPrompt.prompt()
         const choice = await deferredPrompt.userChoice
-        console.log('Install prompt result:', choice?.outcome)
+        console.log('App prompt result:', choice?.outcome)
       } catch (err) {
-        console.warn('Install prompt failed or unavailable:', err)
+        console.warn('App prompt failed or unavailable:', err)
         setShowHelpModal(true)
       } finally {
-        // Chromium only allows prompt() to be invoked once per event
         setDeferredPrompt(null)
       }
     } else {
@@ -69,16 +89,16 @@ export default function InstallAppButton({ className = '' }) {
     <>
       <button
         type="button"
-        onClick={handleInstallClick}
-        title={`Install ${BRANDING.shortName} App on your phone/desktop`}
+        onClick={handleOpenInAppClick}
+        title={`Open ${BRANDING.shortName} in dedicated App mode`}
         className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-brand-primary text-brand-surface border border-transparent dark:border-brand-border/60 shadow-sm hover:opacity-90 active:scale-95 transition-all cursor-pointer select-none ${className}`}
       >
         <Smartphone size={14} className="shrink-0 text-current" />
-        <span>Install App</span>
-        <Download size={13} className="shrink-0 opacity-80 text-current" />
+        <span>Open in App</span>
+        <ExternalLink size={12} className="shrink-0 opacity-80 text-current" />
       </button>
 
-      {/* Fallback Install Help Modal */}
+      {/* Fallback Open in App Help Modal */}
       {showHelpModal && (
         <div 
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
@@ -91,7 +111,7 @@ export default function InstallAppButton({ className = '' }) {
             <div className="flex items-center justify-between pb-3 border-b border-brand-border">
               <div className="flex items-center gap-2">
                 <img src={BRANDING.logoUrl} alt="Logo" className="w-6 h-6 object-contain" />
-                <h3 className="font-bold text-sm text-brand-text">Install {BRANDING.shortName}</h3>
+                <h3 className="font-bold text-sm text-brand-text">Open in {BRANDING.shortName} App</h3>
               </div>
               <button 
                 type="button" 
@@ -103,13 +123,27 @@ export default function InstallAppButton({ className = '' }) {
               </button>
             </div>
 
+            <p className="text-xs text-brand-text-muted leading-relaxed">
+              Experience the fast, full-screen app with offline support on your device:
+            </p>
+
             <div className="space-y-3 text-xs text-brand-text">
               <div className="p-3 rounded-xl bg-brand-surface-tint border border-brand-border/60 flex items-start gap-2.5">
                 <Monitor size={18} className="text-brand-accent shrink-0 mt-0.5" />
                 <div>
                   <p className="font-bold text-brand-text">On Desktop (Chrome / Edge):</p>
                   <p className="text-brand-text-muted mt-0.5">
-                    Look for the <strong>Install App icon (🖥️ / 📥)</strong> in your browser's address bar (top right), or click <strong>⋮ (Menu) → &quot;Install {BRANDING.shortName}&quot;</strong>.
+                    Click the <strong>App icon (🖥️ / 📥)</strong> in your address bar (top right), or click <strong>⋮ (Menu) → &quot;Install / Open in {BRANDING.shortName}&quot;</strong>.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-brand-surface-tint border border-brand-border/60 flex items-start gap-2.5">
+                <Smartphone size={18} className="text-brand-accent shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold text-brand-text">On Android (Chrome):</p>
+                  <p className="text-brand-text-muted mt-0.5">
+                    Tap <strong>⋮ (Menu) → &quot;Install App&quot;</strong> or <strong>&quot;Add to Home screen&quot;</strong> to open in dedicated app window.
                   </p>
                 </div>
               </div>
@@ -120,16 +154,6 @@ export default function InstallAppButton({ className = '' }) {
                   <p className="font-bold text-brand-text">On iPhone / iPad (Safari):</p>
                   <p className="text-brand-text-muted mt-0.5">
                     Tap the <strong>Share button</strong> at the bottom of Safari, scroll down and select <strong>&quot;Add to Home Screen&quot;</strong>.
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-3 rounded-xl bg-brand-surface-tint border border-brand-border/60 flex items-start gap-2.5">
-                <Smartphone size={18} className="text-brand-accent shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-bold text-brand-text">On Android (Chrome):</p>
-                  <p className="text-brand-text-muted mt-0.5">
-                    Tap <strong>⋮ (Menu) → &quot;Install App&quot;</strong> or <strong>&quot;Add to Home screen&quot;</strong>.
                   </p>
                 </div>
               </div>

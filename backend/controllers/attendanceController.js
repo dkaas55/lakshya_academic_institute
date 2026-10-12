@@ -318,10 +318,51 @@ const getMyAttendanceHistory = async (req, res) => {
     const attendancePercentage =
       totalClasses > 0 ? Math.round((attendedCount / totalClasses) * 100) : 100;
 
+    // Per-batch statistics breakdown
+    const batchBreakdown = {};
+    studentBatches.forEach((b) => {
+      batchBreakdown[b] = {
+        batch: b,
+        totalClasses: 0,
+        present: 0,
+        late: 0,
+        absent: 0,
+        attendancePercentage: 100,
+      };
+    });
+
+    history.forEach((h) => {
+      const bKey = h.batch || "General";
+      if (!batchBreakdown[bKey]) {
+        batchBreakdown[bKey] = {
+          batch: bKey,
+          totalClasses: 0,
+          present: 0,
+          late: 0,
+          absent: 0,
+          attendancePercentage: 100,
+        };
+      }
+      batchBreakdown[bKey].totalClasses++;
+      if (h.status === "Present") batchBreakdown[bKey].present++;
+      else if (h.status === "Late") batchBreakdown[bKey].late++;
+      else if (h.status === "Absent") batchBreakdown[bKey].absent++;
+    });
+
+    Object.values(batchBreakdown).forEach((bStats) => {
+      if (bStats.totalClasses > 0) {
+        bStats.attendancePercentage = Math.round(
+          ((bStats.present + bStats.late) / bStats.totalClasses) * 100
+        );
+      }
+    });
+
     res.json({
       success: true,
       data: {
+        batches: studentBatches,
         summary: { totalClasses, present: presentCount, late: lateCount, absent: absentCount, attendancePercentage },
+        batchBreakdown,
         history,
       },
     });
