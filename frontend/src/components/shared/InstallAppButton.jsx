@@ -128,26 +128,19 @@ export default function InstallAppButton({ className = '' }) {
       }).catch(() => {})
     }
 
-    // 1. If native install prompt is ready (app not yet installed on this browser)
+    // 1. If native install prompt is ready, trigger it immediately
     if (deferredPrompt) {
       const installed = await handleNativeInstall()
       if (installed) return
     }
 
-    // 2. On Android: Trigger Android Chrome WebAPK intent directly
-    if (isAndroid) {
-      launchAndroidIntent()
+    // 2. On Desktop: If already installed, launch the standalone PWA window
+    if (isDesktop) {
+      launchDesktopApp()
       return
     }
 
-    // 3. On Desktop: Trigger Navigation Capturing directly into installed PWA
-    // (Bypasses browser popup window creation so it goes straight to the installed PWA)
-    if (isDesktop) {
-      const launched = launchDesktopApp()
-      if (launched) return
-    }
-
-    // 4. On iOS or fallback: Display clear instructions
+    // 3. On Mobile (Android / iOS): Show the tailored action sheet modal with step-by-step guidance
     setShowHelpModal(true)
   }
 
@@ -196,6 +189,17 @@ export default function InstallAppButton({ className = '' }) {
 
             {/* Quick Action Buttons */}
             <div className="space-y-2">
+              {deferredPrompt && (
+                <button
+                  type="button"
+                  onClick={handleNativeInstall}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-brand-primary text-brand-surface font-bold text-xs hover:opacity-90 active:scale-[0.99] transition-all cursor-pointer shadow-sm"
+                >
+                  <Download size={14} />
+                  <span>Install / Open App Now</span>
+                </button>
+              )}
+
               {isDesktop && (
                 <button
                   type="button"
@@ -203,29 +207,7 @@ export default function InstallAppButton({ className = '' }) {
                   className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-brand-primary text-brand-surface font-bold text-xs hover:opacity-90 active:scale-[0.99] transition-all cursor-pointer shadow-sm"
                 >
                   <ExternalLink size={14} />
-                  <span>Open Installed App</span>
-                </button>
-              )}
-
-              {isAndroid && (
-                <button
-                  type="button"
-                  onClick={launchAndroidIntent}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-brand-primary text-brand-surface font-bold text-xs hover:opacity-90 active:scale-[0.99] transition-all cursor-pointer shadow-sm"
-                >
-                  <Smartphone size={14} />
-                  <span>Launch Installed App</span>
-                </button>
-              )}
-
-              {deferredPrompt && (
-                <button
-                  type="button"
-                  onClick={handleNativeInstall}
-                  className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl bg-brand-surface-tint border border-brand-border text-brand-text font-bold text-xs hover:bg-brand-surface active:scale-[0.99] transition-all cursor-pointer"
-                >
-                  <Download size={14} className="text-brand-primary" />
-                  <span>Install App to Device</span>
+                  <span>Open Installed App Window</span>
                 </button>
               )}
             </div>
