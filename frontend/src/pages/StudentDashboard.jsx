@@ -1147,7 +1147,7 @@ function AttendanceSummaryCard({ attnData, onViewAll }) {
             { label: 'Absent',  value: absent,        color: 'text-rose-800 dark:text-rose-300', labelColor: 'text-rose-700 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-950/30 border-rose-100 dark:border-rose-900/50'     },
           ].map((s) => (
             <div key={s.label} className={`rounded-xl border px-3 py-2 ${s.bg}`}>
-              <p className={`text-[9px] font-semibold uppercase tracking-wide ${s.labelColor}`}>{s.label}</p>
+              <p className={`text-[10px] font-bold uppercase tracking-wider ${s.labelColor}`}>{s.label}</p>
               <p className={`text-lg font-bold ${s.color}`}>{s.value}</p>
             </div>
           ))}
@@ -1340,7 +1340,7 @@ function AttendanceHistoryPage({ attnData }) {
       {/* ── Per-Batch Breakdown Cards (Shown in 'All Batches' view) ────────── */}
       {selectedBatch === 'all' && availableBatches.length > 1 && attnData.batchBreakdown && (
         <section className="space-y-3">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-brand-text-muted/80">
+          <p className="text-xs font-bold uppercase tracking-wider text-brand-text-muted">
             Batch-wise Comparison
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -1366,7 +1366,7 @@ function AttendanceHistoryPage({ attnData }) {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <span className="text-[9px] uppercase font-bold text-brand-text-muted block">Batch</span>
+                      <span className="text-[10px] uppercase font-bold text-brand-text-muted block">Batch</span>
                       <h4 className="text-sm font-bold text-brand-text group-hover:text-brand-primary transition-colors">
                         {b}
                       </h4>
@@ -1375,22 +1375,22 @@ function AttendanceHistoryPage({ attnData }) {
                       {bData.totalClasses > 0 ? `${bPct}%` : 'No Classes'}
                     </span>
                   </div>
-                  <div className="grid grid-cols-4 gap-1.5 text-center text-[10px] pt-2 border-t border-brand-border/60">
-                    <div className="bg-brand-surface-tint rounded-lg py-1 px-1">
-                      <span className="text-brand-text-muted block text-[8px] uppercase">Total</span>
-                      <span className="font-bold text-brand-text">{bData.totalClasses}</span>
+                  <div className="grid grid-cols-4 gap-1.5 text-center pt-2.5 border-t border-brand-border/60">
+                    <div className="bg-brand-surface-tint rounded-xl py-1.5 px-1">
+                      <span className="text-brand-text-muted block text-[10px] uppercase font-bold tracking-wider">Total</span>
+                      <span className="text-sm font-black text-brand-text block mt-0.5">{bData.totalClasses}</span>
                     </div>
-                    <div className="bg-emerald-50/50 dark:bg-emerald-950/20 rounded-lg py-1 px-1">
-                      <span className="text-emerald-600 dark:text-emerald-400 block text-[8px] uppercase">Pres</span>
-                      <span className="font-bold text-emerald-700 dark:text-emerald-300">{bData.present}</span>
+                    <div className="bg-emerald-50/50 dark:bg-emerald-950/20 rounded-xl py-1.5 px-1">
+                      <span className="text-emerald-600 dark:text-emerald-400 block text-[10px] uppercase font-bold tracking-wider">Pres</span>
+                      <span className="text-sm font-black text-emerald-700 dark:text-emerald-300 block mt-0.5">{bData.present}</span>
                     </div>
-                    <div className="bg-amber-50/50 dark:bg-amber-950/20 rounded-lg py-1 px-1">
-                      <span className="text-amber-600 dark:text-amber-400 block text-[8px] uppercase">Late</span>
-                      <span className="font-bold text-amber-700 dark:text-amber-300">{bData.late}</span>
+                    <div className="bg-amber-50/50 dark:bg-amber-950/20 rounded-xl py-1.5 px-1">
+                      <span className="text-amber-600 dark:text-amber-400 block text-[10px] uppercase font-bold tracking-wider">Late</span>
+                      <span className="text-sm font-black text-amber-700 dark:text-amber-300 block mt-0.5">{bData.late}</span>
                     </div>
-                    <div className="bg-rose-50/50 dark:bg-rose-950/20 rounded-lg py-1 px-1">
-                      <span className="text-rose-600 dark:text-rose-400 block text-[8px] uppercase">Abs</span>
-                      <span className="font-bold text-rose-700 dark:text-rose-300">{bData.absent}</span>
+                    <div className="bg-rose-50/50 dark:bg-rose-950/20 rounded-xl py-1.5 px-1">
+                      <span className="text-rose-600 dark:text-rose-400 block text-[10px] uppercase font-bold tracking-wider">Abs</span>
+                      <span className="text-sm font-black text-rose-700 dark:text-rose-300 block mt-0.5">{bData.absent}</span>
                     </div>
                   </div>
                 </div>
@@ -1454,7 +1454,7 @@ function AttendanceHistoryPage({ attnData }) {
                 { label: 'Absent',        value: absent,       accent: 'text-rose-800 dark:text-rose-300', labelColor: 'text-rose-700 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-950/30 border-rose-100 dark:border-rose-900/50' },
               ].map((s) => (
                 <div key={s.label} className={`rounded-xl border px-4 py-3 ${s.bg}`}>
-                  <p className={`text-[9px] uppercase font-semibold tracking-wide ${s.labelColor}`}>{s.label}</p>
+                  <p className={`text-[10px] uppercase font-bold tracking-wider ${s.labelColor}`}>{s.label}</p>
                   <p className={`text-2xl font-bold mt-1 ${s.accent}`}>{s.value}</p>
                 </div>
               ))}
@@ -1608,7 +1608,7 @@ function AttendanceHistoryPage({ attnData }) {
               { label: 'Absent',   value: monthResult.absent,       bg: 'bg-rose-50 dark:bg-rose-950/30 border-rose-100 dark:border-rose-900/50', color: 'text-rose-800 dark:text-rose-300' },
             ].map((s) => (
               <div key={s.label} className={`rounded-xl border px-3 py-2 ${s.bg}`}>
-                <p className="text-[9px] uppercase font-semibold tracking-wide text-brand-text-muted">{s.label}</p>
+                <p className="text-[10px] uppercase font-bold tracking-wider text-brand-text-muted">{s.label}</p>
                 <p className={`text-lg font-bold mt-0.5 ${s.color}`}>{s.value}</p>
               </div>
             ))}

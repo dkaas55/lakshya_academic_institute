@@ -198,7 +198,7 @@ export default function StudentAttendanceDetailModal({ student, onClose }) {
                     { label: '%',       value: null,                                   bg: 'bg-brand-surface-tint border-brand-border', color: 'text-brand-text', isPct: true },
                   ].map((s) => (
                     <div key={s.label} className={`rounded-xl border px-3 py-2.5 ${s.bg}`}>
-                      <p className="text-[9px] uppercase font-semibold tracking-wide text-brand-text-muted">{s.label}</p>
+                      <p className="text-[10px] uppercase font-bold tracking-wider text-brand-text-muted">{s.label}</p>
                       {s.isPct ? (
                         <div className="mt-1"><PctBadge pct={data.sessionTotal?.attendancePercentage ?? null} /></div>
                       ) : (
@@ -290,7 +290,7 @@ export default function StudentAttendanceDetailModal({ student, onClose }) {
                       { label: 'Absent',   value: monthResult.absent,       bg: 'bg-rose-50 dark:bg-rose-950/30 border-rose-100 dark:border-rose-900/50', color: 'text-rose-800 dark:text-rose-300' },
                     ].map((s) => (
                       <div key={s.label} className={`rounded-xl border px-3 py-2 ${s.bg}`}>
-                        <p className="text-[9px] uppercase font-semibold tracking-wide text-brand-text-muted">{s.label}</p>
+                        <p className="text-[10px] uppercase font-bold tracking-wider text-brand-text-muted">{s.label}</p>
                         <p className={`text-lg font-bold mt-0.5 ${s.color}`}>{s.value}</p>
                       </div>
                     ))}

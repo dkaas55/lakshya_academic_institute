@@ -27,6 +27,28 @@
   "background_color": "#ffffff",
   "theme_color": "#1e3a8a",
   "display": "standalone",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui"
+  ],
+  "launch_handler": {
+    "client_mode": ["focus-existing", "auto"]
+  },
+  "handle_links": "preferred",
+  "protocol_handlers": [
+    {
+      "protocol": "web+lakshya",
+      "url": "/login?target=%s"
+    }
+  ],
+  "related_applications": [
+    {
+      "platform": "webapp",
+      "url": "/manifest.json",
+      "id": "/pwa-lakshya"
+    }
+  ],
   "orientation": "portrait-primary",
   "scope": "/"
 }

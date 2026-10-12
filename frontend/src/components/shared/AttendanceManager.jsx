@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import api from '../../lib/api'
 import StudentFilterBar from './StudentFilterBar'
 import StudentAttendanceDetailModal from './StudentAttendanceDetailModal'
+import AttendancePrintModal from './AttendancePrintModal'
 import useBatches from '../../hooks/useBatches'
 import { BRANDING } from '../../config/branding'
+import { Printer } from 'lucide-react'
 
 
 // ── Small helpers ─────────────────────────────────────────────────────────────
@@ -62,6 +64,8 @@ function AttendanceHistoryView({ allowedBatches }) {
   const [error,    setError]    = useState('')
   const [result,   setResult]   = useState(null)
   const [filtered, setFiltered] = useState([])
+  const [showPrintModal, setShowPrintModal] = useState(false)
+  const [activeFilterLabel, setActiveFilterLabel] = useState('All Attendance %')
 
   // ── Fetch students once on mount ────────────────────────────────────────────
   const fetchStudents = async () => {
@@ -129,13 +133,12 @@ function AttendanceHistoryView({ allowedBatches }) {
 
   // ── Batch report fetch ──────────────────────────────────────────────────────
   const fetchHistory = async () => {
-    if (!batch) return
     setLoading(true)
     setError('')
     setResult(null)
     setFiltered([])
     try {
-      const params = { batch }
+      const params = { batch: batch || 'all' }
       if (dateFrom) params.dateFrom = dateFrom
       if (dateTo)   params.dateTo   = dateTo
       const { data } = await api.get('/attendance/history', { params })
@@ -316,6 +319,7 @@ function AttendanceHistoryView({ allowedBatches }) {
               }}
               className="w-full rounded-xl border border-brand-border bg-brand-surface px-4 py-2.5 text-sm text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all"
             >
+              <option value="all">All Batches</option>
               {batches.map((b) => <option key={b} value={b}>{b}</option>)}
             </select>
           </div>
@@ -357,18 +361,50 @@ function AttendanceHistoryView({ allowedBatches }) {
 
       {result && (
         <div className="space-y-4 animate-fadeIn">
-          {/* Summary strip */}
-          <div className="flex items-center gap-3 flex-wrap text-[11px] text-brand-text-muted">
-            <span className="font-bold text-brand-text">{result.batch}</span>
-            <span>·</span>
-            <span>{result.totalClassDays} class day{result.totalClassDays !== 1 ? 's' : ''} recorded</span>
-            {result.dateFrom && <><span>·</span><span>From {result.dateFrom} to {result.dateTo || 'today'}</span></>}
+          {/* Summary strip & Print / Send Action Button */}
+          <div className="flex items-center justify-between gap-3 flex-wrap bg-brand-surface-tint p-4 rounded-2xl border border-brand-border">
+            <div className="flex items-center gap-2.5 flex-wrap text-xs text-brand-text-muted">
+              <span className="font-extrabold text-brand-text text-sm">
+                {result.batch === 'all' ? 'All Batches' : result.batch}
+              </span>
+              <span>·</span>
+              <span className="font-semibold text-brand-text">
+                {result.totalClassDays} class day{result.totalClassDays !== 1 ? 's' : ''} recorded
+              </span>
+              {result.dateFrom && (
+                <>
+                  <span>·</span>
+                  <span>From {result.dateFrom} to {result.dateTo || 'today'}</span>
+                </>
+              )}
+              <span>·</span>
+              <span className="font-bold text-brand-primary">
+                {filtered.length} student{filtered.length !== 1 ? 's' : ''} listed
+              </span>
+              {activeFilterLabel && activeFilterLabel !== 'All Attendance %' && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-brand-accent/10 text-brand-accent border border-brand-accent/20">
+                  {activeFilterLabel}
+                </span>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowPrintModal(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-primary text-brand-surface text-xs font-bold shadow-sm hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+              title="Print document or share via WhatsApp"
+            >
+              <Printer size={15} />
+              <span>Print / Send Report</span>
+            </button>
           </div>
 
-          {/* Student Filter Bar */}
+          {/* Student Filter Bar with Attendance % filter enabled */}
           <StudentFilterBar
             students={result.students || []}
             onFilterChange={setFiltered}
+            onAttendanceFilterChange={(key, label) => setActiveFilterLabel(label)}
+            showAttendanceFilter={true}
             accentColor="emerald"
           />
 
@@ -446,17 +482,36 @@ function AttendanceHistoryView({ allowedBatches }) {
               </table>
             </div>
             {filtered.length > 0 && (
-              <div className="px-4 py-3 border-t border-brand-border bg-brand-surface-tint">
+              <div className="px-4 py-3 border-t border-brand-border bg-brand-surface-tint flex items-center justify-between flex-wrap gap-2">
                 <span className="text-[11px] text-brand-text-muted">
                   {filtered.length} student{filtered.length !== 1 ? 's' : ''} ·&nbsp;
                   <span className="text-brand-primary font-bold">≥85% = Good</span>&nbsp;·&nbsp;
                   <span className="text-brand-gold font-bold">75–84% = Average</span>&nbsp;·&nbsp;
                   <span className="text-brand-accent font-bold">&lt;75% = Low</span>
                 </span>
+                <button
+                  type="button"
+                  onClick={() => setShowPrintModal(true)}
+                  className="text-xs font-bold text-brand-primary hover:underline cursor-pointer flex items-center gap-1"
+                >
+                  <Printer size={13} />
+                  <span>Print & Share filtered list ({filtered.length})</span>
+                </button>
               </div>
             )}
           </div>
         </div>
+      )}
+
+      {/* ── Attendance Print & Send Modal ───────────────────────────────────── */}
+      {showPrintModal && (
+        <AttendancePrintModal
+          isOpen={showPrintModal}
+          onClose={() => setShowPrintModal(false)}
+          reportData={result}
+          students={filtered}
+          activeFilterLabel={activeFilterLabel}
+        />
       )}
 
       {/* ── Student Attendance History Modal ────────────────────────────────── */}

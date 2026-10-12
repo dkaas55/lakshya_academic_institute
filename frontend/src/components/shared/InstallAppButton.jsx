@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ExternalLink, Smartphone, X, Monitor, Share } from 'lucide-react'
+import { ExternalLink, Smartphone, X, Monitor, Share, Download } from 'lucide-react'
 import { BRANDING } from '../../config/branding'
 
 export default function InstallAppButton({ className = '' }) {
@@ -7,13 +7,28 @@ export default function InstallAppButton({ className = '' }) {
   const [isStandalone, setIsStandalone] = useState(false)
   const [showHelpModal, setShowHelpModal] = useState(false)
 
-  useEffect(() => {
-    // Check if already running in standalone / installed PWA mode
-    const isApp =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      window.navigator.standalone === true
+  // Device detection
+  const isAndroid = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent || '')
+  const isIOS = typeof navigator !== 'undefined' && /iphone|ipad|ipod/i.test(navigator.userAgent || '')
+  const isDesktop = !isAndroid && !isIOS
 
-    if (isApp) {
+  useEffect(() => {
+    // Check if already running inside standalone installed PWA or app window
+    const checkIsStandalone = () => {
+      if (typeof window === 'undefined') return false
+      const urlParams = new URLSearchParams(window.location.search)
+      return (
+        window.matchMedia('(display-mode: standalone)').matches ||
+        window.matchMedia('(display-mode: fullscreen)').matches ||
+        window.matchMedia('(display-mode: minimal-ui)').matches ||
+        window.matchMedia('(display-mode: window-controls-overlay)').matches ||
+        window.navigator.standalone === true ||
+        window.name === 'LakshyaAppWindow' ||
+        urlParams.get('mode') === 'standalone'
+      )
+    }
+
+    if (checkIsStandalone()) {
       setIsStandalone(true)
       return
     }
@@ -38,51 +53,102 @@ export default function InstallAppButton({ className = '' }) {
     }
   }, [])
 
-  // Do not show button if already running inside the installed standalone app
+  // Do not render button if already running inside the installed app
   if (isStandalone) {
     return null
   }
 
+  // Opens the installed PWA on Desktop via Chrome Navigation Capturing
+  // (Uses semantic link without popup window features so Chrome routes directly to the installed PWA)
+  const launchDesktopApp = () => {
+    try {
+      const link = document.createElement('a')
+      link.href = window.location.href
+      link.target = '_blank'
+      link.rel = 'noopener'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      setShowHelpModal(false)
+      return true
+    } catch (err) {
+      console.warn('Desktop PWA launch failed:', err)
+      return false
+    }
+  }
+
+  // Launches the installed PWA on Android via intent
+  const launchAndroidIntent = () => {
+    try {
+      const cleanHostAndPath = window.location.href.replace(/^https?:\/\//, '')
+      const protocol = window.location.protocol.replace(':', '')
+      const fallbackUrl = encodeURIComponent(window.location.href)
+      const intentUrl = `intent://${cleanHostAndPath}#Intent;scheme=${protocol};package=com.android.chrome;S.browser_fallback_url=${fallbackUrl};end;`
+
+      const link = document.createElement('a')
+      link.href = intentUrl
+      link.rel = 'noopener'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      setShowHelpModal(false)
+      return true
+    } catch (err) {
+      console.warn('Android intent launch failed:', err)
+      return false
+    }
+  }
+
+  // Prompts native browser install
+  const handleNativeInstall = async () => {
+    if (!deferredPrompt) return false
+    try {
+      await deferredPrompt.prompt()
+      const choice = await deferredPrompt.userChoice
+      if (choice?.outcome === 'accepted') {
+        setDeferredPrompt(null)
+        setShowHelpModal(false)
+        return true
+      }
+    } catch (err) {
+      console.warn('Native install prompt failed:', err)
+    }
+    return false
+  }
+
+  // Main action handler for "Open in App" button
   const handleOpenInAppClick = async (e) => {
     e?.preventDefault?.()
     e?.stopPropagation?.()
 
-    // 1. Purge old caches in background so stale assets/manifests are removed
-    try {
-      if ('caches' in window) {
-        const cacheKeys = await caches.keys()
-        await Promise.all(
-          cacheKeys
-            .filter((key) => key !== 'app-cache-v7')
-            .map((key) => caches.delete(key))
-        )
-      }
-      if ('serviceWorker' in navigator) {
-        const regs = await navigator.serviceWorker.getRegistrations()
-        for (const reg of regs) {
-          await reg.update().catch(() => {})
-        }
-      }
-    } catch (err) {
-      console.warn('Cache purge notice:', err)
+    // Background service worker update check (non-blocking)
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then((regs) => {
+        regs.forEach((reg) => reg.update().catch(() => {}))
+      }).catch(() => {})
     }
 
-    // 2. Trigger native install/open prompt if available
+    // 1. If native install prompt is ready (app not yet installed on this browser)
     if (deferredPrompt) {
-      try {
-        await deferredPrompt.prompt()
-        const choice = await deferredPrompt.userChoice
-        console.log('App prompt result:', choice?.outcome)
-      } catch (err) {
-        console.warn('App prompt failed or unavailable:', err)
-        setShowHelpModal(true)
-      } finally {
-        setDeferredPrompt(null)
-      }
-    } else {
-      // If native prompt is not yet ready or browser requires manual install (iOS/Desktop)
-      setShowHelpModal(true)
+      const installed = await handleNativeInstall()
+      if (installed) return
     }
+
+    // 2. On Android: Trigger Android Chrome WebAPK intent directly
+    if (isAndroid) {
+      launchAndroidIntent()
+      return
+    }
+
+    // 3. On Desktop: Trigger Navigation Capturing directly into installed PWA
+    // (Bypasses browser popup window creation so it goes straight to the installed PWA)
+    if (isDesktop) {
+      const launched = launchDesktopApp()
+      if (launched) return
+    }
+
+    // 4. On iOS or fallback: Display clear instructions
+    setShowHelpModal(true)
   }
 
   return (
@@ -98,23 +164,24 @@ export default function InstallAppButton({ className = '' }) {
         <ExternalLink size={12} className="shrink-0 opacity-80 text-current" />
       </button>
 
-      {/* Fallback Open in App Help Modal */}
+      {/* Actionable Open / Install App Modal */}
       {showHelpModal && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn"
           onClick={() => setShowHelpModal(false)}
         >
-          <div 
-            className="bg-brand-surface rounded-2xl border border-brand-border p-6 shadow-2xl max-w-sm w-full space-y-4 text-left animate-fadeIn"
+          <div
+            className="bg-brand-surface rounded-2xl border border-brand-border p-6 shadow-2xl max-w-sm w-full space-y-4 text-left"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Modal Header */}
             <div className="flex items-center justify-between pb-3 border-b border-brand-border">
               <div className="flex items-center gap-2">
                 <img src={BRANDING.logoUrl} alt="Logo" className="w-6 h-6 object-contain" />
-                <h3 className="font-bold text-sm text-brand-text">Open in {BRANDING.shortName} App</h3>
+                <h3 className="font-bold text-sm text-brand-text">Open in {BRANDING.shortName}</h3>
               </div>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setShowHelpModal(false)}
                 className="text-brand-text-muted hover:text-brand-text p-1 rounded-lg hover:bg-brand-surface-tint cursor-pointer transition-colors"
                 aria-label="Close"
@@ -124,47 +191,91 @@ export default function InstallAppButton({ className = '' }) {
             </div>
 
             <p className="text-xs text-brand-text-muted leading-relaxed">
-              Experience the fast, full-screen app with offline support on your device:
+              Experience the fast, full-screen portal with offline capabilities on your device:
             </p>
 
-            <div className="space-y-3 text-xs text-brand-text">
-              <div className="p-3 rounded-xl bg-brand-surface-tint border border-brand-border/60 flex items-start gap-2.5">
-                <Monitor size={18} className="text-brand-accent shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-bold text-brand-text">On Desktop (Chrome / Edge):</p>
-                  <p className="text-brand-text-muted mt-0.5">
-                    Click the <strong>App icon (🖥️ / 📥)</strong> in your address bar (top right), or click <strong>⋮ (Menu) → &quot;Install / Open in {BRANDING.shortName}&quot;</strong>.
-                  </p>
-                </div>
-              </div>
+            {/* Quick Action Buttons */}
+            <div className="space-y-2">
+              {isDesktop && (
+                <button
+                  type="button"
+                  onClick={launchDesktopApp}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-brand-primary text-brand-surface font-bold text-xs hover:opacity-90 active:scale-[0.99] transition-all cursor-pointer shadow-sm"
+                >
+                  <ExternalLink size={14} />
+                  <span>Open Installed App</span>
+                </button>
+              )}
 
-              <div className="p-3 rounded-xl bg-brand-surface-tint border border-brand-border/60 flex items-start gap-2.5">
-                <Smartphone size={18} className="text-brand-accent shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-bold text-brand-text">On Android (Chrome):</p>
-                  <p className="text-brand-text-muted mt-0.5">
-                    Tap <strong>⋮ (Menu) → &quot;Install App&quot;</strong> or <strong>&quot;Add to Home screen&quot;</strong> to open in dedicated app window.
-                  </p>
-                </div>
-              </div>
+              {isAndroid && (
+                <button
+                  type="button"
+                  onClick={launchAndroidIntent}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-brand-primary text-brand-surface font-bold text-xs hover:opacity-90 active:scale-[0.99] transition-all cursor-pointer shadow-sm"
+                >
+                  <Smartphone size={14} />
+                  <span>Launch Installed App</span>
+                </button>
+              )}
 
-              <div className="p-3 rounded-xl bg-brand-surface-tint border border-brand-border/60 flex items-start gap-2.5">
-                <Share size={18} className="text-brand-accent shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-bold text-brand-text">On iPhone / iPad (Safari):</p>
-                  <p className="text-brand-text-muted mt-0.5">
-                    Tap the <strong>Share button</strong> at the bottom of Safari, scroll down and select <strong>&quot;Add to Home Screen&quot;</strong>.
-                  </p>
-                </div>
-              </div>
+              {deferredPrompt && (
+                <button
+                  type="button"
+                  onClick={handleNativeInstall}
+                  className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl bg-brand-surface-tint border border-brand-border text-brand-text font-bold text-xs hover:bg-brand-surface active:scale-[0.99] transition-all cursor-pointer"
+                >
+                  <Download size={14} className="text-brand-primary" />
+                  <span>Install App to Device</span>
+                </button>
+              )}
             </div>
 
+            {/* Device-Specific Instructions */}
+            <div className="space-y-2.5 text-xs text-brand-text pt-1">
+              {isDesktop && (
+                <div className="p-3 rounded-xl bg-brand-surface-tint border border-brand-border/60 flex items-start gap-2.5">
+                  <Monitor size={18} className="text-brand-accent shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-brand-text">Desktop (Chrome / Edge):</p>
+                    <p className="text-brand-text-muted mt-0.5 text-[11px] leading-relaxed">
+                      Click the <strong>App icon (🖥️ / 📥)</strong> in your address bar (top right), or click <strong>⋮ (Menu) → &quot;Install / Open in {BRANDING.shortName}&quot;</strong>.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {isAndroid && (
+                <div className="p-3 rounded-xl bg-brand-surface-tint border border-brand-border/60 flex items-start gap-2.5">
+                  <Smartphone size={18} className="text-brand-accent shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-brand-text">Android (Chrome):</p>
+                    <p className="text-brand-text-muted mt-0.5 text-[11px] leading-relaxed">
+                      Tap <strong>⋮ (Menu) → &quot;Install App&quot;</strong> or <strong>&quot;Add to Home screen&quot;</strong> to place the dedicated app on your phone.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {isIOS && (
+                <div className="p-3 rounded-xl bg-brand-surface-tint border border-brand-border/60 flex items-start gap-2.5">
+                  <Share size={18} className="text-brand-accent shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-brand-text">iPhone / iPad (Safari):</p>
+                    <p className="text-brand-text-muted mt-0.5 text-[11px] leading-relaxed">
+                      Tap the <strong>Share button (📤)</strong> at the bottom of Safari, scroll down and select <strong>&quot;Add to Home Screen (➕)&quot;</strong>.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Dismiss Button */}
             <button
               type="button"
               onClick={() => setShowHelpModal(false)}
-              className="w-full py-2.5 rounded-xl bg-brand-primary text-brand-surface font-bold text-xs hover:opacity-90 active:scale-[0.99] transition-all cursor-pointer text-center shadow-sm"
+              className="w-full py-2 rounded-xl bg-brand-surface-tint text-brand-text-muted hover:text-brand-text text-xs font-semibold hover:bg-brand-surface transition-colors cursor-pointer text-center"
             >
-              Got it!
+              Close
             </button>
           </div>
         </div>
@@ -172,4 +283,3 @@ export default function InstallAppButton({ className = '' }) {
     </>
   )
 }
-

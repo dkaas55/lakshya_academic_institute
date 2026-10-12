@@ -377,14 +377,12 @@ const getMyAttendanceHistory = async (req, res) => {
 const getAttendanceHistory = async (req, res) => {
   const { batch, dateFrom, dateTo } = req.query;
 
-  if (!batch) {
-    return res.status(400).json({ success: false, message: "batch query param is required" });
-  }
+  const isAllBatches = !batch || batch === 'all';
 
   // Teachers may only view their assigned batches
   if (req.user.role === "teacher") {
     const assigned = req.user.assignedBatches || [];
-    if (!assigned.includes(batch)) {
+    if (!isAllBatches && !assigned.includes(batch)) {
       return res.status(403).json({
         success: false,
         message: "You are not authorized to view attendance for this batch",
@@ -402,21 +400,35 @@ const getAttendanceHistory = async (req, res) => {
       dateFilter.$lte = end;
     }
 
-    const query = { batch };
+    const query = {};
+    if (!isAllBatches) {
+      query.batch = batch;
+    } else if (req.user.role === "teacher") {
+      const assigned = req.user.assignedBatches || [];
+      query.batch = { $in: assigned };
+    }
     if (Object.keys(dateFilter).length) query.date = dateFilter;
 
     // Fetch all attendance logs for this batch in the range
     const logs = await Attendance.find(query).sort({ date: -1 }).lean();
 
     // Fetch all students in this batch (excluding removed)
-    const students = await StudentProfile.find({
-      $or: [
+    let studentFilter = { status: { $ne: "removed" } };
+    if (!isAllBatches) {
+      studentFilter.$or = [
         { batches: batch },
         { batch: batch },
         { batch: { $regex: new RegExp(`(^|,\\s*)${batch.trim()}(,\\s*|$)`) } },
-      ],
-      status: { $ne: "removed" },
-    })
+      ];
+    } else if (req.user.role === "teacher") {
+      const assigned = req.user.assignedBatches || [];
+      studentFilter.$or = [
+        { batches: { $in: assigned } },
+        { batch: { $in: assigned } },
+      ];
+    }
+
+    const students = await StudentProfile.find(studentFilter)
       .populate("user", "name username")
       .lean();
 
@@ -431,6 +443,7 @@ const getAttendanceHistory = async (req, res) => {
         studentId: String(s._id),
         fullName: s.user?.name ?? "Unknown",
         username: s.user?.username ?? "",
+        rollNo: s.rollNo ?? "",
         studentClass: s.studentClass ?? "",
         batch: s.batch,
         batches: sBatches,

@@ -763,41 +763,41 @@ export default function ExamMarks({ allowedBatches = [], isAdmin = false }) {
                 >
                   <div>
                     <div className="flex items-start justify-between gap-1.5 mb-1.5">
-                      <span className="inline-flex items-center gap-1 rounded-full bg-brand-primary/10 text-brand-primary px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-brand-primary/10 text-brand-primary px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider">
                         {t.studentClass || t.batch}
                       </span>
-                      <span className="text-[10px] text-brand-text-muted shrink-0">{fmtDate(t.examDate)}</span>
+                      <span className="text-[11px] text-brand-text-muted shrink-0">{fmtDate(t.examDate)}</span>
                     </div>
 
-                    <h4 className="text-xs font-extrabold text-brand-text line-clamp-1 leading-snug">
+                    <h4 className="text-sm font-extrabold text-brand-text line-clamp-1 leading-snug">
                       {t.testName}
                     </h4>
 
-                    <p className="text-[10px] text-brand-text-muted mt-0.5 flex items-center gap-1">
+                    <p className="text-xs text-brand-text-muted mt-0.5 flex items-center gap-1">
                       {t.subject && <span className="font-semibold text-brand-text">{t.subject} · </span>}
                       <span>Batch: {t.batch}</span>
                     </p>
                   </div>
 
-                  <div className="mt-3 pt-3 border-t border-brand-border/60 space-y-2">
-                    <div className="grid grid-cols-3 gap-1 text-center bg-brand-surface-tint rounded-xl p-2">
+                  <div className="mt-3 pt-3 border-t border-brand-border/60 space-y-2.5">
+                    <div className="grid grid-cols-3 gap-1.5 text-center bg-brand-surface-tint rounded-xl p-2.5">
                       <div>
-                        <p className="text-[11px] font-extrabold text-brand-primary">{t.totalMarks}</p>
-                        <p className="text-[9px] text-brand-text-muted">Total</p>
+                        <p className="text-sm font-black text-brand-primary">{t.totalMarks}</p>
+                        <p className="text-[11px] font-semibold text-brand-text-muted mt-0.5">Total</p>
                       </div>
                       <div>
-                        <p className="text-[11px] font-extrabold text-emerald-600">
+                        <p className="text-sm font-black text-emerald-600">
                           {stats ? stats.highest : '—'}
                         </p>
-                        <p className="text-[9px] text-brand-text-muted">High</p>
+                        <p className="text-[11px] font-semibold text-brand-text-muted mt-0.5">High</p>
                       </div>
                       <div>
-                        <p className="text-[11px] font-extrabold text-amber-600">{stats ? stats.avg : '—'}</p>
-                        <p className="text-[9px] text-brand-text-muted">Avg</p>
+                        <p className="text-sm font-black text-amber-600">{stats ? stats.avg : '—'}</p>
+                        <p className="text-[11px] font-semibold text-brand-text-muted mt-0.5">Avg</p>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between text-[10px] text-brand-text-muted px-1">
+                    <div className="flex items-center justify-between text-xs text-brand-text-muted px-1">
                       <span>Marked:</span>
                       <span className="font-bold text-brand-text">
                         {markedCount}/{t.studentMarks.length} students
@@ -910,8 +910,8 @@ export default function ExamMarks({ allowedBatches = [], isAdmin = false }) {
                         { label: 'Pass Rate (≥33%)', value: `${stats.passed} of ${stats.appeared}`, color: 'text-brand-text' },
                       ].map(({ label, value, color }) => (
                         <div key={label} className="rounded-xl border border-brand-border bg-brand-surface-tint p-2.5 text-center">
-                          <p className={`text-xs font-extrabold ${color}`}>{value}</p>
-                          <p className="text-[9px] text-brand-text-muted mt-0.5">{label}</p>
+                          <p className={`text-sm font-extrabold ${color}`}>{value}</p>
+                          <p className="text-[11px] font-semibold text-brand-text-muted mt-0.5">{label}</p>
                         </div>
                       ))}
                     </div>
