@@ -13,6 +13,11 @@ export default function InstallAppButton({ className = '' }) {
   const isIOS = typeof navigator !== 'undefined' && /iphone|ipad|ipod/i.test(navigator.userAgent || '')
   const isDesktop = !isAndroid && !isIOS
 
+  const [isInstalled, setIsInstalled] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return localStorage.getItem('pwa_installed') === 'true'
+  })
+
   useEffect(() => {
     // Check if already running inside standalone installed PWA or app window
     const checkIsStandalone = () => {
@@ -25,13 +30,26 @@ export default function InstallAppButton({ className = '' }) {
         window.matchMedia('(display-mode: window-controls-overlay)').matches ||
         window.navigator.standalone === true ||
         window.name === 'LakshyaAppWindow' ||
+        urlParams.get('source') === 'pwa' ||
         urlParams.get('mode') === 'standalone'
       )
     }
 
     if (checkIsStandalone()) {
       setIsStandalone(true)
+      setIsInstalled(true)
+      localStorage.setItem('pwa_installed', 'true')
       return
+    }
+
+    // Modern Chrome API check if PWA is already installed on device
+    if (typeof navigator !== 'undefined' && 'getInstalledRelatedApps' in navigator) {
+      navigator.getInstalledRelatedApps().then((relatedApps) => {
+        if (Array.isArray(relatedApps) && relatedApps.length > 0) {
+          setIsInstalled(true)
+          localStorage.setItem('pwa_installed', 'true')
+        }
+      }).catch(() => {})
     }
 
     const handleBeforeInstall = (e) => {
@@ -41,6 +59,8 @@ export default function InstallAppButton({ className = '' }) {
 
     const handleAppInstalled = () => {
       setIsStandalone(true)
+      setIsInstalled(true)
+      localStorage.setItem('pwa_installed', 'true')
       setDeferredPrompt(null)
       setShowHelpModal(false)
     }
@@ -54,8 +74,8 @@ export default function InstallAppButton({ className = '' }) {
     }
   }, [])
 
-  // Do not render button if already running inside the installed app
-  if (isStandalone) {
+  // Hide button if app is already installed or running as standalone app
+  if (isStandalone || isInstalled) {
     return null
   }
 
@@ -107,6 +127,8 @@ export default function InstallAppButton({ className = '' }) {
       await deferredPrompt.prompt()
       const choice = await deferredPrompt.userChoice
       if (choice?.outcome === 'accepted') {
+        setIsInstalled(true)
+        localStorage.setItem('pwa_installed', 'true')
         setDeferredPrompt(null)
         setShowHelpModal(false)
         return true
