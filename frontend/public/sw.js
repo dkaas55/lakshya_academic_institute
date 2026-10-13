@@ -3,16 +3,16 @@
  * Network-first strategy for live updates with offline fallback
  */
 
-const CACHE_NAME = 'app-cache-v8';
+const CACHE_NAME = 'app-cache-v9';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
-  '/logo.png',
   '/manifest.json'
 ];
 
-// Install: pre-cache core shell
+// Install: immediately skip waiting and cache essential shell
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(PRECACHE_ASSETS).catch((err) => {
@@ -20,10 +20,9 @@ self.addEventListener('install', (event) => {
       });
     })
   );
-  self.skipWaiting();
 });
 
-// Activate: clean up all old caches
+// Activate: clean up all old caches and claim all clients immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {

@@ -62,17 +62,9 @@ export function initBranding() {
     const isInApp = /FBAN|FBAV|Instagram|WhatsApp|Line|Snapchat/i.test(ua);
 
     if (!isInApp) {
-      const registerSW = () => {
-        navigator.serviceWorker.register('/sw.js')
-          .then((reg) => console.log('PWA Service Worker registered:', reg.scope))
-          .catch((err) => console.warn('PWA Service Worker registration failed:', err));
-      };
-
-      if (document.readyState === 'complete' || document.readyState === 'interactive') {
-        registerSW();
-      } else {
-        window.addEventListener('load', registerSW);
-      }
+      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        .then((reg) => console.log('PWA Service Worker active:', reg.scope))
+        .catch((err) => console.warn('PWA Service Worker registration failed:', err));
     } else {
       console.log('In-app browser detected: Service Worker registration bypassed for stability.');
     }

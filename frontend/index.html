@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="%VITE_APP_LOGO_URL%" />
-    <link rel="manifest" href="/manifest.json?v=8" />
+    <link rel="manifest" href="/manifest.json?v=9" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
     <meta name="theme-color" content="#1e3a8a" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -18,6 +18,28 @@
     <meta property="og:type" content="website" />
     <link rel="apple-touch-icon" href="%VITE_APP_LOGO_URL%" />
     <title>%VITE_APP_NAME%</title>
+    <!-- Early PWA Prompt Capture & Immediate Service Worker Registration -->
+    <script>
+      (function() {
+        window.__pwaDeferredPrompt = null;
+        window.addEventListener('beforeinstallprompt', function(e) {
+          e.preventDefault();
+          window.__pwaDeferredPrompt = e;
+          window.dispatchEvent(new CustomEvent('pwa-prompt-available', { detail: e }));
+        });
+
+        if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+          var ua = navigator.userAgent || '';
+          var isInApp = /FBAN|FBAV|Instagram|WhatsApp|Line|Snapchat/i.test(ua);
+          if (!isInApp) {
+            navigator.serviceWorker.register('/sw.js', { scope: '/' })
+              .catch(function(err) {
+                console.warn('Early SW registration error:', err);
+              });
+          }
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

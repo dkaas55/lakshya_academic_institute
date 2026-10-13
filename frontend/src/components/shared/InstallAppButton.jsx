@@ -1,17 +1,24 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { ExternalLink, Smartphone, X, Monitor, Share, Download } from 'lucide-react'
+import { ExternalLink, Smartphone, X, Monitor, Share, Download, Loader2 } from 'lucide-react'
 import { BRANDING } from '../../config/branding'
 
 export default function InstallAppButton({ className = '' }) {
-  const [deferredPrompt, setDeferredPrompt] = useState(null)
+  const [deferredPrompt, setDeferredPrompt] = useState(() => {
+    if (typeof window !== 'undefined' && window.__pwaDeferredPrompt) {
+      return window.__pwaDeferredPrompt
+    }
+    return null
+  })
   const [isStandalone, setIsStandalone] = useState(false)
   const [showHelpModal, setShowHelpModal] = useState(false)
+  const [isWaitingPrompt, setIsWaitingPrompt] = useState(false)
 
-  // Device detection
+  // Device & browser detection
   const isAndroid = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent || '')
   const isIOS = typeof navigator !== 'undefined' && /iphone|ipad|ipod/i.test(navigator.userAgent || '')
   const isDesktop = !isAndroid && !isIOS
+  const isInApp = typeof navigator !== 'undefined' && /FBAN|FBAV|Instagram|WhatsApp|Line|Snapchat/i.test(navigator.userAgent || '')
 
   const [isInstalled, setIsInstalled] = useState(() => {
     if (typeof window === 'undefined') return false
@@ -52,9 +59,22 @@ export default function InstallAppButton({ className = '' }) {
       }).catch(() => {})
     }
 
+    // Capture prompt if already set on window
+    if (typeof window !== 'undefined' && window.__pwaDeferredPrompt) {
+      setDeferredPrompt(window.__pwaDeferredPrompt)
+    }
+
     const handleBeforeInstall = (e) => {
       e.preventDefault()
+      window.__pwaDeferredPrompt = e
       setDeferredPrompt(e)
+    }
+
+    const handlePromptReady = (e) => {
+      const p = e.detail || window.__pwaDeferredPrompt
+      if (p) {
+        setDeferredPrompt(p)
+      }
     }
 
     const handleAppInstalled = () => {
@@ -62,25 +82,27 @@ export default function InstallAppButton({ className = '' }) {
       setIsInstalled(true)
       localStorage.setItem('pwa_installed', 'true')
       setDeferredPrompt(null)
+      if (typeof window !== 'undefined') window.__pwaDeferredPrompt = null
       setShowHelpModal(false)
     }
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstall)
+    window.addEventListener('pwa-prompt-available', handlePromptReady)
     window.addEventListener('appinstalled', handleAppInstalled)
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstall)
+      window.removeEventListener('pwa-prompt-available', handlePromptReady)
       window.removeEventListener('appinstalled', handleAppInstalled)
     }
   }, [])
 
-  // Hide button if app is already installed or running as standalone app
+  // Hide button if app is already running in standalone mode or recorded installed
   if (isStandalone || isInstalled) {
     return null
   }
 
   // Opens the installed PWA on Desktop via Chrome Navigation Capturing
-  // (Uses semantic link without popup window features so Chrome routes directly to the installed PWA)
   const launchDesktopApp = () => {
     try {
       const link = document.createElement('a')
@@ -98,7 +120,7 @@ export default function InstallAppButton({ className = '' }) {
     }
   }
 
-  // Launches the installed PWA on Android via intent
+  // Launches the installed PWA on Android via intent (escapes in-app browser or routes to Chrome/PWA)
   const launchAndroidIntent = () => {
     try {
       const cleanHostAndPath = window.location.href.replace(/^https?:\/\//, '')
@@ -121,15 +143,17 @@ export default function InstallAppButton({ className = '' }) {
   }
 
   // Prompts native browser install
-  const handleNativeInstall = async () => {
-    if (!deferredPrompt) return false
+  const handleNativeInstall = async (promptObj) => {
+    const promptToUse = promptObj || deferredPrompt || (typeof window !== 'undefined' ? window.__pwaDeferredPrompt : null)
+    if (!promptToUse) return false
     try {
-      await deferredPrompt.prompt()
-      const choice = await deferredPrompt.userChoice
+      await promptToUse.prompt()
+      const choice = await promptToUse.userChoice
       if (choice?.outcome === 'accepted') {
         setIsInstalled(true)
         localStorage.setItem('pwa_installed', 'true')
         setDeferredPrompt(null)
+        if (typeof window !== 'undefined') window.__pwaDeferredPrompt = null
         setShowHelpModal(false)
         return true
       }
@@ -140,39 +164,109 @@ export default function InstallAppButton({ className = '' }) {
   }
 
   // Main action handler for "Open in App" button
-  const handleOpenInAppClick = (e) => {
+  const handleOpenInAppClick = async (e) => {
     if (e) {
       e.preventDefault()
       e.stopPropagation()
     }
 
-    // 1. If native install prompt is ready (Android Chrome), fire it
-    if (deferredPrompt) {
-      handleNativeInstall()
+    // 0. If in in-app browser on Android (e.g. WhatsApp / Instagram link), launch Chrome directly
+    if (isInApp && isAndroid) {
+      launchAndroidIntent()
       return
     }
 
-    // 2. On Desktop: If already installed, launch standalone window
+    // 1. If native install prompt is already available, trigger immediately
+    const activePrompt = deferredPrompt || (typeof window !== 'undefined' ? window.__pwaDeferredPrompt : null)
+    if (activePrompt) {
+      await handleNativeInstall(activePrompt)
+      return
+    }
+
+    // 2. On Desktop: Launch app window
     if (isDesktop) {
       launchDesktopApp()
       return
     }
 
-    // 3. On Mobile (Android / iOS): Open action sheet modal
+    // 3. On Mobile (Android Chrome):
+    // Chrome evaluates PWA installability shortly after initial load.
+    // Instead of immediately displaying the steps modal, wait seamlessly (up to 2.2s)
+    // for beforeinstallprompt / Service Worker activation!
+    setIsWaitingPrompt(true)
+    let promptArrived = null
+
+    try {
+      promptArrived = await new Promise((resolve) => {
+        let settled = false
+        const timer = setTimeout(() => {
+          if (!settled) {
+            settled = true
+            cleanup()
+            resolve(null)
+          }
+        }, 2200)
+
+        const onEvent = (ev) => {
+          if (!settled) {
+            settled = true
+            clearTimeout(timer)
+            cleanup()
+            resolve(ev.detail || ev || window.__pwaDeferredPrompt)
+          }
+        }
+
+        const cleanup = () => {
+          window.removeEventListener('pwa-prompt-available', onEvent)
+          window.removeEventListener('beforeinstallprompt', onEvent)
+        }
+
+        window.addEventListener('pwa-prompt-available', onEvent, { once: true })
+        window.addEventListener('beforeinstallprompt', onEvent, { once: true })
+
+        if (typeof window !== 'undefined' && window.__pwaDeferredPrompt) {
+          settled = true
+          clearTimeout(timer)
+          cleanup()
+          resolve(window.__pwaDeferredPrompt)
+        }
+      })
+    } catch {
+      // ignore
+    } finally {
+      setIsWaitingPrompt(false)
+    }
+
+    if (promptArrived) {
+      setDeferredPrompt(promptArrived)
+      if (typeof window !== 'undefined') window.__pwaDeferredPrompt = promptArrived
+      await handleNativeInstall(promptArrived)
+      return
+    }
+
+    // 4. Fallback: If device doesn't support beforeinstallprompt (e.g. iOS Safari) or prompt timed out,
+    // show the modal with clear instructions and 1-tap actions.
     setShowHelpModal(true)
   }
+
+  const promptReady = !!(deferredPrompt || (typeof window !== 'undefined' && window.__pwaDeferredPrompt))
 
   return (
     <>
       <button
         type="button"
+        disabled={isWaitingPrompt}
         onClick={handleOpenInAppClick}
         title={`Open ${BRANDING.shortName} in dedicated App mode`}
-        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-brand-primary text-brand-surface border border-transparent dark:border-brand-border/60 shadow-sm hover:opacity-90 active:scale-95 transition-all cursor-pointer select-none ${className}`}
+        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-brand-primary text-brand-surface border border-transparent dark:border-brand-border/60 shadow-sm hover:opacity-90 active:scale-95 transition-all cursor-pointer select-none disabled:opacity-80 ${className}`}
       >
-        <Smartphone size={14} className="shrink-0 text-current" />
-        <span>Open in App</span>
-        <ExternalLink size={12} className="shrink-0 opacity-80 text-current" />
+        {isWaitingPrompt ? (
+          <Loader2 size={14} className="shrink-0 text-current animate-spin" />
+        ) : (
+          <Smartphone size={14} className="shrink-0 text-current" />
+        )}
+        <span>{isWaitingPrompt ? 'Opening App…' : 'Open in App'}</span>
+        {!isWaitingPrompt && <ExternalLink size={12} className="shrink-0 opacity-80 text-current" />}
       </button>
 
       {/* Actionable Open / Install App Modal mounted to document.body */}
@@ -207,14 +301,25 @@ export default function InstallAppButton({ className = '' }) {
 
             {/* Quick Action Buttons */}
             <div className="space-y-2">
-              {deferredPrompt && (
+              {promptReady && (
                 <button
                   type="button"
-                  onClick={handleNativeInstall}
+                  onClick={() => handleNativeInstall()}
                   className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-brand-primary text-brand-surface font-bold text-xs hover:opacity-90 active:scale-[0.99] transition-all cursor-pointer shadow-sm"
                 >
                   <Download size={14} />
-                  <span>Install / Open App Now</span>
+                  <span>Download / Install App Now</span>
+                </button>
+              )}
+
+              {isAndroid && !promptReady && (
+                <button
+                  type="button"
+                  onClick={launchAndroidIntent}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-brand-primary text-brand-surface font-bold text-xs hover:opacity-90 active:scale-[0.99] transition-all cursor-pointer shadow-sm"
+                >
+                  <ExternalLink size={14} />
+                  <span>Open directly in Chrome</span>
                 </button>
               )}
 
@@ -232,25 +337,13 @@ export default function InstallAppButton({ className = '' }) {
 
             {/* Device-Specific Instructions */}
             <div className="space-y-2.5 text-xs text-brand-text pt-1">
-              {isDesktop && (
-                <div className="p-3 rounded-xl bg-brand-surface-tint border border-brand-border/60 flex items-start gap-2.5">
-                  <Monitor size={18} className="text-brand-accent shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-bold text-brand-text">Desktop (Chrome / Edge):</p>
-                    <p className="text-brand-text-muted mt-0.5 text-[11px] leading-relaxed">
-                      Click the <strong>App icon (🖥️ / 📥)</strong> in your address bar (top right), or click <strong>⋮ (Menu) → &quot;Install / Open in {BRANDING.shortName}&quot;</strong>.
-                    </p>
-                  </div>
-                </div>
-              )}
-
               {isAndroid && (
                 <div className="p-3 rounded-xl bg-brand-surface-tint border border-brand-border/60 flex items-start gap-2.5">
                   <Smartphone size={18} className="text-brand-accent shrink-0 mt-0.5" />
                   <div>
                     <p className="font-bold text-brand-text">Android (Chrome):</p>
                     <p className="text-brand-text-muted mt-0.5 text-[11px] leading-relaxed">
-                      Tap <strong>⋮ (Menu) → &quot;Install App&quot;</strong> or <strong>&quot;Add to Home screen&quot;</strong> to place the dedicated app on your phone.
+                      Tap <strong>⋮ (Menu) → &quot;Install App&quot;</strong> or <strong>&quot;Add to Home screen&quot;</strong> to place the dedicated app icon on your phone.
                     </p>
                   </div>
                 </div>
@@ -263,6 +356,18 @@ export default function InstallAppButton({ className = '' }) {
                     <p className="font-bold text-brand-text">iPhone / iPad (Safari):</p>
                     <p className="text-brand-text-muted mt-0.5 text-[11px] leading-relaxed">
                       Tap the <strong>Share button (📤)</strong> at the bottom of Safari, scroll down and select <strong>&quot;Add to Home Screen (➕)&quot;</strong>.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {isDesktop && (
+                <div className="p-3 rounded-xl bg-brand-surface-tint border border-brand-border/60 flex items-start gap-2.5">
+                  <Monitor size={18} className="text-brand-accent shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-brand-text">Desktop (Chrome / Edge):</p>
+                    <p className="text-brand-text-muted mt-0.5 text-[11px] leading-relaxed">
+                      Click the <strong>App icon (🖥️ / 📥)</strong> in your address bar (top right), or click <strong>⋮ (Menu) → &quot;Install / Open in {BRANDING.shortName}&quot;</strong>.
                     </p>
                   </div>
                 </div>
