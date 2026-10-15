@@ -5,6 +5,7 @@ const Test = require("../models/Test");
 const ExamResult = require("../models/ExamResult");
 const Batch = require("../models/Batch");
 const { getFeeOverview } = require("../utils/feeStatus");
+const { isClassMatch } = require("../utils/classMatcher");
 
 const getStudentDashboard = async (req, res) => {
   // Any authenticated user who is a student can access their own dashboard
@@ -86,9 +87,18 @@ const getStudentDashboard = async (req, res) => {
       examConditions.push({ "studentMarks.studentRollNo": profile.rollNo });
     }
     if (studentBatches.length > 0) {
+      const allowedClasses = ["", "All", "All Classes", null];
+      if (profile.studentClass) {
+        allowedClasses.push(profile.studentClass);
+        const classNumMatch = profile.studentClass.match(/^(?:Class\s*)?(\d+)/i);
+        if (classNumMatch) {
+          allowedClasses.push(`Class ${classNumMatch[1]}`);
+          allowedClasses.push(`${classNumMatch[1]}th`);
+        }
+      }
       examConditions.push({
         batch: { $in: studentBatches },
-        ...(profile.studentClass ? { studentClass: { $in: [profile.studentClass, "", "All", "All Classes", null] } } : {}),
+        studentClass: { $in: allowedClasses },
       });
     }
 
@@ -99,12 +109,7 @@ const getStudentDashboard = async (req, res) => {
     const instituteExams = [];
     for (const exam of allExams) {
       // If exam is specified for a specific class, skip exams meant for a different class
-      if (
-        exam.studentClass &&
-        profile.studentClass &&
-        !["all", "all classes"].includes(exam.studentClass.trim().toLowerCase()) &&
-        exam.studentClass.trim().toLowerCase() !== profile.studentClass.trim().toLowerCase()
-      ) {
+      if (!isClassMatch(exam.studentClass, profile.studentClass)) {
         continue;
       }
 
@@ -118,6 +123,26 @@ const getStudentDashboard = async (req, res) => {
             sm.studentRollNo.trim().toUpperCase() === profile.rollNo.trim().toUpperCase())
       );
 
+      const allMarks = Array.isArray(exam.studentMarks) ? exam.studentMarks : [];
+      const appearedMarks = allMarks
+        .filter((sm) => !sm.isAbsent && sm.marksObtained !== null && sm.marksObtained !== undefined)
+        .map((sm) => Number(sm.marksObtained))
+        .sort((a, b) => b - a);
+
+      const totalAppeared = appearedMarks.length;
+      const totalStudents = allMarks.length;
+      const highestMarks = totalAppeared > 0 ? Math.max(...appearedMarks) : null;
+      const lowestMarks = totalAppeared > 0 ? Math.min(...appearedMarks) : null;
+      const averageMarks =
+        totalAppeared > 0
+          ? Math.round((appearedMarks.reduce((a, b) => a + b, 0) / totalAppeared) * 10) / 10
+          : null;
+
+      let rank = null;
+      if (myMark && !myMark.isAbsent && myMark.marksObtained !== null && totalAppeared > 0) {
+        rank = appearedMarks.filter((score) => score > Number(myMark.marksObtained)).length + 1;
+      }
+
       if (myMark && (myMark.marksObtained !== null || myMark.isAbsent)) {
         instituteExams.push({
           id: exam._id,
@@ -128,7 +153,52 @@ const getStudentDashboard = async (req, res) => {
           totalMarks: exam.totalMarks,
           examDate: exam.examDate,
           marksObtained: myMark.marksObtained,
-          isAbsent: myMark.isAbsent,
+          isAbsent: !!myMark.isAbsent,
+          isPending: false,
+          rank,
+          highestMarks,
+          averageMarks,
+          lowestMarks,
+          totalAppeared,
+          totalStudents,
+        });
+      } else if (myMark && myMark.marksObtained === null && !myMark.isAbsent) {
+        instituteExams.push({
+          id: exam._id,
+          testName: exam.testName,
+          subject: exam.subject,
+          batch: exam.batch,
+          studentClass: exam.studentClass,
+          totalMarks: exam.totalMarks,
+          examDate: exam.examDate,
+          marksObtained: null,
+          isAbsent: false,
+          isPending: true,
+          rank: null,
+          highestMarks,
+          averageMarks,
+          lowestMarks,
+          totalAppeared,
+          totalStudents,
+        });
+      } else if (studentBatches.includes(exam.batch)) {
+        instituteExams.push({
+          id: exam._id,
+          testName: exam.testName,
+          subject: exam.subject,
+          batch: exam.batch,
+          studentClass: exam.studentClass,
+          totalMarks: exam.totalMarks,
+          examDate: exam.examDate,
+          marksObtained: null,
+          isAbsent: false,
+          isPending: true,
+          rank: null,
+          highestMarks,
+          averageMarks,
+          lowestMarks,
+          totalAppeared,
+          totalStudents,
         });
       }
     }

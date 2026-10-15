@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import api from '../../lib/api'
 import useBatches from '../../hooks/useBatches'
 import {
@@ -21,13 +21,27 @@ import {
 
 const CLASS_OPTIONS = [
   'All Classes',
+  'Class 1',
+  'Class 2',
+  'Class 3',
+  'Class 4',
+  'Class 5',
   'Class 6',
   'Class 7',
   'Class 8',
   'Class 9',
   'Class 10',
   'Class 11',
+  'Class 11 (Science)',
+  'Class 11 (Commerce)',
+  'Class 11 (Arts)',
   'Class 12',
+  'Class 12 (Science)',
+  'Class 12 (Commerce)',
+  'Class 12 (Arts)',
+  'Competitive Prep',
+  'Foundation',
+  'Other',
 ]
 
 function fmtDate(d) {
@@ -88,6 +102,17 @@ export default function ExamMarks({ allowedBatches = [], isAdmin = false }) {
   const [loadingStudents, setLoadingStudents] = useState(false)
   const [formErr, setFormErr] = useState('')
   const [creating, setCreating] = useState(false)
+
+  const availableClassOptions = useMemo(() => {
+    const list = CLASS_OPTIONS.filter((c) => c !== 'All Classes')
+    const custom = []
+    exams.forEach((e) => {
+      if (e.studentClass && !['All', 'All Classes'].includes(e.studentClass) && !list.includes(e.studentClass)) {
+        custom.push(e.studentClass)
+      }
+    })
+    return [...list, ...custom]
+  }, [exams])
 
   // Load all exams
   const loadExams = useCallback(async () => {
@@ -448,7 +473,7 @@ export default function ExamMarks({ allowedBatches = [], isAdmin = false }) {
                   className="w-full rounded-xl border border-brand-border bg-brand-surface-tint px-3 py-2 text-xs font-semibold text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-primary cursor-pointer"
                 >
                   <option value="">All Classes in Batch</option>
-                  {CLASS_OPTIONS.filter((c) => c !== 'All Classes').map((c) => (
+                  {availableClassOptions.map((c) => (
                     <option key={c} value={c}>
                       {c}
                     </option>

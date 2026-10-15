@@ -1,6 +1,7 @@
 require("../models/User");
 const ExamResult = require("../models/ExamResult");
 const StudentProfile = require("../models/StudentProfile");
+const { buildClassRegex } = require("../utils/classMatcher");
 
 // ── GET /api/exam-results ────────────────────────────────────────────────────
 const getExamResults = async (req, res) => {
@@ -96,8 +97,9 @@ const createExamResult = async (req, res) => {
         ],
         status: { $ne: "removed" },
       };
-      if (studentClass?.trim() && !["All", "All Classes"].includes(studentClass.trim())) {
-        query.studentClass = studentClass.trim();
+      const classRegex = buildClassRegex(studentClass);
+      if (classRegex) {
+        query.studentClass = { $regex: classRegex };
       }
 
       const profiles = await StudentProfile.find(query)
@@ -232,8 +234,9 @@ const getStudentsByBatch = async (req, res) => {
       ],
       status: { $ne: "removed" },
     };
-    if (studentClass && studentClass.trim() && !["All", "All Classes"].includes(studentClass.trim())) {
-      query.studentClass = studentClass.trim();
+    const classRegex = buildClassRegex(studentClass);
+    if (classRegex) {
+      query.studentClass = { $regex: classRegex };
     }
 
     const profiles = await StudentProfile.find(query)

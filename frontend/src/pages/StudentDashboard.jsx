@@ -5,6 +5,7 @@ import { clearToken, clearRole } from '../lib/auth'
 import SettingsModal from '../components/shared/SettingsModal'
 import { BRANDING } from '../config/branding'
 import InstallAppButton from '../components/shared/InstallAppButton'
+import StudentResults from '../components/student/StudentResults'
 import {
   LayoutDashboard,
   CalendarCheck,
@@ -20,6 +21,7 @@ import {
   Award,
   Sparkles,
   Clock,
+  ArrowRight,
 } from 'lucide-react'
 
 
@@ -94,7 +96,7 @@ const TABS = [
   { id: 'overview',    label: 'Overview',       Icon: LayoutDashboard },
   { id: 'attendance',  label: 'Attendance',     Icon: CalendarCheck },
   { id: 'materials',   label: 'Materials',      Icon: BookOpen },
-  { id: 'tests',       label: 'Practice Tests', Icon: ClipboardList },
+  { id: 'results',     label: 'Result',         Icon: Award },
   { id: 'payments',    label: 'Payments',       Icon: IndianRupee },
 ]
 
@@ -307,6 +309,7 @@ function StudentFeeDueCard({ fee, onViewLedger }) {
 export default function StudentDashboard() {
   const navigate = useNavigate()
   const [activeTab, setActiveTab]   = useState('overview')
+  const [materialSubTab, setMaterialSubTab] = useState('vault') // 'vault' | 'practice'
   const [dashData, setDashData]     = useState(null)
   const [attnData, setAttnData]     = useState(null)
   const [loading, setLoading]       = useState(true)
@@ -535,7 +538,10 @@ export default function StudentDashboard() {
                       <h2 className="text-base font-bold text-brand-text">Recent Materials</h2>
                       <button
                         type="button"
-                        onClick={() => setActiveTab('materials')}
+                        onClick={() => {
+                          setActiveTab('materials')
+                          setMaterialSubTab('vault')
+                        }}
                         className="text-xs font-semibold text-brand-primary hover:text-brand-primary"
                       >
                         View all →
@@ -550,10 +556,19 @@ export default function StudentDashboard() {
                 )}
 
                 {/* ── MY PROGRESS (Comparing last 2 test marks + compliment) ── */}
-                <MyProgressCard exams={dashData?.instituteExams || []} />
+                <MyProgressCard
+                  exams={dashData?.instituteExams || []}
+                  onViewAllResults={() => setActiveTab('results')}
+                />
 
                 {/* ── PRACTICE TESTS BLOCK (Below My Progress) ── */}
-                <PracticeTestsPreviewBlock tests={tests} onViewAll={() => setActiveTab('tests')} />
+                <PracticeTestsPreviewBlock
+                  tests={tests}
+                  onViewAll={() => {
+                    setActiveTab('materials')
+                    setMaterialSubTab('practice')
+                  }}
+                />
 
                 <AttendanceSummaryCard attnData={attnData} onViewAll={() => setActiveTab('attendance')} />
               </div>
@@ -564,14 +579,73 @@ export default function StudentDashboard() {
               <AttendanceHistoryPage attnData={attnData} />
             )}
 
-            {/* ── MATERIALS TAB ──────────────────────────────────────────── */}
+            {/* ── MATERIALS TAB (Study Vault & Practice Test) ────────────── */}
             {activeTab === 'materials' && (
-              <StudyVault materials={materials} />
+              <section className="flex flex-col gap-6">
+                {/* Two Sub-Options: Study Vault & Practice Test */}
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-brand-border pb-3">
+                  <div className="flex items-center gap-1.5 p-1 rounded-xl bg-brand-surface-tint border border-brand-border">
+                    <button
+                      type="button"
+                      onClick={() => setMaterialSubTab('vault')}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all ${
+                        materialSubTab === 'vault'
+                          ? 'bg-brand-primary text-brand-surface shadow-xs font-black'
+                          : 'text-brand-text-muted hover:text-brand-text hover:bg-brand-surface'
+                      }`}
+                    >
+                      <BookOpen size={16} />
+                      <span>Study Vault</span>
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                          materialSubTab === 'vault'
+                            ? 'bg-brand-surface/20 text-brand-surface'
+                            : 'bg-brand-surface text-brand-text-muted border border-brand-border'
+                        }`}
+                      >
+                        {materials.length}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setMaterialSubTab('practice')}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all ${
+                        materialSubTab === 'practice'
+                          ? 'bg-brand-primary text-brand-surface shadow-xs font-black'
+                          : 'text-brand-text-muted hover:text-brand-text hover:bg-brand-surface'
+                      }`}
+                    >
+                      <ClipboardList size={16} />
+                      <span>Practice Test</span>
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                          materialSubTab === 'practice'
+                            ? 'bg-brand-surface/20 text-brand-surface'
+                            : 'bg-brand-surface text-brand-text-muted border border-brand-border'
+                        }`}
+                      >
+                        {tests.length}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Sub-tab view */}
+                {materialSubTab === 'vault' ? (
+                  <StudyVault materials={materials} />
+                ) : (
+                  <PracticeTests tests={tests} />
+                )}
+              </section>
             )}
 
-            {/* ── PRACTICE TESTS TAB ───────────────────────────────────────── */}
-            {activeTab === 'tests' && (
-              <PracticeTests tests={tests} />
+            {/* ── RESULT TAB ─────────────────────────────────────────────── */}
+            {activeTab === 'results' && (
+              <StudentResults
+                exams={dashData?.instituteExams || []}
+                student={student}
+              />
             )}
 
             {/* ── PAYMENTS TAB ───────────────────────────────────────────── */}
@@ -794,9 +868,10 @@ function getTestProgressCompliment(latest, previous) {
   }
 }
 
-function MyProgressCard({ exams = [] }) {
-  const latest = exams[0] || null
-  const previous = exams[1] || null
+function MyProgressCard({ exams = [], onViewAllResults }) {
+  const evaluatedExams = exams.filter((e) => !e.isPending && (e.isAbsent || e.marksObtained !== null))
+  const latest = evaluatedExams[0] || null
+  const previous = evaluatedExams[1] || null
 
   const compliment = getTestProgressCompliment(latest, previous)
 
@@ -826,26 +901,39 @@ function MyProgressCard({ exams = [] }) {
           </h2>
         </div>
 
-        {diff !== null && (
-          <div className="flex items-center gap-1.5 self-start sm:self-auto">
-            {diff > 0 ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 text-emerald-600 px-3.5 py-1 text-sm font-extrabold border border-emerald-500/20">
-                <TrendingUp size={16} />
-                +{diff}% Improvement
-              </span>
-            ) : diff < 0 ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 text-amber-600 px-3.5 py-1 text-sm font-extrabold border border-amber-500/20">
-                <TrendingDown size={16} />
-                {diff}% Change
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-primary/10 text-brand-primary px-3.5 py-1 text-sm font-extrabold border border-brand-primary/20">
-                <Minus size={16} />
-                Consistent (0%)
-              </span>
-            )}
-          </div>
-        )}
+        <div className="flex items-center gap-3 self-start sm:self-auto">
+          {diff !== null && (
+            <div className="flex items-center gap-1.5">
+              {diff > 0 ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 text-emerald-600 px-3.5 py-1 text-sm font-extrabold border border-emerald-500/20">
+                  <TrendingUp size={16} />
+                  +{diff}% Improvement
+                </span>
+              ) : diff < 0 ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 text-amber-600 px-3.5 py-1 text-sm font-extrabold border border-amber-500/20">
+                  <TrendingDown size={16} />
+                  {diff}% Change
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-primary/10 text-brand-primary px-3.5 py-1 text-sm font-extrabold border border-brand-primary/20">
+                  <Minus size={16} />
+                  Consistent (0%)
+                </span>
+              )}
+            </div>
+          )}
+
+          {onViewAllResults && exams.length > 0 && (
+            <button
+              type="button"
+              onClick={onViewAllResults}
+              className="inline-flex items-center gap-1 text-xs font-bold text-brand-primary hover:underline cursor-pointer"
+            >
+              <span>View Results</span>
+              <ArrowRight size={14} />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Tests Comparison Grid */}
