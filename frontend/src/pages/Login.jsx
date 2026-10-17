@@ -192,7 +192,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl bg-brand-primary hover:bg-brand-primary/90 active:scale-[0.99] px-4 py-3 text-sm font-bold text-brand-surface shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer"
+              className="w-full rounded-xl bg-brand-accent hover:bg-brand-accent-hover active:scale-[0.99] px-4 py-3 text-sm font-bold text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-accent focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer"
             >
               {loading ? 'Signing in…' : 'Sign in'}
             </button>

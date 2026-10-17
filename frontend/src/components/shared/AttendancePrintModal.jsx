@@ -489,7 +489,7 @@ export default function AttendancePrintModal({
             <button
               type="button"
               onClick={handlePrint}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-primary text-brand-surface text-xs font-bold shadow-sm hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-accent hover:bg-brand-accent-hover text-white text-xs font-bold shadow-sm active:scale-95 transition-all cursor-pointer"
             >
               <Printer size={13} />
               <span>Print</span>

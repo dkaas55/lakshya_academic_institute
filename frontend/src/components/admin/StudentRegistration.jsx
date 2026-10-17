@@ -391,7 +391,7 @@ export default function StudentRegistration() {
             <button
               type="submit"
               disabled={loading || !tempPassword}
-              className="rounded-lg bg-brand-primary px-4 py-2 text-xs font-semibold text-brand-surface hover:bg-brand-primary/100 focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-brand-primary focus:ring-offset-2 disabled:bg-brand-surface-tint disabled:text-brand-text-muted/50 disabled:border disabled:border-brand-border/50 disabled:cursor-not-allowed transition-colors"
+              className="rounded-lg bg-brand-accent hover:bg-brand-accent-hover px-4 py-2 text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-brand-accent focus:border-brand-accent focus:ring-offset-2 disabled:bg-brand-surface-tint disabled:text-brand-text-muted/50 disabled:border disabled:border-brand-border/50 disabled:cursor-not-allowed transition-colors shadow-sm cursor-pointer"
             >
               {loading ? 'Registering…' : 'Register student'}
             </button>

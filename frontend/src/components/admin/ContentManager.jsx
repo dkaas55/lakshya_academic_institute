@@ -302,8 +302,8 @@ export default function ContentManager() {
           {/* Upload Form */}
           <section className="rounded-2xl border border-brand-border bg-brand-surface p-4 sm:p-5 shadow-sm lg:sticky lg:top-6">
             <h3 className="text-sm font-semibold text-brand-text mb-4">Upload New Material</h3>
-            {matUploadOk && <p role="status" className="mb-4 flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-brand-primary/10 px-3 py-2 text-xs text-emerald-800">✓ {matUploadOk}</p>}
-            {matUploadErr && <p role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{matUploadErr}</p>}
+            {matUploadOk && <p role="status" className="mb-4 flex items-center gap-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800/50 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-2 text-xs text-emerald-800 dark:text-emerald-300">✓ {matUploadOk}</p>}
+            {matUploadErr && <p role="alert" className="mb-4 rounded-lg border border-red-200 dark:border-red-800/50 bg-red-50 dark:bg-red-950/40 px-3 py-2 text-xs text-red-700 dark:text-red-300">{matUploadErr}</p>}
             <form onSubmit={handleMaterialUpload} noValidate className="space-y-4">
               <FormField label="Title" htmlFor="cm-title" error={matFieldErrs.title}>
                 <input id="cm-title" type="text" value={matForm.title} onChange={(e) => updateMatField('title', e.target.value)} placeholder="e.g. Algebra Basics" className={inputCls(matFieldErrs, 'title')} />
@@ -332,7 +332,7 @@ export default function ContentManager() {
               <FormField label="Description (optional)" htmlFor="cm-desc">
                 <textarea id="cm-desc" rows={2} value={matForm.description} onChange={(e) => updateMatField('description', e.target.value)} placeholder="Short description..." className={`${inputCls(matFieldErrs, 'description')} resize-none`} />
               </FormField>
-              <button type="submit" disabled={matUploading} className="w-full rounded-lg bg-brand-primary px-4 py-2 text-xs font-semibold text-brand-surface hover:bg-brand-primary/100 active:scale-[0.98] disabled:opacity-60 transition-all">
+              <button type="submit" disabled={matUploading} className="w-full rounded-lg bg-brand-accent hover:bg-brand-accent-hover px-4 py-2 text-xs font-semibold text-white active:scale-[0.98] disabled:opacity-60 transition-all shadow-sm cursor-pointer">
                 {matUploading ? 'Uploading…' : 'Upload Material'}
               </button>
             </form>
@@ -365,8 +365,8 @@ export default function ContentManager() {
           <section className="rounded-xl border border-brand-border bg-brand-surface p-4 sm:p-5 shadow-sm lg:sticky lg:top-6">
             <h3 className="text-sm font-semibold text-brand-text mb-1">Upload Practice Test</h3>
             <p className="text-[11px] text-brand-text-muted mb-4">Upload exam papers, sample tests, or practice PDFs.</p>
-            {testUploadOk && <p role="status" className="mb-4 flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-brand-primary/10 px-3 py-2 text-xs text-emerald-800">✓ {testUploadOk}</p>}
-            {testUploadErr && <p role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{testUploadErr}</p>}
+            {testUploadOk && <p role="status" className="mb-4 flex items-center gap-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800/50 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-2 text-xs text-emerald-800 dark:text-emerald-300">✓ {testUploadOk}</p>}
+            {testUploadErr && <p role="alert" className="mb-4 rounded-lg border border-red-200 dark:border-red-800/50 bg-red-50 dark:bg-red-950/40 px-3 py-2 text-xs text-red-700 dark:text-red-300">{testUploadErr}</p>}
             <form onSubmit={handleTestUpload} noValidate className="space-y-4">
               <FormField label="Test Title" htmlFor="ct-title" error={testFieldErrs.testTitle}>
                 <input id="ct-title" type="text" value={testForm.testTitle} onChange={(e) => updateTestField('testTitle', e.target.value)} placeholder="e.g. Chapter 3 – Mid-Term Test" className={inputCls(testFieldErrs, 'testTitle')} />
@@ -390,7 +390,7 @@ export default function ContentManager() {
               <FormField label="Document URL" htmlFor="ct-url" error={testFieldErrs.documentUrl}>
                 <input id="ct-url" type="url" value={testForm.documentUrl} onChange={(e) => updateTestField('documentUrl', e.target.value)} placeholder="https://..." className={inputCls(testFieldErrs, 'documentUrl')} />
               </FormField>
-              <button type="submit" disabled={testUploading} className="w-full rounded-lg bg-brand-primary px-4 py-2 text-xs font-semibold text-brand-surface hover:bg-brand-primary/90 active:scale-[0.98] disabled:opacity-60 transition-all">
+              <button type="submit" disabled={testUploading} className="w-full rounded-lg bg-brand-accent hover:bg-brand-accent-hover px-4 py-2 text-xs font-semibold text-white active:scale-[0.98] disabled:opacity-60 transition-all shadow-sm cursor-pointer">
                 {testUploading ? 'Uploading…' : 'Upload Test Paper'}
               </button>
             </form>

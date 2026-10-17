@@ -309,7 +309,7 @@ export default function BatchManagement() {
         </div>
         <button
           onClick={openAddModal}
-          className="rounded-lg bg-brand-primary px-4 py-2 text-xs font-semibold text-brand-surface hover:bg-brand-primary/100 transition-colors cursor-pointer"
+          className="rounded-lg bg-brand-accent hover:bg-brand-accent-hover px-4 py-2 text-xs font-semibold text-white transition-colors cursor-pointer shadow-sm"
         >
           + {BRANDING.createBatchLabel}
         </button>
@@ -591,7 +591,7 @@ export default function BatchManagement() {
                         setSelectedBatch(null)
                         openEnrollModal(b)
                       }}
-                      className="inline-flex items-center gap-1 rounded-lg bg-brand-primary px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-brand-primary/90 cursor-pointer"
+                      className="inline-flex items-center gap-1 rounded-lg bg-brand-accent px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-brand-accent-hover cursor-pointer"
                     >
                       <span>👥 Enroll Students Now</span>
                     </button>
@@ -681,7 +681,7 @@ export default function BatchManagement() {
                     setSelectedBatch(null)
                     openEnrollModal(b)
                   }}
-                  className="rounded-lg bg-brand-primary px-4 py-2 text-xs font-semibold text-white hover:bg-brand-primary/90 transition-colors cursor-pointer shadow-xs"
+                  className="rounded-lg bg-brand-accent px-4 py-2 text-xs font-semibold text-white hover:bg-brand-accent-hover transition-colors cursor-pointer shadow-xs"
                 >
                   👥 Enroll Students
                 </button>
@@ -856,7 +856,7 @@ export default function BatchManagement() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="rounded-lg bg-brand-primary px-5 py-2 text-xs font-semibold text-brand-surface hover:bg-brand-primary/100 disabled:opacity-60"
+                  className="rounded-lg bg-brand-accent hover:bg-brand-accent-hover px-5 py-2 text-xs font-semibold text-white disabled:opacity-60 transition-colors shadow-sm cursor-pointer"
                 >
                   {submitting ? 'Saving...' : 'Save Batch'}
                 </button>
@@ -1097,7 +1097,7 @@ export default function BatchManagement() {
                   type="button"
                   onClick={handleSaveEnrollments}
                   disabled={savingEnroll}
-                  className="rounded-lg bg-brand-primary px-5 py-2 text-xs font-semibold text-white hover:bg-brand-primary/100 disabled:opacity-60 cursor-pointer shadow-xs"
+                  className="rounded-lg bg-brand-accent hover:bg-brand-accent-hover px-5 py-2 text-xs font-semibold text-white disabled:opacity-60 cursor-pointer shadow-xs transition-colors"
                 >
                   {savingEnroll ? 'Saving...' : 'Save Enrollments'}
                 </button>

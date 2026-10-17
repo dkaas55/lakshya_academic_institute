@@ -169,7 +169,7 @@ function HistoryReceiptButton({ entry, student, ledgerData }) {
         amountDue: entry.amountDue ?? ledgerData?.amountDue ?? 0,
         totalCourseFee: ledgerData?.totalCourseFee ?? 0,
         monthlyFeeAmount: ledgerData?.monthlyFeeAmount ?? 0,
-        paymentTiming: ledgerData?.paymentTiming,
+        paymentTiming: entry.paymentTiming || ledgerData?.paymentTiming || 'advance',
         paymentMode: entry.method || 'Cash',
         paidAt: entry.paidAt,
         receiptNumber: rNum,
@@ -209,9 +209,44 @@ export default function FeeLedgerModal({ student, onClose, onPaymentCollected })
   const [paymentTiming,  setPaymentTiming]  = useState('advance')
   const [collecting,     setCollecting]     = useState(false)
   const [collectError,   setCollectError]   = useState('')
+  // ── Fee edit state ────────────────────────────────────────────────────────
+  const [isEditingFee,   setIsEditingFee]   = useState(false)
+  const [feeInput,       setFeeInput]       = useState('')
+  const [feeSaving,      setFeeSaving]      = useState(false)
+  const [feeEditError,   setFeeEditError]   = useState('')
   // ── Receipt state ─────────────────────────────────────────────────────────
   const [lastReceipt,    setLastReceipt]    = useState(null)   // holds receipt data for banner
   const receiptCounter = useRef(1)
+
+  async function handleUpdateFee(e) {
+    e?.preventDefault()
+    setFeeEditError('')
+    const parsedFee = Number(feeInput)
+    if (!Number.isFinite(parsedFee) || parsedFee < 0) {
+      setFeeEditError('Please enter a valid amount.')
+      return
+    }
+    setFeeSaving(true)
+    try {
+      const { data } = await api.patch(`/fees/ledger/${student.id}/fee`, {
+        monthlyFeeAmount: parsedFee,
+      })
+      if (data.success && data.data?.ledger) {
+        setLedger((prev) => ({
+          ...prev,
+          ledger: data.data.ledger,
+        }))
+        setIsEditingFee(false)
+        onPaymentCollected?.(data.data.ledger.feeStatus)
+      } else {
+        setFeeEditError(data.message || 'Failed to update fee.')
+      }
+    } catch (err) {
+      setFeeEditError(err.response?.data?.message || 'Failed to update fee.')
+    } finally {
+      setFeeSaving(false)
+    }
+  }
 
   const loadLedger = useCallback(async () => {
     if (!student?.id) return
@@ -271,9 +306,7 @@ export default function FeeLedgerModal({ student, onClose, onPaymentCollected })
       const payload = {
         amount: paymentAmount,
         paymentMode,
-      }
-      if (!ledger?.ledger?.paymentTiming) {
-        payload.paymentTiming = paymentTiming
+        paymentTiming,
       }
 
       const { data } = await api.post(`/fees/collect/${student.id}`, payload)
@@ -303,7 +336,7 @@ export default function FeeLedgerModal({ student, onClose, onPaymentCollected })
         amountDue:      data.data.ledger.amountDue,
         totalCourseFee: data.data.ledger.totalCourseFee,
         monthlyFeeAmount: data.data.ledger.monthlyFeeAmount,
-        paymentTiming:  data.data.ledger.paymentTiming,
+        paymentTiming:  paymentTiming,
         paymentMode,
         paidAt:         now,
         receiptNumber:  rNum,
@@ -402,10 +435,58 @@ export default function FeeLedgerModal({ student, onClose, onPaymentCollected })
               {/* ── 4 Summary Cards: Monthly Fee, Amount to be Paid, Fee Pending for Month, Payment Time ── */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 <div className="rounded-xl border border-brand-border bg-brand-surface-tint/80 px-3 py-2.5 flex flex-col justify-between min-h-[80px]">
-                  <p className="text-[10px] font-medium text-brand-text-muted uppercase tracking-wide">Monthly Fee</p>
-                  <p className="text-sm font-semibold text-brand-text mt-1">
-                    {formatCurrency(ledgerData.monthlyFeeAmount || ledgerData.totalCourseFee)}
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-medium text-brand-text-muted uppercase tracking-wide">Monthly Fee</p>
+                    {!isEditingFee && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFeeInput(String(ledgerData.monthlyFeeAmount || ledgerData.totalCourseFee || '0'))
+                          setIsEditingFee(true)
+                          setFeeEditError('')
+                        }}
+                        className="text-[10px] text-brand-primary hover:underline font-semibold cursor-pointer"
+                      >
+                        Edit
+                      </button>
+                    )}
+                  </div>
+                  {isEditingFee ? (
+                    <form onSubmit={handleUpdateFee} className="mt-1 space-y-1">
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-brand-text-muted">₹</span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={feeInput}
+                          onChange={(e) => setFeeInput(e.target.value)}
+                          className="w-full min-w-0 rounded border border-brand-primary/50 bg-brand-surface px-1.5 py-0.5 text-xs font-semibold text-brand-text focus:outline-none focus:ring-1 focus:ring-brand-primary"
+                          autoFocus
+                          disabled={feeSaving}
+                        />
+                        <button
+                          type="submit"
+                          disabled={feeSaving}
+                          className="rounded bg-brand-primary px-2 py-0.5 text-[10px] font-bold text-white hover:bg-brand-primary/90 disabled:opacity-50 cursor-pointer"
+                        >
+                          {feeSaving ? '…' : '✓'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setIsEditingFee(false); setFeeEditError('') }}
+                          disabled={feeSaving}
+                          className="rounded px-1 text-[11px] text-brand-text-muted hover:text-brand-text cursor-pointer"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      {feeEditError && <p className="text-[9px] text-red-500 leading-tight">{feeEditError}</p>}
+                    </form>
+                  ) : (
+                    <p className="text-sm font-semibold text-brand-text mt-1">
+                      {formatCurrency(ledgerData.monthlyFeeAmount || ledgerData.totalCourseFee)}
+                    </p>
+                  )}
                 </div>
                 <div className={`rounded-xl border px-3 py-2.5 flex flex-col justify-between min-h-[80px] ${
                   amountDue > 0
@@ -462,11 +543,7 @@ export default function FeeLedgerModal({ student, onClose, onPaymentCollected })
               <form onSubmit={handleCollect} className="rounded-2xl border border-brand-border bg-brand-surface p-3 space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xs font-semibold text-brand-text">Collect Installment</h3>
-                  {!ledgerData.paymentTiming ? (
-                    <span className="text-[10px] font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800">
-                      First Payment Setup
-                    </span>
-                  ) : amountDue === 0 ? (
+                  {amountDue === 0 ? (
                     <span className="text-[10px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
                       Advance Payment
                     </span>
@@ -479,58 +556,56 @@ export default function FeeLedgerModal({ student, onClose, onPaymentCollected })
                   </p>
                 )}
 
-                {/* Payment Timing: ONLY rendered for 1st payment when paymentTiming is not yet saved */}
-                {!ledgerData.paymentTiming && (
-                  <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 dark:border-indigo-900/40 dark:bg-indigo-950/20 p-2.5 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[11px] font-semibold text-brand-text">
-                        Payment Time
-                      </label>
-                      <span className="text-[10px] text-brand-text-muted">Set once for this student</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <label
-                        className={`flex items-center gap-2 p-2 rounded-lg border text-xs cursor-pointer transition-all ${
-                          paymentTiming === 'advance'
-                            ? 'border-indigo-600 bg-white dark:bg-brand-surface shadow-xs font-semibold text-brand-text ring-1 ring-indigo-500'
-                            : 'border-brand-border bg-white/60 dark:bg-brand-surface/60 text-brand-text-muted hover:bg-white'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="paymentTiming"
-                          value="advance"
-                          checked={paymentTiming === 'advance'}
-                          onChange={() => setPaymentTiming('advance')}
-                          className="accent-indigo-600"
-                        />
-                        <span>In Advance</span>
-                      </label>
-                      <label
-                        className={`flex items-center gap-2 p-2 rounded-lg border text-xs cursor-pointer transition-all ${
-                          paymentTiming === 'after_month'
-                            ? 'border-indigo-600 bg-white dark:bg-brand-surface shadow-xs font-semibold text-brand-text ring-1 ring-indigo-500'
-                            : 'border-brand-border bg-white/60 dark:bg-brand-surface/60 text-brand-text-muted hover:bg-white'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="paymentTiming"
-                          value="after_month"
-                          checked={paymentTiming === 'after_month'}
-                          onChange={() => setPaymentTiming('after_month')}
-                          className="accent-indigo-600"
-                        />
-                        <span>End of Month</span>
-                      </label>
-                    </div>
-                    <p className="text-[10px] text-brand-text-muted">
-                      {paymentTiming === 'advance'
-                        ? 'Fees will be billed in advance at the start of each month.'
-                        : 'Fees will be billed after each month completes (end of month).'}
-                    </p>
+                {/* Payment Timing: Option for every transaction */}
+                <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 dark:border-indigo-900/40 dark:bg-indigo-950/20 p-2.5 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-semibold text-brand-text">
+                      Payment Timing
+                    </label>
+                    <span className="text-[10px] text-brand-text-muted">Select for this transaction</span>
                   </div>
-                )}
+                  <div className="grid grid-cols-2 gap-2">
+                    <label
+                      className={`flex items-center gap-2 p-2 rounded-lg border text-xs cursor-pointer transition-all ${
+                        paymentTiming === 'advance'
+                          ? 'border-indigo-600 bg-white dark:bg-brand-surface shadow-xs font-semibold text-brand-text ring-1 ring-indigo-500'
+                          : 'border-brand-border bg-white/60 dark:bg-brand-surface/60 text-brand-text-muted hover:bg-white'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="paymentTiming"
+                        value="advance"
+                        checked={paymentTiming === 'advance'}
+                        onChange={() => setPaymentTiming('advance')}
+                        className="accent-indigo-600"
+                      />
+                      <span>In Advance</span>
+                    </label>
+                    <label
+                      className={`flex items-center gap-2 p-2 rounded-lg border text-xs cursor-pointer transition-all ${
+                        paymentTiming === 'after_month'
+                          ? 'border-indigo-600 bg-white dark:bg-brand-surface shadow-xs font-semibold text-brand-text ring-1 ring-indigo-500'
+                          : 'border-brand-border bg-white/60 dark:bg-brand-surface/60 text-brand-text-muted hover:bg-white'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="paymentTiming"
+                        value="after_month"
+                        checked={paymentTiming === 'after_month'}
+                        onChange={() => setPaymentTiming('after_month')}
+                        className="accent-indigo-600"
+                      />
+                      <span>End of Month</span>
+                    </label>
+                  </div>
+                  <p className="text-[10px] text-brand-text-muted">
+                    {paymentTiming === 'advance'
+                      ? 'Fees will be billed in advance at the start of each month.'
+                      : 'Fees will be billed after each month completes (end of month).'}
+                  </p>
+                </div>
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
@@ -614,21 +689,34 @@ export default function FeeLedgerModal({ student, onClose, onPaymentCollected })
                         <tr className="bg-brand-surface-tint border-b border-brand-border">
                           <th className="px-3 py-2 font-semibold text-brand-text">Date</th>
                           <th className="px-3 py-2 font-semibold text-brand-text">Amount</th>
+                          <th className="px-3 py-2 font-semibold text-brand-text">Timing</th>
                           <th className="px-3 py-2 font-semibold text-brand-text">Mode</th>
                           <th className="px-3 py-2 font-semibold text-brand-text text-right">Receipt</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-brand-border">
-                        {ledgerData.paymentHistory.map((entry) => (
-                          <tr key={entry._id} className="hover:bg-brand-surface-tint/60 transition-colors">
-                            <td className="px-3 py-2 text-brand-text whitespace-nowrap">{formatDate(entry.paidAt)}</td>
-                            <td className="px-3 py-2 font-semibold text-brand-primary">{formatCurrency(entry.amount)}</td>
-                            <td className="px-3 py-2 text-brand-text">{entry.method || '—'}</td>
-                            <td className="px-3 py-2 text-right">
-                              <HistoryReceiptButton entry={entry} student={student} ledgerData={ledgerData} />
-                            </td>
-                          </tr>
-                        ))}
+                        {ledgerData.paymentHistory.map((entry) => {
+                          const timing = entry.paymentTiming || ledgerData.paymentTiming || 'advance'
+                          return (
+                            <tr key={entry._id} className="hover:bg-brand-surface-tint/60 transition-colors">
+                              <td className="px-3 py-2 text-brand-text whitespace-nowrap">{formatDate(entry.paidAt)}</td>
+                              <td className="px-3 py-2 font-semibold text-brand-primary">{formatCurrency(entry.amount)}</td>
+                              <td className="px-3 py-2 whitespace-nowrap">
+                                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                                  timing === 'after_month'
+                                    ? 'bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800'
+                                    : 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800'
+                                }`}>
+                                  {timing === 'after_month' ? 'End of Month' : 'In Advance'}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2 text-brand-text">{entry.method || '—'}</td>
+                              <td className="px-3 py-2 text-right">
+                                <HistoryReceiptButton entry={entry} student={student} ledgerData={ledgerData} />
+                              </td>
+                            </tr>
+                          )
+                        })}
                       </tbody>
                     </table>
                   </div>

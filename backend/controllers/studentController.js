@@ -214,6 +214,8 @@ const getStudents = async (req, res) => {
         studentClass: profile.studentClass,
         subjects: profile.subjects,
         feeStatus,
+        monthlyFeeAmount: ledger?.monthlyFeeAmount || ledger?.totalFee || 0,
+        totalCourseFee: ledger?.totalFee || ledger?.monthlyFeeAmount || 0,
         admissionDate: profile.admissionDate,
         joiningDate: profile.joiningDate ?? null,
         status: profile.status ?? "active",
@@ -241,7 +243,7 @@ const updateStudent = async (req, res) => {
   }
 
   const { id } = req.params;
-  const { fullName, phoneNumber, batch, batches: incomingBatches, studentClass, subjects } = req.body;
+  const { fullName, phoneNumber, batch, batches: incomingBatches, studentClass, subjects, monthlyFeeAmount, totalCourseFee } = req.body;
 
   try {
     const profile = await StudentProfile.findById(id).populate("user");
@@ -284,6 +286,38 @@ const updateStudent = async (req, res) => {
 
     await profile.save();
 
+    // Update FeeLedger if fee provided
+    const feeProvided = monthlyFeeAmount !== undefined ? monthlyFeeAmount : totalCourseFee;
+    let currentFee = 0;
+    let feeStatus = "PENDING";
+    if (feeProvided !== undefined && feeProvided !== null && feeProvided !== "") {
+      const feeNum = Number(feeProvided);
+      if (Number.isFinite(feeNum) && feeNum >= 0) {
+        let ledger = await FeeLedger.findOne({ student: id });
+        if (!ledger) {
+          ledger = await FeeLedger.create({
+            student: id,
+            totalFee: feeNum,
+            monthlyFeeAmount: feeNum,
+            amountPaid: 0,
+            amountDue: feeNum,
+            paymentTiming: "advance",
+          });
+        } else {
+          ledger.monthlyFeeAmount = feeNum;
+          ledger.totalFee = feeNum;
+          ledger.amountDue = calculateDynamicAmountDue(ledger, profile);
+          await ledger.save();
+        }
+        currentFee = feeNum;
+        feeStatus = deriveFeeStatus(ledger, profile);
+      }
+    } else {
+      const ledger = await FeeLedger.findOne({ student: id }).lean();
+      currentFee = ledger?.monthlyFeeAmount || ledger?.totalFee || 0;
+      feeStatus = deriveFeeStatus(ledger, profile);
+    }
+
     const sBatches = Array.isArray(profile.batches) && profile.batches.length > 0
       ? profile.batches
       : (profile.batch ? profile.batch.split(",").map((b) => b.trim()).filter(Boolean) : []);
@@ -300,6 +334,9 @@ const updateStudent = async (req, res) => {
         batches: sBatches,
         studentClass: profile.studentClass,
         subjects: profile.subjects,
+        feeStatus,
+        monthlyFeeAmount: currentFee,
+        totalCourseFee: currentFee,
         joiningDate: profile.joiningDate ?? null,
         status: profile.status ?? "active",
       },

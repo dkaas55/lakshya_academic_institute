@@ -5,6 +5,8 @@
   --font-sans: "Source Sans 3", sans-serif;
   
   --color-brand-primary: var(--color-primary);
+  --color-brand-primary-hover: var(--color-primary-hover);
+  --color-brand-sidebar-bg: var(--color-sidebar-bg);
   --color-brand-bg: var(--color-background);
   --color-brand-surface: var(--color-surface);
   --color-brand-surface-tint: var(--color-surface-tint);
@@ -26,16 +28,18 @@
 
 :root {
   font-size: 16px;
-  --color-primary: #090d16;
-  --color-background: #ffffff;
+  --color-primary: #064e3b;
+  --color-primary-hover: #065f46;
+  --color-sidebar-bg: #064e3b;
+  --color-background: #f8fafc;
   --color-surface: #ffffff;
   --color-surface-tint: #f1f5f9;
-  --color-text: #090d16;
-  --color-text-muted: #334155;
-  --color-accent: #1d4ed8;
-  --color-accent-hover: #1e40af;
+  --color-text: #0f172a;
+  --color-text-muted: #475569;
+  --color-accent: #059669;
+  --color-accent-hover: #047857;
   --color-gold: #b45309;
-  --color-border: #cbd5e1;
+  --color-border: #e2e8f0;
 }
 
 @media (max-width: 768px) {
@@ -46,16 +50,18 @@
 }
 
 .dark {
-  --color-primary: #f8fafc;
+  --color-primary: #34d399;
+  --color-primary-hover: #6ee7b7;
+  --color-sidebar-bg: #042017;
   --color-background: #090d16;
-  --color-surface: #0f172a;
+  --color-surface: #111827;
   --color-surface-tint: #1e293b;
   --color-text: #f8fafc;
-  --color-text-muted: #cbd5e1;
-  --color-accent: #60a5fa;
-  --color-accent-hover: #93c5fd;
-  --color-gold: #facc15;
-  --color-border: #334155;
+  --color-text-muted: #94a3b8;
+  --color-accent: #059669;
+  --color-accent-hover: #047857;
+  --color-gold: #fbbf24;
+  --color-border: #1f2937;
 }
 
 @variant dark (&:where(.dark, .dark *));
@@ -64,4 +70,3 @@ input, select, textarea, option {
   background-color: var(--color-surface);
   color: var(--color-text);
 }
-

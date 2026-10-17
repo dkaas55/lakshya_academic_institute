@@ -370,7 +370,7 @@ export default function ExamMarks({ allowedBatches = [], isAdmin = false }) {
             setShowForm((v) => !v)
             setFormErr('')
           }}
-          className="flex items-center justify-center gap-2 rounded-xl bg-brand-primary text-brand-surface px-4 py-2.5 text-xs font-bold hover:bg-brand-primary/90 transition-all shadow-sm cursor-pointer shrink-0"
+          className="flex items-center justify-center gap-2 rounded-xl bg-brand-accent text-white px-4 py-2.5 text-xs font-bold hover:bg-brand-accent-hover transition-all shadow-sm cursor-pointer shrink-0"
         >
           {showForm ? <X size={15} /> : <Plus size={15} />}
           <span>{showForm ? 'Close Form' : 'Add Test & Enter Marks'}</span>
@@ -725,7 +725,7 @@ export default function ExamMarks({ allowedBatches = [], isAdmin = false }) {
               <button
                 type="submit"
                 disabled={creating}
-                className="w-full sm:w-auto rounded-xl bg-brand-primary text-brand-surface px-6 py-2.5 text-xs font-bold hover:bg-brand-primary/90 disabled:opacity-60 transition-all shadow-sm cursor-pointer flex items-center justify-center gap-2"
+                className="w-full sm:w-auto rounded-xl bg-brand-accent text-white px-6 py-2.5 text-xs font-bold hover:bg-brand-accent-hover disabled:opacity-60 transition-all shadow-sm cursor-pointer flex items-center justify-center gap-2"
               >
                 <Save size={14} />
                 <span>{creating ? 'Saving Test & Marks…' : 'Save Test & Marks'}</span>
@@ -832,7 +832,7 @@ export default function ExamMarks({ allowedBatches = [], isAdmin = false }) {
                     <button
                       type="button"
                       onClick={() => setExpandedId(expandedId === t._id ? null : t._id)}
-                      className="w-full rounded-xl bg-brand-surface-tint hover:bg-brand-primary hover:text-brand-surface text-brand-text text-xs font-bold py-1.5 transition-colors cursor-pointer text-center"
+                      className="w-full rounded-xl bg-brand-surface-tint hover:bg-brand-primary hover:text-white text-brand-text text-xs font-bold py-1.5 transition-colors cursor-pointer text-center"
                     >
                       {expandedId === t._id ? 'Close Marks' : 'View / Edit Marks →'}
                     </button>
@@ -1112,7 +1112,7 @@ export default function ExamMarks({ allowedBatches = [], isAdmin = false }) {
                           type="button"
                           onClick={() => handleSaveMarks(exam._id)}
                           disabled={savingId === exam._id}
-                          className="flex items-center gap-2 rounded-xl bg-brand-primary text-brand-surface px-5 py-2 text-xs font-bold hover:bg-brand-primary/90 disabled:opacity-60 transition-all shadow-xs cursor-pointer"
+                          className="flex items-center gap-2 rounded-xl bg-brand-accent text-white px-5 py-2 text-xs font-bold hover:bg-brand-accent-hover disabled:opacity-60 transition-all shadow-xs cursor-pointer"
                         >
                           <Save size={13} />
                           <span>{savingId === exam._id ? 'Saving…' : 'Save Marks'}</span>

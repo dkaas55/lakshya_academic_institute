@@ -412,7 +412,7 @@ export default function StudentDetailModal({
                 onClose()
                 onCollectFee(student)
               }}
-              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-xs font-bold text-white shadow-xs transition-colors"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand-accent hover:bg-brand-accent-hover px-4 py-2 text-xs font-bold text-white shadow-xs transition-colors cursor-pointer"
             >
               <CreditCard className="h-3.5 w-3.5" />
               <span>Collect Fee</span>

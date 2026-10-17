@@ -19,6 +19,11 @@ const paymentEntrySchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    paymentTiming: {
+      type: String,
+      enum: ["advance", "after_month", null],
+      default: "advance",
+    },
   },
   { _id: true }
 );

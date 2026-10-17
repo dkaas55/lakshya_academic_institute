@@ -392,7 +392,7 @@ export default function StudentResults({ exams = [], student = null }) {
               onClick={() => setSelectedBatch('All')}
               className={`shrink-0 flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
                 selectedBatch === 'All'
-                  ? 'bg-brand-primary text-brand-surface shadow-xs font-black'
+                  ? 'bg-brand-accent text-white shadow-xs font-black'
                   : 'bg-brand-surface border border-brand-border text-brand-text-muted hover:text-brand-text hover:bg-brand-surface-tint'
               }`}
             >
@@ -400,7 +400,7 @@ export default function StudentResults({ exams = [], student = null }) {
               <span
                 className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${
                   selectedBatch === 'All'
-                    ? 'bg-brand-surface/20 text-brand-surface'
+                    ? 'bg-white/20 text-white'
                     : 'bg-brand-surface-tint text-brand-text-muted border border-brand-border'
                 }`}
               >
@@ -418,7 +418,7 @@ export default function StudentResults({ exams = [], student = null }) {
                   onClick={() => setSelectedBatch(batchName)}
                   className={`shrink-0 flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
                     isSelected
-                      ? 'bg-brand-primary text-brand-surface shadow-xs font-black'
+                      ? 'bg-brand-accent text-white shadow-xs font-black'
                       : 'bg-brand-surface border border-brand-border text-brand-text-muted hover:text-brand-text hover:bg-brand-surface-tint'
                   }`}
                 >
@@ -426,7 +426,7 @@ export default function StudentResults({ exams = [], student = null }) {
                   <span
                     className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${
                       isSelected
-                        ? 'bg-brand-surface/20 text-brand-surface'
+                        ? 'bg-white/20 text-white'
                         : 'bg-brand-surface-tint text-brand-text-muted border border-brand-border'
                     }`}
                   >
@@ -444,7 +444,7 @@ export default function StudentResults({ exams = [], student = null }) {
         <section className="rounded-2xl border-2 border-brand-primary/30 bg-gradient-to-br from-brand-primary/5 via-brand-surface to-brand-surface p-5 sm:p-6 shadow-sm space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-brand-border pb-3">
             <div className="flex items-center gap-2.5">
-              <span className="p-2 rounded-xl bg-brand-primary text-brand-surface shadow-xs">
+              <span className="p-2 rounded-xl bg-brand-primary text-white shadow-xs">
                 <Sparkles size={16} />
               </span>
               <div>
@@ -452,7 +452,7 @@ export default function StudentResults({ exams = [], student = null }) {
                   <h2 className="text-base font-extrabold text-brand-text tracking-tight">
                     Recent Test Marks
                   </h2>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-brand-primary text-brand-surface shadow-2xs">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-brand-primary text-white shadow-2xs">
                     Latest
                   </span>
                 </div>
@@ -848,7 +848,7 @@ export default function StudentResults({ exams = [], student = null }) {
                 setSelectedSubject('All')
                 setStatusFilter('all')
               }}
-              className="px-4 py-2 rounded-xl bg-brand-primary text-brand-surface text-xs font-bold shadow-xs hover:bg-brand-primary/90 cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-brand-accent text-white text-xs font-bold shadow-xs hover:bg-brand-accent-hover transition-colors cursor-pointer"
             >
               Reset Filters
             </button>

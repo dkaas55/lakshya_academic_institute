@@ -133,12 +133,11 @@ const collectInstallment = async (req, res) => {
       });
     }
 
-    // Set paymentTiming if provided or if not yet set
-    if (paymentTiming && ["advance", "after_month"].includes(paymentTiming)) {
-      ledger.paymentTiming = paymentTiming;
-    } else if (!ledger.paymentTiming) {
-      ledger.paymentTiming = "advance";
-    }
+    const timing = (paymentTiming && ["advance", "after_month"].includes(paymentTiming))
+      ? paymentTiming
+      : (ledger.paymentTiming || "advance");
+
+    ledger.paymentTiming = timing;
 
     ledger.amountPaid += paymentAmount;
     if (ledger.amountPaid > ledger.totalFee) {
@@ -149,6 +148,7 @@ const collectInstallment = async (req, res) => {
       amount: paymentAmount,
       paidAt: new Date(),
       method: mode,
+      paymentTiming: timing,
     });
 
     await ledger.save();
@@ -242,6 +242,73 @@ const updatePaymentTiming = async (req, res) => {
   }
 };
 
+const updateLedgerFee = async (req, res) => {
+  if (req.user.role !== "admin") {
+    return res.status(403).json({
+      success: false,
+      message: "Only administrators can update student fees",
+    });
+  }
+
+  const { studentId } = req.params;
+  const { monthlyFeeAmount, totalCourseFee } = req.body;
+
+  const rawFee = monthlyFeeAmount !== undefined ? monthlyFeeAmount : totalCourseFee;
+  const newFee = Number(rawFee);
+
+  if (!Number.isFinite(newFee) || newFee < 0) {
+    return res.status(400).json({
+      success: false,
+      message: "Fee must be a valid non-negative number",
+    });
+  }
+
+  try {
+    const profile = await StudentProfile.findById(studentId).lean();
+    if (!profile) {
+      return res.status(404).json({ success: false, message: "Student not found" });
+    }
+
+    let ledger = await FeeLedger.findOne({ student: studentId });
+    if (!ledger) {
+      ledger = await FeeLedger.create({
+        student: studentId,
+        totalFee: newFee,
+        monthlyFeeAmount: newFee,
+        amountPaid: 0,
+        amountDue: newFee,
+        paymentTiming: "advance",
+      });
+    } else {
+      ledger.monthlyFeeAmount = newFee;
+      ledger.totalFee = newFee;
+      ledger.amountDue = calculateDynamicAmountDue(ledger, profile);
+      await ledger.save();
+    }
+
+    const overview = getFeeOverview(ledger, profile);
+
+    res.json({
+      success: true,
+      message: "Monthly fee updated successfully",
+      data: {
+        ledger: {
+          id: ledger._id,
+          totalCourseFee: ledger.totalFee,
+          monthlyFeeAmount: overview.monthlyFeeAmount,
+          amountPaid: ledger.amountPaid,
+          amountDue: overview.amountDue,
+          feeStatus: overview.feeStatus,
+          feePendingForMonth: overview.feePendingForMonth,
+          paymentTiming: overview.paymentTiming,
+        },
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Failed to update fee" });
+  }
+};
+
 const getAllTransactions = async (req, res) => {
   if (req.user.role !== "admin") {
     return res.status(403).json({
@@ -279,6 +346,7 @@ const getAllTransactions = async (req, res) => {
           amount: payment.amount,
           method: payment.method,
           paidAt: payment.paidAt,
+          paymentTiming: payment.paymentTiming || ledger.paymentTiming || "advance",
         });
       }
     }
@@ -359,6 +427,7 @@ module.exports = {
   getLedger,
   collectInstallment,
   updatePaymentTiming,
+  updateLedgerFee,
   getAllTransactions,
   getPendingDues,
   PAYMENT_MODES,

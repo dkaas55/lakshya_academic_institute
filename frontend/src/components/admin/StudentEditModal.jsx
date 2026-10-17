@@ -50,6 +50,7 @@ export default function StudentEditModal({ student, onClose, onUpdated, onRemove
     batches: [],
     studentClass: '',
     subjects: '',
+    monthlyFee: '',
   })
   const [currentStatus, setCurrentStatus] = useState(student?.status || 'active')
   const [loading, setLoading] = useState(false)
@@ -68,6 +69,7 @@ export default function StudentEditModal({ student, onClose, onUpdated, onRemove
         batches: initialBatches,
         studentClass: student.studentClass || '',
         subjects: student.subjects || '',
+        monthlyFee: student.monthlyFeeAmount !== undefined ? String(student.monthlyFeeAmount) : (student.totalCourseFee !== undefined ? String(student.totalCourseFee) : ''),
       })
       setCurrentStatus(student.status || 'active')
     }
@@ -168,6 +170,8 @@ export default function StudentEditModal({ student, onClose, onUpdated, onRemove
         batch: form.batches.join(', '),
         studentClass: form.studentClass.trim(),
         subjects: form.subjects.trim(),
+        monthlyFeeAmount: form.monthlyFee !== '' ? Number(form.monthlyFee) : 0,
+        totalCourseFee: form.monthlyFee !== '' ? Number(form.monthlyFee) : 0,
       })
 
       if (!data.success) {
@@ -381,6 +385,22 @@ export default function StudentEditModal({ student, onClose, onUpdated, onRemove
               </datalist>
               <p className="mt-1 text-[10px] text-brand-text-muted/75">Comma-separate multiple subjects</p>
             </div>
+
+            <div>
+              <label htmlFor="edit-monthlyFee" className="block text-xs font-medium text-brand-text mb-1">
+                Monthly Fee (₹)
+              </label>
+              <input
+                id="edit-monthlyFee"
+                type="number"
+                min="0"
+                value={form.monthlyFee}
+                onChange={(e) => updateField('monthlyFee', e.target.value)}
+                placeholder="e.g. 1000"
+                className="w-full rounded-lg border border-brand-border px-3 py-2 text-sm text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-brand-primary"
+              />
+              <p className="mt-1 text-[10px] text-brand-text-muted/75">Monthly tuition fee charged for this student</p>
+            </div>
           </div>
 
           {/* Action buttons row: Pause, Delete, Cancel, Save Changes */}
@@ -430,7 +450,7 @@ export default function StudentEditModal({ student, onClose, onUpdated, onRemove
               <button
                 type="submit"
                 disabled={loading || !!statusLoading}
-                className="rounded-lg bg-brand-primary px-4 py-2 text-xs font-semibold text-white hover:bg-brand-primary/100 transition-colors disabled:opacity-50 cursor-pointer shadow-sm"
+                className="rounded-lg bg-brand-accent hover:bg-brand-accent-hover px-4 py-2 text-xs font-semibold text-white transition-colors disabled:opacity-50 cursor-pointer shadow-sm"
               >
                 {loading ? 'Saving…' : 'Save Changes'}
               </button>

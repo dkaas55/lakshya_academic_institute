@@ -228,7 +228,7 @@ export default function StudentAttendanceDetailModal({ student, onClose }) {
                         type="button"
                         onClick={handleDateLookup}
                         disabled={!lookupDate || filterLoading}
-                        className="rounded-xl bg-brand-primary hover:bg-brand-primary/90 px-4 py-2.5 text-xs font-bold text-brand-surface disabled:opacity-60 transition-all shadow-sm cursor-pointer"
+                        className="rounded-xl bg-brand-accent hover:bg-brand-accent-hover px-4 py-2.5 text-xs font-bold text-white disabled:opacity-60 transition-all shadow-sm cursor-pointer"
                       >
                         {filterLoading ? '…' : 'Check'}
                       </button>

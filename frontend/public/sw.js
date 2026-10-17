@@ -3,7 +3,7 @@
  * Network-first strategy for live updates with offline fallback
  */
 
-const CACHE_NAME = 'app-cache-v9';
+const CACHE_NAME = 'app-cache-v11';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',

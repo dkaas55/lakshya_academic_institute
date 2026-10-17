@@ -219,7 +219,7 @@ export default function TeacherManagement() {
         </div>
         <button
           onClick={openAddModal}
-          className="rounded-lg bg-brand-primary px-4 py-2 text-xs font-semibold text-brand-surface hover:bg-brand-primary/100 transition-colors"
+          className="rounded-lg bg-brand-accent hover:bg-brand-accent-hover px-4 py-2 text-xs font-semibold text-white transition-colors cursor-pointer shadow-sm"
         >
           + Add Teacher
         </button>
@@ -426,7 +426,7 @@ export default function TeacherManagement() {
                             <button
                               type="button"
                               onClick={() => setForm({...form, password: generateSecurePassword()})}
-                              className="px-2 py-1 text-[10px] font-semibold text-brand-primary bg-brand-primary/10 border border-brand-primary/20 rounded hover:bg-brand-primary/20 transition-colors"
+                              className="px-2 py-1 text-[10px] font-semibold text-brand-accent bg-brand-accent/10 border border-brand-accent/20 rounded hover:bg-brand-accent/20 transition-colors cursor-pointer"
                             >
                               Generate
                             </button>
@@ -565,7 +565,7 @@ export default function TeacherManagement() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="rounded-lg bg-brand-primary px-5 py-2 text-xs font-semibold text-brand-surface hover:bg-brand-primary/100 disabled:opacity-60"
+                  className="rounded-lg bg-brand-accent hover:bg-brand-accent-hover px-5 py-2 text-xs font-semibold text-white disabled:opacity-60 transition-colors shadow-sm cursor-pointer"
                 >
                   {submitting ? 'Saving...' : 'Save Teacher'}
                 </button>

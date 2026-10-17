@@ -258,7 +258,7 @@ export default function InstallAppButton({ className = '' }) {
         disabled={isWaitingPrompt}
         onClick={handleOpenInAppClick}
         title={`Open ${BRANDING.shortName} in dedicated App mode`}
-        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-brand-primary text-brand-surface border border-transparent dark:border-brand-border/60 shadow-sm hover:opacity-90 active:scale-95 transition-all cursor-pointer select-none disabled:opacity-80 ${className}`}
+        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-brand-accent hover:bg-brand-accent-hover text-white border border-transparent dark:border-brand-border/60 shadow-sm hover:opacity-95 active:scale-95 transition-all cursor-pointer select-none disabled:opacity-80 ${className}`}
       >
         {isWaitingPrompt ? (
           <Loader2 size={14} className="shrink-0 text-current animate-spin" />
@@ -305,7 +305,7 @@ export default function InstallAppButton({ className = '' }) {
                 <button
                   type="button"
                   onClick={() => handleNativeInstall()}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-brand-primary text-brand-surface font-bold text-xs hover:opacity-90 active:scale-[0.99] transition-all cursor-pointer shadow-sm"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-brand-accent hover:bg-brand-accent-hover text-white font-bold text-xs active:scale-[0.99] transition-all cursor-pointer shadow-sm"
                 >
                   <Download size={14} />
                   <span>Download / Install App Now</span>
@@ -316,7 +316,7 @@ export default function InstallAppButton({ className = '' }) {
                 <button
                   type="button"
                   onClick={launchAndroidIntent}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-brand-primary text-brand-surface font-bold text-xs hover:opacity-90 active:scale-[0.99] transition-all cursor-pointer shadow-sm"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-brand-accent hover:bg-brand-accent-hover text-white font-bold text-xs active:scale-[0.99] transition-all cursor-pointer shadow-sm"
                 >
                   <ExternalLink size={14} />
                   <span>Open directly in Chrome</span>
@@ -327,7 +327,7 @@ export default function InstallAppButton({ className = '' }) {
                 <button
                   type="button"
                   onClick={launchDesktopApp}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-brand-primary text-brand-surface font-bold text-xs hover:opacity-90 active:scale-[0.99] transition-all cursor-pointer shadow-sm"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-brand-accent hover:bg-brand-accent-hover text-white font-bold text-xs active:scale-[0.99] transition-all cursor-pointer shadow-sm"
                 >
                   <ExternalLink size={14} />
                   <span>Open Installed App Window</span>

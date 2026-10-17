@@ -54,7 +54,7 @@ export function buildReceiptHtml(receiptInfo, student) {
 
   const timingDisplay = paymentTiming === 'advance'
     ? 'In Advance'
-    : (paymentTiming === 'postpaid' || paymentTiming === 'end_of_month')
+    : (paymentTiming === 'postpaid' || paymentTiming === 'end_of_month' || paymentTiming === 'after_month')
       ? 'End of Month'
       : null
 

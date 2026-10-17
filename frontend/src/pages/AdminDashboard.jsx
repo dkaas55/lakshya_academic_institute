@@ -76,7 +76,7 @@ export default function AdminDashboard() {
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
 
       <aside
-        className={`fixed lg:sticky lg:top-0 inset-y-0 left-0 z-50 flex w-64 max-w-[85vw] h-screen flex-col border-r border-brand-border bg-brand-primary text-brand-surface transform transition-transform duration-300 ease-in-out shrink-0 ${
+        className={`fixed lg:sticky lg:top-0 inset-y-0 left-0 z-50 flex w-64 max-w-[85vw] h-screen flex-col border-r border-brand-border bg-brand-sidebar-bg text-white transform transition-transform duration-300 ease-in-out shrink-0 ${
           sidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'
         }`}
       >
@@ -89,13 +89,13 @@ export default function AdminDashboard() {
               <p className="text-[10px] font-bold uppercase tracking-widest text-brand-gold truncate">
                 {BRANDING.shortName}
               </p>
-              <h1 className="text-xs font-semibold text-brand-surface/90 mt-0.5 truncate">Admin Workspace</h1>
+              <h1 className="text-xs font-semibold text-white mt-0.5 truncate">Admin Workspace</h1>
             </div>
           </div>
           <button
             type="button"
             onClick={() => setSidebarOpen(false)}
-            className="lg:hidden p-1.5 rounded-xl hover:bg-brand-surface/10 text-brand-surface/70 hover:text-brand-surface transition-colors cursor-pointer"
+            className="lg:hidden p-1.5 rounded-xl hover:bg-white/10 text-white/70 hover:text-white transition-colors cursor-pointer"
             title="Close sidebar"
             aria-label="Close sidebar"
           >
@@ -118,18 +118,18 @@ export default function AdminDashboard() {
                     setSidebarOpen(false)
                   }
                 }}
-                className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left text-xs font-semibold transition-all duration-200 ${
+                className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left text-xs font-semibold transition-all duration-200 cursor-pointer ${
                   item.disabled
-                    ? 'text-brand-surface/40 cursor-not-allowed'
+                    ? 'text-white/35 cursor-not-allowed'
                     : isActive
-                      ? 'bg-brand-surface text-brand-primary shadow-sm font-extrabold scale-[1.02]'
-                      : 'text-brand-surface/80 hover:bg-brand-surface/10 hover:text-brand-surface'
+                      ? 'bg-brand-accent text-white shadow-sm font-extrabold scale-[1.02]'
+                      : 'text-white/80 hover:bg-white/10 hover:text-white'
                 }`}
               >
                 <Icon size={16} strokeWidth={isActive ? 2.5 : 2} aria-hidden />
                 {item.label}
                 {item.disabled && (
-                  <span className="ml-auto text-[8px] uppercase tracking-wide text-brand-surface/40 bg-brand-surface/5 px-1.5 py-0.5 rounded">
+                  <span className="ml-auto text-[8px] uppercase tracking-wide text-white/50 bg-white/10 px-1.5 py-0.5 rounded">
                     Soon
                   </span>
                 )}
@@ -145,7 +145,7 @@ export default function AdminDashboard() {
               setShowSettings(true)
               setSidebarOpen(false)
             }}
-            className="w-full rounded-xl px-4 py-3 text-xs font-semibold text-brand-surface/80 hover:bg-brand-surface/10 hover:text-brand-surface transition-all duration-200 text-left flex items-center gap-3 cursor-pointer"
+            className="w-full rounded-xl px-4 py-3 text-xs font-semibold text-white/80 hover:bg-white/10 hover:text-white transition-all duration-200 text-left flex items-center gap-3 cursor-pointer"
           >
             <Settings size={16} strokeWidth={2} aria-hidden />
             Settings
@@ -153,7 +153,7 @@ export default function AdminDashboard() {
           <button
             type="button"
             onClick={handleSignOut}
-            className="w-full rounded-xl px-4 py-3 text-xs font-semibold text-brand-surface/80 hover:bg-brand-surface/10 hover:text-brand-surface transition-all duration-200 text-left flex items-center gap-3 cursor-pointer"
+            className="w-full rounded-xl px-4 py-3 text-xs font-semibold text-white/80 hover:bg-white/10 hover:text-white transition-all duration-200 text-left flex items-center gap-3 cursor-pointer"
           >
             <LogOut size={16} strokeWidth={2} aria-hidden />
             Sign out

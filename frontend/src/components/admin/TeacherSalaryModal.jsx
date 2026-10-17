@@ -664,7 +664,7 @@ export default function TeacherSalaryModal({ teacher, onClose, onPaymentRecorded
                     <button
                       type="submit"
                       disabled={submitting}
-                      className="rounded-xl bg-brand-primary px-5 py-2.5 text-xs font-bold text-white hover:bg-brand-primary/90 transition-colors shadow-sm disabled:opacity-50 cursor-pointer flex items-center gap-2"
+                      className="rounded-xl bg-brand-accent hover:bg-brand-accent-hover px-5 py-2.5 text-xs font-bold text-white transition-colors shadow-sm disabled:opacity-50 cursor-pointer flex items-center gap-2"
                     >
                       {submitting ? (
                         'Recording...'

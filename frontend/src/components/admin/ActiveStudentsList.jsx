@@ -231,7 +231,7 @@ export default function ActiveStudentsList({ refreshKey = 0 }) {
                         <button
                           type="button"
                           onClick={() => setFeeStudent(student)}
-                          className="rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-2 py-1 text-[10px] font-semibold transition-colors"
+                          className="rounded-lg border border-brand-accent/30 bg-brand-accent/10 text-brand-accent hover:bg-brand-accent hover:text-white px-2 py-1 text-[10px] font-bold transition-all cursor-pointer"
                           title="Collect fee or view ledger"
                         >
                           Fee

@@ -346,7 +346,7 @@ function AttendanceHistoryView({ allowedBatches }) {
               <button
                 onClick={fetchHistory}
                 disabled={loading}
-                className="rounded-xl bg-brand-primary hover:bg-brand-primary/90 px-4 py-2.5 text-xs font-bold text-brand-surface disabled:opacity-60 transition-all shadow-sm cursor-pointer whitespace-nowrap"
+                className="rounded-xl bg-brand-accent hover:bg-brand-accent-hover px-4 py-2.5 text-xs font-bold text-white disabled:opacity-60 transition-all shadow-sm cursor-pointer whitespace-nowrap"
               >
                 {loading ? 'Loading…' : 'Load Report'}
               </button>
@@ -391,7 +391,7 @@ function AttendanceHistoryView({ allowedBatches }) {
             <button
               type="button"
               onClick={() => setShowPrintModal(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-primary text-brand-surface text-xs font-bold shadow-sm hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-accent hover:bg-brand-accent-hover text-white text-xs font-bold shadow-sm active:scale-95 transition-all cursor-pointer"
               title="Print document or share via WhatsApp"
             >
               <Printer size={15} />
@@ -832,9 +832,9 @@ export default function AttendanceManager({ allowedBatches = null }) {
                             <td className="px-4 py-3.5">
                               <div className="flex justify-center items-center gap-3">
                                 {[
-                                  { value: 'Present', activeClass: 'bg-brand-primary text-brand-surface border-brand-primary' },
-                                  { value: 'Late',    activeClass: 'bg-brand-gold text-brand-surface border-brand-gold'   },
-                                  { value: 'Absent',  activeClass: 'bg-brand-accent text-brand-surface border-brand-accent'     },
+                                  { value: 'Present', activeClass: 'bg-brand-primary text-white border-brand-primary' },
+                                  { value: 'Late',    activeClass: 'bg-brand-gold text-white border-brand-gold'   },
+                                  { value: 'Absent',  activeClass: 'bg-brand-accent text-white border-brand-accent'     },
                                 ].map((opt) => (
                                   <button
                                     key={opt.value}
@@ -886,7 +886,7 @@ export default function AttendanceManager({ allowedBatches = null }) {
                     <button
                       onClick={handleSave}
                       disabled={saving}
-                      className="rounded-xl bg-brand-accent hover:bg-brand-accent-hover px-5 py-3 text-xs font-bold text-brand-surface disabled:opacity-60 transition-all cursor-pointer shadow-sm"
+                      className="rounded-xl bg-brand-accent hover:bg-brand-accent-hover px-5 py-3 text-xs font-bold text-white disabled:opacity-60 transition-all cursor-pointer shadow-sm"
                     >
                       {saving ? 'Saving…' : 'Save Attendance'}
                     </button>
@@ -895,7 +895,7 @@ export default function AttendanceManager({ allowedBatches = null }) {
                     <button
                       type="button"
                       onClick={() => setIsEditMode(true)}
-                      className="rounded-xl bg-brand-primary hover:bg-brand-primary/90 px-5 py-3 text-xs font-bold text-brand-surface transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
+                      className="rounded-xl bg-brand-accent hover:bg-brand-accent-hover px-5 py-3 text-xs font-bold text-white transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
                         <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
@@ -916,7 +916,7 @@ export default function AttendanceManager({ allowedBatches = null }) {
                       <button
                         onClick={handleUpdate}
                         disabled={saving}
-                        className="rounded-xl bg-brand-accent hover:bg-brand-accent-hover px-5 py-3 text-xs font-bold text-brand-surface disabled:opacity-60 transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
+                        className="rounded-xl bg-brand-accent hover:bg-brand-accent-hover px-5 py-3 text-xs font-bold text-white disabled:opacity-60 transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />

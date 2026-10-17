@@ -3,6 +3,7 @@ const {
   getLedger,
   collectInstallment,
   updatePaymentTiming,
+  updateLedgerFee,
   getAllTransactions,
   getPendingDues,
 } = require("../controllers/feeController");
@@ -14,6 +15,7 @@ router.get("/transactions", protect, getAllTransactions);
 router.get("/pending", protect, getPendingDues);
 router.get("/ledger/:studentId", protect, getLedger);
 router.patch("/ledger/:studentId/timing", protect, updatePaymentTiming);
+router.patch("/ledger/:studentId/fee", protect, updateLedgerFee);
 router.post("/collect/:studentId", protect, collectInstallment);
 
 module.exports = router;

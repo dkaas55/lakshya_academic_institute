@@ -137,7 +137,7 @@ export default function TeacherDashboard() {
 
       {/* ── Sidebar ──────────────────────────────────────────────────────── */}
       <aside
-        className={`fixed lg:sticky lg:top-0 inset-y-0 left-0 z-50 flex w-64 max-w-[85vw] h-screen flex-col border-r border-brand-border bg-brand-primary text-brand-surface transform transition-transform duration-300 ease-in-out shrink-0 ${
+        className={`fixed lg:sticky lg:top-0 inset-y-0 left-0 z-50 flex w-64 max-w-[85vw] h-screen flex-col border-r border-brand-border bg-brand-sidebar-bg text-white transform transition-transform duration-300 ease-in-out shrink-0 ${
           sidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'
         }`}
       >
@@ -150,13 +150,13 @@ export default function TeacherDashboard() {
               <p className="text-[10px] font-bold uppercase tracking-widest text-brand-gold leading-tight truncate">
                 {BRANDING.shortName}
               </p>
-              <h1 className="text-xs font-semibold text-brand-surface/90 mt-0.5 truncate">Teacher Portal</h1>
+              <h1 className="text-xs font-semibold text-white mt-0.5 truncate">Teacher Portal</h1>
             </div>
           </div>
           <button
             type="button"
             onClick={() => setSidebarOpen(false)}
-            className="lg:hidden p-1.5 rounded-xl hover:bg-brand-surface/10 text-brand-surface/70 hover:text-brand-surface transition-colors cursor-pointer"
+            className="lg:hidden p-1.5 rounded-xl hover:bg-white/10 text-white/70 hover:text-white transition-colors cursor-pointer"
             title="Close sidebar"
             aria-label="Close sidebar"
           >
@@ -166,14 +166,14 @@ export default function TeacherDashboard() {
 
         {/* Teacher identity */}
         {teacher && (
-          <div className="px-5 py-3 border-b border-brand-border/10 shrink-0">
+          <div className="px-5 py-3 border-b border-white/10 shrink-0">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-brand-surface/20 text-brand-surface flex items-center justify-center text-xs font-bold shrink-0">
+              <div className="w-8 h-8 rounded-full bg-white/15 text-white flex items-center justify-center text-xs font-bold shrink-0">
                 {teacher.name.charAt(0).toUpperCase()}
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-semibold text-brand-surface truncate">{teacher.name}</p>
-                <p className="text-[10px] text-brand-surface/60 truncate">{teacher.username}</p>
+                <p className="text-xs font-semibold text-white truncate">{teacher.name}</p>
+                <p className="text-[10px] text-white/60 truncate">{teacher.username}</p>
               </div>
             </div>
           </div>
@@ -191,10 +191,10 @@ export default function TeacherDashboard() {
                   setActiveTab(item.id)
                   setSidebarOpen(false)
                 }}
-                className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left text-xs font-semibold transition-all duration-200 ${
+                className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left text-xs font-semibold transition-all duration-200 cursor-pointer ${
                   isActive
-                    ? 'bg-brand-surface text-brand-primary shadow-sm font-extrabold scale-[1.02]'
-                    : 'text-brand-surface/80 hover:bg-brand-surface/10 hover:text-brand-surface'
+                    ? 'bg-brand-accent text-white shadow-sm font-extrabold scale-[1.02]'
+                    : 'text-white/80 hover:bg-white/10 hover:text-white'
                 }`}
               >
                 <Icon size={16} strokeWidth={isActive ? 2.5 : 2} aria-hidden />
@@ -211,7 +211,7 @@ export default function TeacherDashboard() {
               setShowSettings(true)
               setSidebarOpen(false)
             }}
-            className="w-full rounded-xl px-4 py-3 text-xs font-semibold text-brand-surface/80 hover:bg-brand-surface/10 hover:text-brand-surface transition-all duration-200 text-left flex items-center gap-3 cursor-pointer"
+            className="w-full rounded-xl px-4 py-3 text-xs font-semibold text-white/80 hover:bg-white/10 hover:text-white transition-all duration-200 text-left flex items-center gap-3 cursor-pointer"
           >
             <Settings size={16} strokeWidth={2} aria-hidden />
             Settings
@@ -219,7 +219,7 @@ export default function TeacherDashboard() {
           <button
             type="button"
             onClick={handleSignOut}
-            className="w-full rounded-xl px-4 py-3 text-xs font-semibold text-brand-surface/80 hover:bg-brand-surface/10 hover:text-brand-surface transition-all duration-200 text-left flex items-center gap-3 cursor-pointer"
+            className="w-full rounded-xl px-4 py-3 text-xs font-semibold text-white/80 hover:bg-white/10 hover:text-white transition-all duration-200 text-left flex items-center gap-3 cursor-pointer"
           >
             <LogOut size={16} strokeWidth={2} aria-hidden />
             Sign out
@@ -391,14 +391,14 @@ function OverviewTab({ teacher, materials, tests, onNavigateTab }) {
       {/* Top Banner and Earnings Card */}
       <div className="grid gap-6 md:grid-cols-3">
         {/* Welcome banner */}
-        <div className="md:col-span-2 rounded-2xl bg-gradient-to-r from-brand-primary to-brand-primary/80 p-6 text-brand-surface shadow-sm flex flex-col justify-between">
+        <div className="md:col-span-2 rounded-2xl bg-gradient-to-r from-brand-primary to-brand-primary/80 p-6 text-white shadow-sm flex flex-col justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-brand-surface/80">
+            <p className="text-xs font-semibold uppercase tracking-widest text-white/80">
               Welcome back
             </p>
             <h2 className="text-2xl font-extrabold tracking-tight mt-1">{teacher.name}</h2>
           </div>
-          <p className="text-xs text-brand-surface/90 mt-4 font-medium">
+          <p className="text-xs text-white/90 mt-4 font-medium">
             You are managing{' '}
             <span className="font-extrabold text-brand-gold">{teacher.assignedBatches.length}</span> batch
             {teacher.assignedBatches.length !== 1 ? 'es' : ''}
@@ -743,7 +743,7 @@ function OverviewTab({ teacher, materials, tests, onNavigateTab }) {
                     href={t.documentUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-auto w-full rounded-xl bg-brand-primary hover:bg-brand-primary/90 text-brand-surface py-2 text-center text-xs font-bold transition-all"
+                    className="mt-auto w-full rounded-xl bg-brand-accent hover:bg-brand-accent-hover text-white py-2 text-center text-xs font-bold transition-all shadow-sm"
                   >
                     Open Test ↗
                   </a>
@@ -1134,8 +1134,8 @@ function SalaryTab({ teacher }) {
                                 onClick={() => setSelectedMonth(row.month)}
                                 className={`text-[10px] font-bold px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
                                   isSelected
-                                    ? 'bg-brand-primary text-white'
-                                    : 'bg-brand-surface-tint border border-brand-border text-brand-primary hover:bg-brand-primary/10'
+                                    ? 'bg-brand-accent text-white'
+                                    : 'bg-brand-surface-tint border border-brand-border text-brand-accent hover:bg-brand-accent/10'
                                 }`}
                               >
                                 {isSelected ? 'Viewing' : 'View Month'}
@@ -1423,7 +1423,7 @@ function UploadTab({ assignedBatches, onSuccess }) {
               <textarea rows={2} value={form.description} onChange={(e) => updateField('description', e.target.value)} placeholder="Brief note…" className="w-full rounded-xl border border-brand-border px-4 py-2.5 text-sm text-brand-text placeholder:text-brand-text-muted/50 bg-brand-surface focus:outline-none focus:ring-2 focus:ring-brand-primary resize-none transition-all" />
             </div>
             {serverError && <p role="alert" className="text-xs text-brand-accent bg-brand-accent/5 border border-brand-accent/10 rounded-xl px-4 py-3">{serverError}</p>}
-            <button type="submit" disabled={loading} className="w-full rounded-xl bg-brand-accent hover:bg-brand-accent-hover text-brand-surface px-4 py-3 text-sm font-bold disabled:opacity-60 transition-all duration-200 cursor-pointer shadow-sm">
+            <button type="submit" disabled={loading} className="w-full rounded-xl bg-brand-accent hover:bg-brand-accent-hover text-white px-4 py-3 text-sm font-bold disabled:opacity-60 transition-all duration-200 cursor-pointer shadow-sm">
               {loading ? 'Uploading…' : 'Upload Material'}
             </button>
           </form>
@@ -1472,7 +1472,7 @@ function UploadTab({ assignedBatches, onSuccess }) {
               {testErrors.documentUrl && <p className="mt-1 text-[11px] text-brand-accent">{testErrors.documentUrl}</p>}
             </div>
             {testServerError && <p role="alert" className="text-xs text-brand-accent bg-brand-accent/5 border border-brand-accent/10 rounded-xl px-4 py-3">{testServerError}</p>}
-            <button type="submit" disabled={testLoading} className="w-full rounded-xl bg-brand-accent hover:bg-brand-accent-hover text-brand-surface px-4 py-3 text-sm font-bold disabled:opacity-60 transition-all duration-200 cursor-pointer shadow-sm">
+            <button type="submit" disabled={testLoading} className="w-full rounded-xl bg-brand-accent hover:bg-brand-accent-hover text-white px-4 py-3 text-sm font-bold disabled:opacity-60 transition-all duration-200 cursor-pointer shadow-sm">
               {testLoading ? 'Uploading…' : 'Upload Test Paper'}
             </button>
           </form>
@@ -1634,7 +1634,7 @@ function MaterialCard({ material }) {
           href={material.fileUrlOrLink}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-auto w-full rounded-xl bg-brand-primary hover:bg-brand-primary/90 text-brand-surface py-2 text-center text-xs font-bold transition-all shadow-sm"
+          className="mt-auto w-full rounded-xl bg-brand-accent hover:bg-brand-accent-hover text-white py-2 text-center text-xs font-bold transition-all shadow-sm"
         >
           Open Resource ↗
         </a>

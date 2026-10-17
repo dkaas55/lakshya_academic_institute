@@ -296,7 +296,7 @@ function StudentFeeDueCard({ fee, onViewLedger }) {
       <button
         type="button"
         onClick={onViewLedger}
-        className="mt-4 w-full rounded-xl border border-brand-border bg-brand-surface-tint hover:bg-brand-surface py-2.5 px-3 text-xs font-bold text-brand-text flex items-center justify-center gap-2 hover:border-brand-primary/40 transition-all cursor-pointer shadow-xs"
+        className="mt-4 w-full rounded-xl border border-brand-border bg-brand-surface-tint hover:bg-brand-surface py-2.5 px-3 text-xs font-bold text-brand-text flex items-center justify-center gap-2 hover:border-brand-accent/50 hover:text-brand-accent transition-all cursor-pointer shadow-xs"
       >
         <span>View Full Fee &amp; Payment Ledger →</span>
       </button>
@@ -375,7 +375,7 @@ export default function StudentDashboard() {
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
       
       {/* ── Desktop Sidebar (hidden on mobile) ─────────────────────────────── */}
-      <aside className="hidden lg:flex sticky top-0 inset-y-0 left-0 z-30 w-60 h-screen flex-col shrink-0 border-r border-brand-border bg-brand-primary text-brand-surface transition-transform duration-300">
+      <aside className="hidden lg:flex sticky top-0 inset-y-0 left-0 z-30 w-60 h-screen flex-col shrink-0 border-r border-brand-border bg-brand-sidebar-bg text-white transition-transform duration-300">
         <div className="px-6 py-6 border-b border-brand-border/20 flex items-center gap-3 shrink-0">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white shadow-sm overflow-hidden shrink-0">
             <img src={BRANDING.logoUrl} alt={`${BRANDING.shortName} Logo`} className="h-full w-full object-contain p-1" />
@@ -384,7 +384,7 @@ export default function StudentDashboard() {
             <p className="text-[10px] font-bold uppercase tracking-widest text-brand-gold leading-tight">
               {BRANDING.shortName}
             </p>
-            <h1 className="text-xs font-semibold text-brand-surface/90 mt-0.5">Student Portal</h1>
+            <h1 className="text-xs font-semibold text-white mt-0.5">Student Portal</h1>
           </div>
         </div>
 
@@ -397,10 +397,10 @@ export default function StudentDashboard() {
                 key={item.id}
                 type="button"
                 onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left text-xs font-semibold transition-all duration-200 ${
+                className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left text-xs font-semibold transition-all duration-200 cursor-pointer ${
                   isActive
-                    ? 'bg-brand-surface text-brand-primary shadow-sm font-extrabold scale-[1.02]'
-                    : 'text-brand-surface/80 hover:bg-brand-surface/10 hover:text-brand-surface'
+                    ? 'bg-brand-accent text-white shadow-sm font-extrabold scale-[1.02]'
+                    : 'text-white/80 hover:bg-white/10 hover:text-white'
                 }`}
               >
                 <Icon size={16} strokeWidth={isActive ? 2.5 : 2} aria-hidden />
@@ -414,7 +414,7 @@ export default function StudentDashboard() {
           <button
             type="button"
             onClick={() => setShowSettings(true)}
-            className="w-full rounded-xl px-4 py-3 text-xs font-semibold text-brand-surface/80 hover:bg-brand-surface/10 hover:text-brand-surface transition-all duration-200 text-left flex items-center gap-3"
+            className="w-full rounded-xl px-4 py-3 text-xs font-semibold text-white/80 hover:bg-white/10 hover:text-white transition-all duration-200 text-left flex items-center gap-3 cursor-pointer"
           >
             <Settings size={16} strokeWidth={2} aria-hidden />
             Settings
@@ -422,7 +422,7 @@ export default function StudentDashboard() {
           <button
             type="button"
             onClick={handleSignOut}
-            className="w-full rounded-xl px-4 py-3 text-xs font-semibold text-brand-surface/80 hover:bg-brand-surface/10 hover:text-brand-surface transition-all duration-200 text-left flex items-center gap-3"
+            className="w-full rounded-xl px-4 py-3 text-xs font-semibold text-white/80 hover:bg-white/10 hover:text-white transition-all duration-200 text-left flex items-center gap-3 cursor-pointer"
           >
             <LogOut size={16} strokeWidth={2} aria-hidden />
             Sign out
@@ -590,7 +590,7 @@ export default function StudentDashboard() {
                       onClick={() => setMaterialSubTab('vault')}
                       className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all ${
                         materialSubTab === 'vault'
-                          ? 'bg-brand-primary text-brand-surface shadow-xs font-black'
+                          ? 'bg-brand-accent text-white shadow-xs font-black'
                           : 'text-brand-text-muted hover:text-brand-text hover:bg-brand-surface'
                       }`}
                     >
@@ -599,7 +599,7 @@ export default function StudentDashboard() {
                       <span
                         className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
                           materialSubTab === 'vault'
-                            ? 'bg-brand-surface/20 text-brand-surface'
+                            ? 'bg-white/20 text-white'
                             : 'bg-brand-surface text-brand-text-muted border border-brand-border'
                         }`}
                       >
@@ -612,7 +612,7 @@ export default function StudentDashboard() {
                       onClick={() => setMaterialSubTab('practice')}
                       className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all ${
                         materialSubTab === 'practice'
-                          ? 'bg-brand-primary text-brand-surface shadow-xs font-black'
+                          ? 'bg-brand-accent text-white shadow-xs font-black'
                           : 'text-brand-text-muted hover:text-brand-text hover:bg-brand-surface'
                       }`}
                     >
@@ -621,7 +621,7 @@ export default function StudentDashboard() {
                       <span
                         className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
                           materialSubTab === 'practice'
-                            ? 'bg-brand-surface/20 text-brand-surface'
+                            ? 'bg-white/20 text-white'
                             : 'bg-brand-surface text-brand-text-muted border border-brand-border'
                         }`}
                       >
@@ -669,7 +669,7 @@ export default function StudentDashboard() {
       </div>
 
       {/* ── Mobile Bottom Nav (hidden on desktop) ──────────────────────────── */}
-      <nav className="lg:hidden fixed bottom-3 sm:bottom-5 left-3 sm:left-6 right-3 sm:right-6 z-50 bg-brand-primary text-brand-surface rounded-2xl sm:rounded-[2rem] px-2 sm:px-3 py-1.5 sm:py-2 flex justify-around items-center shadow-2xl border border-brand-border/20 backdrop-blur-xl">
+      <nav className="lg:hidden fixed bottom-3 sm:bottom-5 left-3 sm:left-6 right-3 sm:right-6 z-50 bg-brand-sidebar-bg text-white rounded-2xl sm:rounded-[2rem] px-2 sm:px-3 py-1.5 sm:py-2 flex justify-around items-center shadow-2xl border border-white/20 backdrop-blur-xl">
         {TABS.map((item) => {
           const isActive = activeTab === item.id
           const Icon = item.Icon
@@ -678,12 +678,12 @@ export default function StudentDashboard() {
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`relative flex-1 flex flex-col items-center justify-center py-1 sm:py-1.5 px-1 rounded-xl transition-all duration-200 min-w-0 ${
-                isActive ? 'bg-brand-surface/15 text-brand-gold font-bold scale-[1.03]' : 'text-brand-surface/60 hover:text-brand-surface'
+              className={`relative flex-1 flex flex-col items-center justify-center py-1 sm:py-1.5 px-1 rounded-xl transition-all duration-200 min-w-0 cursor-pointer ${
+                isActive ? 'bg-white/20 text-brand-gold font-bold scale-[1.03]' : 'text-white/70 hover:text-white'
               }`}
             >
               <Icon size={18} strokeWidth={isActive ? 2.5 : 2} className="shrink-0" />
-              <span className={`text-[9px] sm:text-[10px] truncate mt-0.5 sm:mt-1 leading-tight ${isActive ? 'text-brand-gold font-bold' : 'text-brand-surface/70'}`}>
+              <span className={`text-[9px] sm:text-[10px] truncate mt-0.5 sm:mt-1 leading-tight ${isActive ? 'text-brand-gold font-bold' : 'text-white/75'}`}>
                 {item.label}
               </span>
             </button>
@@ -1398,7 +1398,7 @@ function AttendanceHistoryPage({ attnData }) {
               onClick={() => { setSelectedBatch('all'); setDateResult(null); setMonthResult(null); }}
               className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer ${
                 selectedBatch === 'all'
-                  ? 'bg-brand-primary text-white shadow-xs'
+                  ? 'bg-brand-accent text-white shadow-xs'
                   : 'bg-brand-surface-tint border border-brand-border text-brand-text hover:bg-brand-surface'
               }`}
             >
@@ -1413,7 +1413,7 @@ function AttendanceHistoryPage({ attnData }) {
                   onClick={() => { setSelectedBatch(b); setDateResult(null); setMonthResult(null); }}
                   className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer ${
                     selectedBatch === b
-                      ? 'bg-brand-primary text-white shadow-xs'
+                      ? 'bg-brand-accent text-white shadow-xs'
                       : 'bg-brand-surface-tint border border-brand-border text-brand-text hover:bg-brand-surface'
                   }`}
                 >
@@ -1608,7 +1608,7 @@ function AttendanceHistoryPage({ attnData }) {
                 type="button"
                 onClick={handleDateLookup}
                 disabled={!lookupDate}
-                className="rounded-xl bg-brand-primary hover:bg-brand-primary/90 px-4 py-2.5 text-xs font-bold text-brand-surface disabled:opacity-60 transition-all shadow-sm cursor-pointer"
+                className="rounded-xl bg-brand-accent hover:bg-brand-accent-hover px-4 py-2.5 text-xs font-bold text-white disabled:opacity-60 transition-all shadow-sm cursor-pointer"
               >
                 Check
               </button>
@@ -1752,7 +1752,7 @@ function AttendanceHistoryPage({ attnData }) {
             {['all', 'Present', 'Late', 'Absent'].map((f) => {
               const active = filter === f
                const colors = {
-                all:     active ? 'bg-brand-primary text-brand-surface'   : 'bg-brand-surface text-brand-text-muted border-brand-border hover:bg-brand-surface-tint',
+                all:     active ? 'bg-brand-primary text-white'   : 'bg-brand-surface text-brand-text-muted border-brand-border hover:bg-brand-surface-tint',
                 Present: active ? 'bg-emerald-600 text-white' : 'bg-brand-surface text-emerald-700 dark:text-emerald-400 border-brand-border hover:bg-emerald-50/10',
                 Late:    active ? 'bg-amber-500 text-white'   : 'bg-brand-surface text-amber-700 dark:text-amber-400 border-brand-border hover:bg-amber-50/10',
                 Absent:  active ? 'bg-rose-600 text-white'    : 'bg-brand-surface text-rose-700 dark:text-rose-400 border-brand-border hover:bg-rose-50/10',
@@ -2148,24 +2148,37 @@ function PaymentHistoryTable({ history }) {
             <tr className="border-b border-brand-border bg-brand-surface-tint/50">
               <th className="px-4 py-2.5 font-semibold text-brand-text-muted">Date</th>
               <th className="px-4 py-2.5 font-semibold text-brand-text-muted">Amount</th>
+              <th className="px-4 py-2.5 font-semibold text-brand-text-muted">Timing</th>
               <th className="px-4 py-2.5 font-semibold text-brand-text-muted">Mode</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-brand-border">
-            {history.map((entry) => (
-              <tr key={entry._id} className="hover:bg-brand-surface-tint/60 transition-colors">
-                <td className="px-4 py-2.5 text-brand-text-muted whitespace-nowrap">
-                  {new Intl.DateTimeFormat('en-IN', {
-                    day: 'numeric', month: 'short', year: 'numeric',
-                    hour: '2-digit', minute: '2-digit',
-                  }).format(new Date(entry.paidAt))}
-                </td>
-                <td className="px-4 py-2.5 font-bold text-emerald-700 dark:text-emerald-400">
-                  {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(entry.amount)}
-                </td>
-                <td className="px-4 py-2.5 text-brand-text">{entry.method || '—'}</td>
-              </tr>
-            ))}
+            {history.map((entry) => {
+              const timing = entry.paymentTiming || 'advance'
+              return (
+                <tr key={entry._id} className="hover:bg-brand-surface-tint/60 transition-colors">
+                  <td className="px-4 py-2.5 text-brand-text-muted whitespace-nowrap">
+                    {new Intl.DateTimeFormat('en-IN', {
+                      day: 'numeric', month: 'short', year: 'numeric',
+                      hour: '2-digit', minute: '2-digit',
+                    }).format(new Date(entry.paidAt))}
+                  </td>
+                  <td className="px-4 py-2.5 font-bold text-emerald-700 dark:text-emerald-400">
+                    {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(entry.amount)}
+                  </td>
+                  <td className="px-4 py-2.5 whitespace-nowrap">
+                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                      timing === 'after_month'
+                        ? 'bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800'
+                        : 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800'
+                    }`}>
+                      {timing === 'after_month' ? 'End of Month' : 'In Advance'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2.5 text-brand-text">{entry.method || '—'}</td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>

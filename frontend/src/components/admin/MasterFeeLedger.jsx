@@ -225,7 +225,7 @@ export default function MasterFeeLedger() {
                             batches: due.batches,
                             studentClass: due.studentClass
                           })}
-                          className="inline-flex items-center gap-1.5 rounded-lg bg-brand-primary/10 px-3 py-1.5 text-xs font-semibold text-brand-primary hover:bg-brand-primary/20 transition-colors"
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-brand-accent hover:bg-brand-accent-hover px-3 py-1.5 text-xs font-bold text-white shadow-xs transition-all cursor-pointer"
                           title="Collect fee"
                         >
                           Collect Fee
@@ -252,6 +252,7 @@ export default function MasterFeeLedger() {
                     <th className="px-4 py-3 font-semibold text-brand-text">Student Name</th>
                     <th className="px-4 py-3 font-semibold text-brand-text">Batch</th>
                     <th className="px-4 py-3 font-semibold text-brand-text text-right">Amount Paid</th>
+                    <th className="px-4 py-3 font-semibold text-brand-text">Timing</th>
                     <th className="px-4 py-3 font-semibold text-brand-text">Mode</th>
                   </tr>
                 </thead>
@@ -297,6 +298,15 @@ export default function MasterFeeLedger() {
                       <td className="px-4 py-3 text-brand-text">{tx.batch}</td>
                       <td className="px-4 py-3 font-semibold text-brand-primary text-right">
                         {formatCurrency(tx.amount)}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                          tx.paymentTiming === 'after_month'
+                            ? 'bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800'
+                            : 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800'
+                        }`}>
+                          {tx.paymentTiming === 'after_month' ? 'End of Month' : 'In Advance'}
+                        </span>
                       </td>
                       <td className="px-4 py-3 text-brand-text">{tx.method || '—'}</td>
                     </tr>

@@ -248,7 +248,7 @@ export default function StudentFilterBar({
               onClick={() => setAttendanceFilter('all')}
               className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
                 attendanceFilter === 'all'
-                  ? 'bg-brand-primary text-brand-surface shadow-xs'
+                  ? 'bg-brand-primary text-white shadow-xs'
                   : 'bg-brand-surface-tint text-brand-text-muted hover:text-brand-text border border-brand-border/60'
               }`}
             >
@@ -260,7 +260,7 @@ export default function StudentFilterBar({
               onClick={() => setAttendanceFilter('below75')}
               className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
                 attendanceFilter === 'below75'
-                  ? 'bg-brand-accent text-brand-surface shadow-xs'
+                  ? 'bg-brand-accent text-white shadow-xs'
                   : 'bg-brand-accent/10 text-brand-accent hover:bg-brand-accent/20 border border-brand-accent/20'
               }`}
             >
@@ -284,7 +284,7 @@ export default function StudentFilterBar({
               onClick={() => setAttendanceFilter('75to84')}
               className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
                 attendanceFilter === '75to84'
-                  ? 'bg-brand-gold text-brand-surface shadow-xs'
+                  ? 'bg-brand-gold text-white shadow-xs'
                   : 'bg-brand-gold/15 text-brand-gold hover:bg-brand-gold/25 border border-brand-gold/25'
               }`}
             >
