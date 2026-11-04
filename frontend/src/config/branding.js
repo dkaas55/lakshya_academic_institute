@@ -16,9 +16,9 @@ const mode = (import.meta.env.VITE_APP_MODE || 'institute').toLowerCase().trim()
 const isSchool = mode === 'school';
 
 export const BRANDING = {
-  name: import.meta.env.VITE_APP_NAME || 'Your Institute',
-  shortName: import.meta.env.VITE_APP_SHORT_NAME || 'Your Institute',
-  tagline: import.meta.env.VITE_APP_TAGLINE || 'Excellence & Innovation',
+  name: import.meta.env.VITE_APP_NAME || 'Lakshya Academic Institute',
+  shortName: import.meta.env.VITE_APP_SHORT_NAME || 'Lakshya Academy',
+  tagline: import.meta.env.VITE_APP_TAGLINE || 'Excellence in Education',
   logoUrl: import.meta.env.VITE_APP_LOGO_URL || '/logo.png',
   mode,
   isSchool,

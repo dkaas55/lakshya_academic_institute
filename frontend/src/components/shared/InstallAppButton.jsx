@@ -36,7 +36,7 @@ export default function InstallAppButton({ className = '' }) {
         window.matchMedia('(display-mode: minimal-ui)').matches ||
         window.matchMedia('(display-mode: window-controls-overlay)').matches ||
         window.navigator.standalone === true ||
-        window.name === 'InstituteAppWindow' ||
+        window.name === 'LakshyaAppWindow' ||
         urlParams.get('source') === 'pwa' ||
         urlParams.get('mode') === 'standalone'
       )
